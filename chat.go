@@ -51,13 +51,21 @@ func (c *Chat) SendText(text string) *tg.Message {
 }
 
 // Send sends any Sendable object.
-func (c *Chat) Send(s Sendable) *tg.Message {
+func (c *Chat) Send(s Sendable, opts ...SendOptions) *tg.Message {
 	if s == nil {
 		return nil
 	}
 
 	m := "send" + s.what()
 	p := s.params().set("chat_id", c.chatID)
+	if len(opts) > 0 {
+		o := &opts[0]
+		p.set("disable_notification", o.DisableNotification)
+		p.set("protect_content", o.ProtectContent)
+		p.set("reply_to_message_id", o.ReplyTo)
+		p.set("allow_sending_without_reply", o.AllowSendingWithoutReply)
+		p.set("reply_markup", o.ReplyMarkup)
+	}
 	if f, ok := s.(Fileable); ok {
 		files := f.files()
 		for i := range files {
@@ -80,4 +88,10 @@ func (c *Chat) SendChatAction(act tg.ChatAction) {
 	p.set("chat_id", c.chatID)
 	p.set("action", string(act))
 	api[bool](c.ctx, "sendChatAction", p)
+}
+
+// SendInvoice sends invoice.
+func (c *Chat) SendInvoice(i Invoice) *tg.Message {
+	p := i.params().set("chat_id", c.chatID)
+	return api[*tg.Message](c.ctx, "sendInvoice", p)
 }

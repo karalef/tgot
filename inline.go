@@ -13,7 +13,6 @@ func (b *Bot) makeInlineContext(q *tg.InlineQuery) *InlineContext {
 		inlineQueryID: q.ID,
 	}
 	c.getCaller = c.caller
-	c.Chat = c.OpenChat(q.From.ID)
 	return &c
 }
 

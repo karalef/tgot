@@ -11,7 +11,6 @@ import (
 
 type contextBase struct {
 	bot       *Bot
-	Chat      Chat
 	getCaller func() string
 }
 
@@ -142,6 +141,8 @@ type Context struct {
 	contextBase
 	cmd *Command
 	msg *tg.Message
+
+	Chat Chat
 }
 
 func (c *Context) caller() string {
@@ -153,9 +154,8 @@ func (c *Context) Reply(text string, entities ...tg.MessageEntity) {
 	c.Chat.Send(Message{
 		Text:     text,
 		Entities: entities,
-		SendOptions: SendOptions{
-			ReplyTo: c.msg.ID,
-		},
+	}, SendOptions{
+		ReplyTo: c.msg.ID,
 	})
 	c.Close()
 }

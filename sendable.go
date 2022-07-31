@@ -51,14 +51,6 @@ type SendOptions struct {
 	ReplyMarkup              tg.ReplyMarkup
 }
 
-func (o *SendOptions) embed(p params) {
-	p.set("disable_notification", o.DisableNotification)
-	p.set("protect_content", o.ProtectContent)
-	p.set("reply_to_message_id", o.ReplyTo)
-	p.set("allow_sending_without_reply", o.AllowSendingWithoutReply)
-	p.set("reply_markup", o.ReplyMarkup)
-}
-
 // NewMessage makes a new message.
 func NewMessage(text string) *Message {
 	return &Message{
@@ -72,7 +64,6 @@ type Message struct {
 	ParseMode             tg.ParseMode
 	Entities              []tg.MessageEntity
 	DisableWebPagePreview bool
-	SendOptions
 }
 
 func (Message) what() string {
@@ -85,7 +76,6 @@ func (m Message) params() params {
 	p.set("parse_mode", string(m.ParseMode))
 	p.set("entities", m.Entities)
 	p.set("disable_web_page_preview", m.DisableWebPagePreview)
-	m.SendOptions.embed(p)
 	return p
 }
 
@@ -100,7 +90,6 @@ func NewPhoto(photo *tg.InputFile) *Photo {
 type Photo struct {
 	Photo *tg.InputFile
 	CaptionData
-	SendOptions
 }
 
 func (Photo) what() string {
@@ -110,7 +99,6 @@ func (Photo) what() string {
 func (ph Photo) params() params {
 	p := params{}
 	ph.CaptionData.embed(p)
-	ph.SendOptions.embed(p)
 	return p
 }
 
@@ -132,7 +120,6 @@ type Audio struct {
 	Duration  int
 	Performer string
 	Title     string
-	SendOptions
 }
 
 func (Audio) what() string {
@@ -145,7 +132,6 @@ func (a Audio) params() params {
 	p.set("duration", a.Duration)
 	p.set("performer", a.Performer)
 	p.set("title", a.Title)
-	a.SendOptions.embed(p)
 	return p
 }
 
@@ -165,7 +151,6 @@ type Document struct {
 	BaseFile
 	CaptionData
 	DisableTypeDetection bool
-	SendOptions
 }
 
 func (Document) what() string {
@@ -176,7 +161,6 @@ func (d Document) params() params {
 	p := params{}
 	d.CaptionData.embed(p)
 	p.set("disable_content_type_detection", d.DisableTypeDetection)
-	d.SendOptions.embed(p)
 	return p
 }
 
@@ -199,7 +183,6 @@ type Video struct {
 	Width             int
 	Height            int
 	SupportsStreaming bool
-	SendOptions
 }
 
 func (Video) what() string {
@@ -213,7 +196,6 @@ func (v Video) params() params {
 	p.set("height", v.Height)
 	v.CaptionData.embed(p)
 	p.set("supports_streaming", v.SupportsStreaming)
-	v.SendOptions.embed(p)
 	return p
 }
 
@@ -235,7 +217,6 @@ type Animation struct {
 	Duration int
 	Width    int
 	Height   int
-	SendOptions
 }
 
 func (Animation) what() string {
@@ -248,7 +229,6 @@ func (a Animation) params() params {
 	p.set("width", a.Width)
 	p.set("height", a.Height)
 	a.CaptionData.embed(p)
-	a.SendOptions.embed(p)
 	return p
 }
 
@@ -268,7 +248,6 @@ type Voice struct {
 	Voice *tg.InputFile
 	CaptionData
 	Duration int
-	SendOptions
 }
 
 func (Voice) what() string {
@@ -279,7 +258,6 @@ func (v Voice) params() params {
 	p := params{}
 	v.CaptionData.embed(p)
 	p.set("duration", v.Duration)
-	v.SendOptions.embed(p)
 	return p
 }
 
@@ -299,7 +277,6 @@ type VideoNote struct {
 	BaseFile
 	Duration int
 	Length   int
-	SendOptions
 }
 
 func (VideoNote) what() string {
@@ -310,7 +287,6 @@ func (v VideoNote) params() params {
 	p := params{}
 	p.set("duration", v.Duration)
 	p.set("length", v.Length)
-	v.SendOptions.embed(p)
 	return p
 }
 
@@ -318,26 +294,169 @@ func (v VideoNote) files() []File {
 	return v.BaseFile.files("video_note")
 }
 
-// NewDice makes a new dice.
-func NewDice(dice tg.DiceEmoji) *Dice {
-	return &Dice{
-		Emoji: dice,
+// MediaGroup contains information about the media group to be sent.
+type MediaGroup struct{}
+
+// Location contains information about the location to be sent.
+type Location struct {
+	tg.Location
+}
+
+func (Location) what() string {
+	return "Location"
+}
+
+func (l Location) params() params {
+	p := params{}
+	p.set("latitude", l.Lat)
+	p.set("longitude", l.Long)
+	if l.HorizontalAccuracy != nil {
+		p.set("horizontal_accuracy", *l.HorizontalAccuracy)
 	}
+	p.set("live_period", l.LivePeriod)
+	p.set("heading", l.Heading)
+	p.set("proximity_alert_radius", l.AlertRadius)
+	return p
+}
+
+// Venue contains information about the venue to be sent.
+type Venue struct {
+	Lat             float32
+	Long            float32
+	Title           string
+	Address         string
+	FoursquareID    string
+	FoursquareType  string
+	GooglePlaceID   string
+	GooglePlaceType string
+}
+
+func (Venue) what() string {
+	return "Venue"
+}
+
+func (v Venue) params() params {
+	p := params{}
+	p.set("latitude", v.Lat)
+	p.set("longitude", v.Long)
+	p.set("title", v.Title)
+	p.set("address", v.Address)
+	p.set("foursquare_id", v.FoursquareID)
+	p.set("foursquare_type", v.FoursquareType)
+	p.set("google_place_id", v.GooglePlaceID)
+	p.set("google_place_type", v.GooglePlaceType)
+	return p
+}
+
+// Contact contains information about the contact to be sent.
+type Contact struct {
+	PhoneNumber string
+	FirstName   string
+	LastName    string
+	Vcard       string
+}
+
+func (Contact) what() string {
+	return "Contact"
+}
+
+func (c Contact) params() params {
+	p := params{}
+	p.set("phone_number", c.PhoneNumber)
+	p.set("first_name", c.FirstName)
+	p.set("last_name", c.LastName)
+	p.set("vcard", c.Vcard)
+	return p
+}
+
+// Poll contains information about the poll to be sent.
+type Poll struct {
+	Question             string
+	Options              []string
+	IsAnonymous          bool
+	Type                 tg.PollType
+	MultipleAnswers      bool
+	CorrectOption        int
+	Explanation          string
+	ExplanationParseMode tg.ParseMode
+	ExplanationEntities  []tg.MessageEntity
+	OpenPeriod           int
+	CloseDate            int64
+	IsClosed             bool
+}
+
+func (Poll) what() string {
+	return "Poll"
+}
+
+func (poll Poll) params() params {
+	p := params{}
+	p.set("question", poll.Question)
+	p.set("options", poll.Options)
+	p.set("is_anonymous", poll.IsAnonymous)
+	p.set("type", string(poll.Type))
+	p.set("allows_multiple_answers", poll.MultipleAnswers)
+	p.set("correct_option_id", poll.CorrectOption)
+	p.set("explanation", poll.Explanation)
+	p.set("explanation_parse_mode", string(poll.ExplanationParseMode))
+	p.set("explanation_entities", poll.ExplanationEntities)
+	p.set("open_period", poll.OpenPeriod)
+	p.set("close_date", poll.CloseDate)
+	p.set("is_closed", poll.IsClosed)
+	return p
 }
 
 // Dice contains information about the dice to be sent.
-type Dice struct {
-	Emoji tg.DiceEmoji
-	SendOptions
-}
+type Dice tg.DiceEmoji
 
 func (Dice) what() string {
 	return "Dice"
 }
 
 func (d Dice) params() params {
+	return params{}.set("emoji", string(d))
+}
+
+// Invoice contains information about the invoice to be sent.
+type Invoice struct {
+	tg.InputInvoiceMessageContent
+	StartParameter           string
+	DisableNotification      bool
+	ProtectContent           bool
+	ReplyTo                  int
+	AllowSendingWithoutReply bool
+	ReplyMarkup              *tg.InlineKeyboardMarkup
+}
+
+func (i Invoice) params() params {
 	p := params{}
-	p.set("emoji", string(d.Emoji))
-	d.SendOptions.embed(p)
+	p.set("title", i.Title)
+	p.set("description", i.Description)
+	p.set("payload", i.Payload)
+	p.set("provider_token", i.ProviderToken)
+	p.set("currency", i.Currency)
+	p.set("prices", i.Prices)
+	p.set("max_tip_amount", i.MaxTipAmount)
+	p.set("suggested_tip_amounts", i.SuggestedTipAmounts)
+	p.set("start_parameter", i.StartParameter)
+	p.set("provider_data", i.ProviderData)
+	p.set("photo_url", i.PhotoURL)
+	p.set("photo_size", i.PhotoSize)
+	p.set("photo_width", i.PhotoWidth)
+	p.set("photo_height", i.PhotoHeight)
+	p.set("need_name", i.NeedName)
+	p.set("need_phone_number", i.NeedPhoneNumber)
+	p.set("need_email", i.NeedEmail)
+	p.set("need_shipping_address", i.NeedShippingAddress)
+	p.set("send_phone_number_to_provider", i.SendPhoneNumberToProvider)
+	p.set("send_email_to_provider", i.SendEmailToProvider)
+	p.set("is_flexible", i.IsFlexible)
+	p.set("disable_notification", i.DisableNotification)
+	p.set("protect_content", i.ProtectContent)
+	p.set("reply_to_message_id", i.ReplyTo)
+	p.set("allow_sending_without_reply", i.AllowSendingWithoutReply)
+	if i.ReplyMarkup != nil {
+		p.set("reply_markup", i.ReplyMarkup)
+	}
 	return p
 }
