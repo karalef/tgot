@@ -1,6 +1,10 @@
 package bot
 
-import "tghwbot/bot/tg"
+import (
+	"errors"
+	"strconv"
+	"tghwbot/bot/tg"
+)
 
 // Sendable interface for Chat.Send.
 type Sendable interface {
@@ -295,7 +299,56 @@ func (v VideoNote) files() []File {
 }
 
 // MediaGroup contains information about the media group to be sent.
-type MediaGroup struct{}
+type MediaGroup struct {
+	Media                    tg.Media
+	DisableNotification      bool
+	ProtectContent           bool
+	ReplyTo                  int
+	AllowSendingWithoutReply bool
+}
+
+func (g MediaGroup) data() (params, []File, error) {
+	p := params{}
+	p.set("disable_notification", g.DisableNotification)
+	p.set("protect_content", g.ProtectContent)
+	p.set("reply_to_message_id", g.ReplyTo)
+	p.set("allow_sending_without_reply", g.AllowSendingWithoutReply)
+
+	var files []File
+	for i := range g.Media {
+		n := strconv.Itoa(i)
+		var media, thumb **tg.InputFile
+		switch m := g.Media[i].(type) {
+		case *tg.InputMediaPhoto:
+			media = &m.Media
+		case *tg.InputMediaVideo:
+			media, thumb = &m.Media, &m.Thumbnail
+		case *tg.InputMediaAudio:
+			media, thumb = &m.Media, &m.Thumbnail
+		case *tg.InputMediaDocument:
+			media, thumb = &m.Media, &m.Thumbnail
+		default:
+			return nil, nil, errors.New("unsupported media group entry " + n + " type")
+		}
+		if media == nil {
+			return nil, nil, errors.New("media group entry " + n + " does not exist")
+		}
+		if _, r := (*media).UploadData(); r != nil {
+			*media = tg.FileReader("file-"+n, r)
+			files = append(files, File{"file-" + n, *media})
+
+		}
+		if thumb == nil {
+			continue
+		}
+		if _, r := (*thumb).UploadData(); r != nil {
+			*thumb = tg.FileReader("file-"+n+"-thumb", r)
+			files = append(files, File{"file-" + n + "-thumb", *thumb})
+		}
+	}
+
+	return p.set("media", g.Media), files, nil
+}
 
 // Location contains information about the location to be sent.
 type Location struct {

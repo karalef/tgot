@@ -1,6 +1,8 @@
 package bot
 
-import "tghwbot/bot/tg"
+import (
+	"tghwbot/bot/tg"
+)
 
 // Chat represents chat api.
 type Chat struct {
@@ -79,6 +81,16 @@ func (c *Chat) Send(s Sendable, opts ...SendOptions) *tg.Message {
 	}
 
 	return api[*tg.Message](c.ctx, m, p)
+}
+
+// SendMediaGroup sends a group of photos, videos, documents or audios as an album.
+func (c *Chat) SendMediaGroup(mg MediaGroup) []tg.Message {
+	p, files, err := mg.data()
+	if err != nil {
+		closeCtx(c.ctx, err)
+	}
+	p.set("chat_id", c.chatID)
+	return api[[]tg.Message](c.ctx, "sendMediaGroup", p, files...)
 }
 
 // SendChatAction sends chat action to tell the user that something

@@ -98,6 +98,13 @@ type commonContext interface {
 	Close()
 }
 
+func closeCtx(c commonContext, err error) {
+	if err != nil {
+		c.getBot().log.Error("%s\n%s\n%s", err.Error(), c.caller(), backtrace())
+	}
+	c.Close()
+}
+
 func api[T any](c commonContext, method string, p params, files ...File) T {
 	bot := c.getBot()
 	result, err := performRequest[T](bot, method, p, files...)
@@ -105,22 +112,20 @@ func api[T any](c commonContext, method string, p params, files ...File) T {
 	case nil:
 		return result
 	case *tg.APIError:
-		bot.log.Error("%s\n%s\n%s", err.Error(), c.caller(), backtrace())
-		c.Close()
+		closeCtx(c, err)
 		return result
 	}
 
 	switch err {
 	case context.Canceled, context.DeadlineExceeded:
-	default:
-		bot.log.Error("%s\n%s\n%s", err.Error(), c.caller(), backtrace())
+		err = nil
 	}
-	c.Close()
+	closeCtx(c, err)
 	return result
 }
 
 func backtrace() string {
-	return internal.FramesString(internal.BackTrace(2, 2), true)
+	return internal.FramesString(internal.BackTrace(3, 2), true)
 }
 
 func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
