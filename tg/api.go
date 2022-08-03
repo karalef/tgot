@@ -1,6 +1,7 @@
 package tg
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -88,4 +89,47 @@ type CommandScope struct {
 	Type   CommandScopeType `json:"type"`
 	ChatID int64            `json:"chat_id,omitempty"`
 	UserID int64            `json:"user_id,omitempty"`
+}
+
+// MenuButton describes the bot's menu button in a private chat.
+type MenuButton struct {
+	typ string
+	txt string
+	app *WebAppInfo
+}
+
+// MarshalJSON implements json.Marshaler.
+func (b MenuButton) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type   string      `json:"type"`
+		Text   string      `json:"text,omitempty"`
+		WebApp *WebAppInfo `json:"web_app,omitempty"`
+	}{
+		Type:   b.typ,
+		Text:   b.txt,
+		WebApp: b.app,
+	})
+}
+
+// MenuButtonCommands represents a menu button, which opens the bot's list of commands.
+func MenuButtonCommands() *MenuButton {
+	return &MenuButton{
+		typ: "commands",
+	}
+}
+
+// MenuButtonWebApp represents a menu button, which launches a Web App.
+func MenuButtonWebApp(text string, webApp *WebAppInfo) *MenuButton {
+	return &MenuButton{
+		typ: "web_app",
+		txt: text,
+		app: webApp,
+	}
+}
+
+// MenuButtonDefault describes that no specific value for the menu button was set.
+func MenuButtonDefault() *MenuButton {
+	return &MenuButton{
+		typ: "default",
+	}
 }
