@@ -19,11 +19,11 @@ var (
 
 // ReplyKeyboardMarkup represents a custom keyboard with reply options.
 type ReplyKeyboardMarkup struct {
-	Keyboard    []KeyboardButton `json:"keyboard"`
-	Resize      bool             `json:"resize_keyboard,omitempty"`
-	OneTime     bool             `json:"one_time_keyboard,omitempty"`
-	Placeholder string           `json:"input_field_placeholder,omitempty"`
-	Selective   bool             `json:"selective,omitempty"`
+	Keyboard    [][]KeyboardButton `json:"keyboard"`
+	Resize      bool               `json:"resize_keyboard,omitempty"`
+	OneTime     bool               `json:"one_time_keyboard,omitempty"`
+	Placeholder string             `json:"input_field_placeholder,omitempty"`
+	Selective   bool               `json:"selective,omitempty"`
 }
 
 // KeyboardButton represents one button of the reply keyboard.
@@ -60,7 +60,7 @@ type ForceReply struct {
 // InlineKeyboardMarkup represents an inline keyboard that
 // appears right next to the message it belongs to.
 type InlineKeyboardMarkup struct {
-	Keyboard []InlineKeyboardButton `json:"inline_keyboard"`
+	Keyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
 // InlineKeyboardButton represents one button of an inline keyboard.
