@@ -102,7 +102,7 @@ type StickerSet struct {
 // MaskPosition describes the position on faces where a mask should be placed by default.
 type MaskPosition struct {
 	Point  string  `json:"point"`
-	XShift float64 `json:"x_shift"`
-	YShift float64 `json:"y_shift"`
-	Scale  float64 `json:"scale"`
+	XShift float32 `json:"x_shift"`
+	YShift float32 `json:"y_shift"`
+	Scale  float32 `json:"scale"`
 }

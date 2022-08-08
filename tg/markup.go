@@ -5,10 +5,10 @@ type ReplyMarkup interface {
 	replyMarkup()
 }
 
-func (m *ReplyKeyboardMarkup) replyMarkup()  {}
-func (m *InlineKeyboardMarkup) replyMarkup() {}
-func (m *ReplyKeyboardRemove) replyMarkup()  {}
-func (m *ForceReply) replyMarkup()           {}
+func (*ReplyKeyboardMarkup) replyMarkup()  {}
+func (*InlineKeyboardMarkup) replyMarkup() {}
+func (*ReplyKeyboardRemove) replyMarkup()  {}
+func (*ForceReply) replyMarkup()           {}
 
 var (
 	_ ReplyMarkup = &ReplyKeyboardMarkup{}
@@ -83,16 +83,4 @@ type LoginURL struct {
 	ForwardText  string `json:"forward_text,omitempty"`
 	BotUsername  string `json:"bot_username,omitempty"`
 	RequestWrite bool   `json:"request_write_access,omitempty"`
-}
-
-// CallbackQuery represents an incoming callback query from a callback
-// button in an inline keyboard.
-type CallbackQuery struct {
-	ID              string   `json:"id"`
-	From            *User    `json:"from"`
-	Message         *Message `json:"message,omitempty"`
-	InlineMessageID string   `json:"inline_message_id,omitempty"`
-	ChatInstance    string   `json:"chat_instance,omitempty"`
-	Data            string   `json:"data,omitempty"`
-	GameShortName   string   `json:"game_short_name,omitempty"`
 }

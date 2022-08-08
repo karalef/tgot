@@ -1,7 +1,6 @@
 package tg
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -12,9 +11,9 @@ const DefaultAPIURL = "https://api.telegram.org/bot"
 const DefaultFileURL = "https://api.telegram.org/file/bot"
 
 // APIResponse represents telegram api response.
-type APIResponse[T any] struct {
+type APIResponse[Type any] struct {
 	Ok     bool `json:"ok"`
-	Result T    `json:"result"`
+	Result Type `json:"result"`
 	*APIError
 }
 
@@ -29,7 +28,16 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("telegram: (%d) %s", e.Code, e.Description)
+	s := fmt.Sprintf("telegram (%d) %s", e.Code, e.Description)
+	if e.Parameters != nil {
+		if e.Parameters.MigrateTo != nil {
+			s += fmt.Sprintf(" (migrate to %d)", *e.Parameters.MigrateTo)
+		}
+		if e.Parameters.RetryAfter != nil {
+			s += fmt.Sprintf(" (retry after %d)", *e.Parameters.RetryAfter)
+		}
+	}
+	return s
 }
 
 // Update object represents an incoming update.
@@ -51,17 +59,34 @@ type Update struct {
 	ChatJoinRequest   *ChatJoinRequest   `json:"chat_join_request"`
 }
 
+// CallbackQuery represents an incoming callback query from a callback
+// button in an inline keyboard.
+type CallbackQuery struct {
+	ID              string   `json:"id"`
+	From            *User    `json:"from"`
+	Message         *Message `json:"message,omitempty"`
+	InlineMessageID string   `json:"inline_message_id,omitempty"`
+	ChatInstance    string   `json:"chat_instance,omitempty"`
+	Data            string   `json:"data,omitempty"`
+	GameShortName   string   `json:"game_short_name,omitempty"`
+}
+
 // WebhookInfo describes the current status of a webhook.
 type WebhookInfo struct {
 	URL                string   `json:"url"`
 	HasCustomCert      bool     `json:"has_custom_certificate"`
 	PendingUpdateCount int      `json:"pending_update_count"`
-	IPAddress          string   `json:"ip_address,omitempty"`
-	LastErrorDate      int64    `json:"last_error_date,omitempty"`
-	LastErrorMessage   string   `json:"last_error_message,omitempty"`
-	LastSyncErrorDate  int64    `json:"last_synchronization_error_date,omitempty"`
-	MaxConnections     int      `json:"max_connections,omitempty"`
-	AllowedUpdates     []string `json:"allowed_updates,omitempty"`
+	IPAddress          string   `json:"ip_address"`
+	LastErrorDate      int64    `json:"last_error_date"`
+	LastErrorMessage   string   `json:"last_error_message"`
+	LastSyncErrorDate  int64    `json:"last_synchronization_error_date"`
+	MaxConnections     int      `json:"max_connections"`
+	AllowedUpdates     []string `json:"allowed_updates"`
+}
+
+// ChatID represents chat id.
+type ChatID interface {
+	string | int64
 }
 
 // Command represents a bot command.
@@ -70,66 +95,94 @@ type Command struct {
 	Description string `json:"description"`
 }
 
-// CommandScopeType represents scope type.
-type CommandScopeType string
-
-// all available command scope types.
-const (
-	ScopeTypeDefault         = CommandScopeType("default")
-	ScopeTypeAllPrivateChats = CommandScopeType("all_private_chats")
-	ScopeTypeAllGroupChats   = CommandScopeType("all_group_chats")
-	ScopeTypeAllChatAdmins   = CommandScopeType("all_chat_administrators")
-	ScopeTypeChat            = CommandScopeType("chat")
-	ScopeTypeChatAdmins      = CommandScopeType("chat_administrators")
-	ScopeTypeChatMember      = CommandScopeType("chat_member")
-)
-
 // CommandScope represents the scope to which bot commands are applied.
-type CommandScope struct {
-	Type   CommandScopeType `json:"type"`
-	ChatID int64            `json:"chat_id,omitempty"`
-	UserID int64            `json:"user_id,omitempty"`
+type CommandScope interface {
+	commandScope()
 }
+
+type commandScope[ChatIDType ChatID] struct {
+	Type   string     `json:"type"`
+	ChatID ChatIDType `json:"chat_id,omitempty"`
+	UserID int64      `json:"user_id,omitempty"`
+}
+
+func (commandScope[ChatIDType]) commandScope() {}
+
+// CommandScopeDefault returns the default scope of bot commands.
+// Default commands are used if no commands with a narrower scope
+// are specified for the user.
+func CommandScopeDefault() CommandScope {
+	return commandScope[int64]{Type: "default"}
+}
+
+// CommandScopeAllPrivateChats returns the scope of bot commands,
+// covering all private chats.
+func CommandScopeAllPrivateChats() CommandScope {
+	return commandScope[int64]{Type: "all_private_chats"}
+}
+
+// CommandScopeAllGroupChats returns the scope of bot commands,
+// covering all group and supergroup chats.
+func CommandScopeAllGroupChats() CommandScope {
+	return commandScope[int64]{Type: "all_group_chats"}
+}
+
+// CommandScopeAllChatAdmins returns the scope of bot commands,
+// covering all group and supergroup chat administrators.
+func CommandScopeAllChatAdmins() CommandScope {
+	return commandScope[int64]{Type: "all_chat_administrators"}
+}
+
+// CommandScopeChat returns the scope of bot commands,
+// covering a specific chat.
+func CommandScopeChat[T ChatID](chatID T) CommandScope {
+	return commandScope[T]{Type: "chat", ChatID: chatID}
+}
+
+// CommandScopeChatAdmins returns the scope of bot commands,
+// covering all administrators of a specific group or supergroup chat.
+func CommandScopeChatAdmins[T ChatID](chatID T) CommandScope {
+	return commandScope[T]{Type: "chat_administrators", ChatID: chatID}
+}
+
+// CommandScopeChatMember returns the scope of bot commands,
+// covering a specific member of a group or supergroup chat.
+func CommandScopeChatMember[T ChatID](chatID T, userID int64) CommandScope {
+	return commandScope[T]{Type: "chat_member", ChatID: chatID, UserID: userID}
+}
+
+// MenuButtonType represents menu button type.
+type MenuButtonType string
+
+// all available menu button types.
+const (
+	MenuButtonTypeCommands = MenuButtonType("commands")
+	MenuButtonTypeWebApp   = MenuButtonType("web_app")
+	MenuButtonTypeDefault  = MenuButtonType("default")
+)
 
 // MenuButton describes the bot's menu button in a private chat.
 type MenuButton struct {
-	typ string
-	txt string
-	app *WebAppInfo
-}
-
-// MarshalJSON implements json.Marshaler.
-func (b MenuButton) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Type   string      `json:"type"`
-		Text   string      `json:"text,omitempty"`
-		WebApp *WebAppInfo `json:"web_app,omitempty"`
-	}{
-		Type:   b.typ,
-		Text:   b.txt,
-		WebApp: b.app,
-	})
+	Type   MenuButtonType `json:"type"`
+	Text   string         `json:"text,omitempty"`
+	WebApp *WebAppInfo    `json:"web_app,omitempty"`
 }
 
 // MenuButtonCommands represents a menu button, which opens the bot's list of commands.
 func MenuButtonCommands() *MenuButton {
-	return &MenuButton{
-		typ: "commands",
-	}
+	return &MenuButton{Type: MenuButtonTypeCommands}
 }
 
 // MenuButtonWebApp represents a menu button, which launches a Web App.
 func MenuButtonWebApp(text string, webApp *WebAppInfo) *MenuButton {
 	return &MenuButton{
-		typ: "web_app",
-		txt: text,
-		app: webApp,
+		Type:   MenuButtonTypeWebApp,
+		Text:   text,
+		WebApp: webApp,
 	}
 }
 
 // MenuButtonDefault describes that no specific value for the menu button was set.
 func MenuButtonDefault() *MenuButton {
-	return &MenuButton{
-		typ: "default",
-	}
+	return &MenuButton{Type: MenuButtonTypeDefault}
 }
