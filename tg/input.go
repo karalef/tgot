@@ -2,7 +2,6 @@ package tg
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 )
 
@@ -52,64 +51,50 @@ func FileReader(name string, data io.Reader) *InputFile {
 
 // FileBytes returns InputFile as bytes that needs to be uploaded.
 func FileBytes(name string, data []byte) *InputFile {
-	return &InputFile{
-		name: name,
-		data: bytes.NewReader(data),
-	}
+	return FileReader(name, bytes.NewReader(data))
+}
+
+// MediaInputter is an interface for InputMedia to be compatible
+// with Go methods.
+type MediaInputter interface {
+	inputMedia()
+}
+
+// InputMediaData represents any available input media object.
+type InputMediaData interface {
+	inputMediaType() string
+	InputMediaPhoto | InputMediaVideo | InputMediaAnimation |
+		InputMediaAudio | InputMediaDocument
 }
 
 // InputMedia represents the content of a media message to be sent.
-type InputMedia interface {
-	inputMediaType() string
+type InputMedia[T InputMediaData] struct {
+	Media     *InputFile
+	Caption   string
+	ParseMode ParseMode
+	Entities  []MessageEntity
+	Data      T
 }
 
-var (
-	_ InputMedia = InputMediaPhoto{}
-	_ InputMedia = InputMediaVideo{}
-	_ InputMedia = InputMediaAnimation{}
-	_ InputMedia = InputMediaAudio{}
-	_ InputMedia = InputMediaDocument{}
-)
+func (InputMedia[T]) inputMedia() {}
 
-// Media represents list of InputMedia.
-type Media []InputMedia
-
-// MarshalJSON implements json.Marshaler.
-func (media Media) MarshalJSON() ([]byte, error) {
-	data := make([]json.RawMessage, len(media))
-	for i := range media {
-		var err error
-		data[i], err = mergeJSON(media[i], struct {
-			Type string `json:"type"`
-		}{media[i].inputMediaType()})
-		if err != nil {
-			return nil, err
-		}
-	}
-	return json.Marshal(data)
-}
-
-// BaseInputMedia type.
-type BaseInputMedia struct {
-	Media     *InputFile      `json:"media"`
-	Caption   string          `json:"caption,omitempty"`
-	ParseMode ParseMode       `json:"parse_mode,omitempty"`
-	Entities  []MessageEntity `json:"caption_entities,omitempty"`
+func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
+	return mergeJSON(i.Data, struct {
+		Type      string          `json:"type"`
+		Media     *InputFile      `json:"media"`
+		Caption   string          `json:"caption,omitempty"`
+		ParseMode ParseMode       `json:"parse_mode,omitempty"`
+		Entities  []MessageEntity `json:"caption_entities,omitempty"`
+	}{i.Data.inputMediaType(), i.Media, i.Caption, i.ParseMode, i.Entities})
 }
 
 // NewInputMediaPhoto creates new InputMediaPhoto object.
-func NewInputMediaPhoto(file *InputFile) *InputMediaPhoto {
-	return &InputMediaPhoto{
-		BaseInputMedia: BaseInputMedia{
-			Media: file,
-		},
-	}
+func NewInputMediaPhoto(file *InputFile) *InputMedia[InputMediaPhoto] {
+	return &InputMedia[InputMediaPhoto]{Media: file}
 }
 
 // InputMediaPhoto represents a photo to be sent.
-type InputMediaPhoto struct {
-	BaseInputMedia
-}
+type InputMediaPhoto struct{}
 
 func (InputMediaPhoto) inputMediaType() string {
 	return "photo"
@@ -117,7 +102,6 @@ func (InputMediaPhoto) inputMediaType() string {
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
-	BaseInputMedia
 	Thumbnail         *InputFile `json:"thumb,omitempty"`
 	Width             int        `json:"width,omitempty"`
 	Height            int        `json:"height,omitempty"`
@@ -132,7 +116,6 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	BaseInputMedia
 	Thumbnail *InputFile `json:"thumb,omitempty"`
 	Width     int        `json:"width,omitempty"`
 	Height    int        `json:"height,omitempty"`
@@ -145,7 +128,6 @@ func (InputMediaAnimation) inputMediaType() string {
 
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
-	BaseInputMedia
 	Thumbnail *InputFile `json:"thumb,omitempty"`
 	Duration  int        `json:"duration,omitempty"`
 	Performer string     `json:"performer,omitempty"`
@@ -158,7 +140,6 @@ func (InputMediaAudio) inputMediaType() string {
 
 // InputMediaDocument represents a general file to be sent.
 type InputMediaDocument struct {
-	BaseInputMedia
 	Thumbnail            *InputFile `json:"thumb,omitempty"`
 	DisableTypeDetection bool       `json:"disable_content_type_detection,omitempty"`
 }

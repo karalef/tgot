@@ -22,23 +22,42 @@ type InlineChosen struct {
 	Query           string    `json:"query"`
 }
 
-// InlineQueryResult represents one result of an inline query.
-type InlineQueryResult struct {
-	ID     string
-	Result InlineQueryResultObject
+// InlineQueryResulter is an interface for InlineQueryResult to be compatible
+// with Go methods.
+type InlineQueryResulter interface {
+	inlineQueryResult()
 }
 
+// InlineQueryResultData represents any available inline query result object.
+type InlineQueryResultData interface {
+	inlineQueryResultType() string
+	InlineQueryResultCachedAudio | InlineQueryResultCachedDocument |
+		InlineQueryResultCachedGIF | InlineQueryResultCachedMPEG4GIF |
+		InlineQueryResultCachedPhoto | InlineQueryResultCachedSticker |
+		InlineQueryResultCachedVideo | InlineQueryResultCachedVoice |
+
+		InlineQueryResultArticle | InlineQueryResultAudio |
+		InlineQueryResultContact | InlineQueryResultGame |
+		InlineQueryResultDocument | InlineQueryResultGIF |
+		InlineQueryResultLocation | InlineQueryResultMPEG4GIF |
+		InlineQueryResultPhoto | InlineQueryResultVenue |
+		InlineQueryResultVideo | InlineQueryResultVoice
+}
+
+// InlineQueryResult represents one result of an inline query.
+type InlineQueryResult[T InlineQueryResultData] struct {
+	ID     string
+	Result T
+}
+
+func (InlineQueryResult[T]) inlineQueryResult() {}
+
 // MarshalJSON implements json.Marshaler.
-func (r *InlineQueryResult) MarshalJSON() ([]byte, error) {
+func (r *InlineQueryResult[T]) MarshalJSON() ([]byte, error) {
 	return mergeJSON(struct {
 		Type string `json:"type"`
 		ID   string `json:"id"`
 	}{r.Result.inlineQueryResultType(), r.ID}, r.Result)
-}
-
-// InlineQueryResultObject represents one result of an inline query.
-type InlineQueryResultObject interface {
-	inlineQueryResultType() string
 }
 
 // InputMessageContent represents the content of a message to be sent
