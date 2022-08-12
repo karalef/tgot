@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"tghwbot/bot/internal"
@@ -36,37 +37,42 @@ func (p params) forEach(f func(k, v string) error) error {
 	return nil
 }
 
-func (p params) set(key string, value interface{}) params {
-	if value == nil {
-		return p
-	}
-	vals := url.Values(p)
-	switch v := value.(type) {
-	case string:
-		if v != "" {
-			vals.Set(key, v)
-		}
-	case int:
-		if v != 0 {
-			vals.Set(key, strconv.Itoa(v))
-		}
-	case int64:
-		if v != 0 {
-			vals.Set(key, strconv.FormatInt(v, 10))
-		}
-	case bool:
-		if v {
-			vals.Set(key, strconv.FormatBool(v))
-		}
-	case float64:
-		if v != 0 {
-			vals.Set(key, strconv.FormatFloat(v, 'f', 6, 64))
-		}
-	default:
-		b, _ := json.Marshal(value)
-		vals.Set(key, string(b))
+func (p params) set(k, v string) params {
+	if v != "" {
+		url.Values(p).Set(k, v)
 	}
 	return p
+}
+
+func (p params) setInt(key string, v int) {
+	if v != 0 {
+		p.set(key, strconv.Itoa(v))
+	}
+}
+
+func (p params) setInt64(key string, v int64) {
+	if v != 0 {
+		p.set(key, strconv.FormatInt(v, 10))
+	}
+}
+
+func (p params) setFloat(key string, v float32) {
+	if v != 0 {
+		p.set(key, strconv.FormatFloat(float64(v), 'f', 6, 32))
+	}
+}
+
+func (p params) setBool(key string, v bool) {
+	if v {
+		p.set(key, strconv.FormatBool(v))
+	}
+}
+
+func (p params) setJSON(key string, v interface{}) {
+	if v != nil && !reflect.ValueOf(v).IsZero() {
+		b, _ := json.Marshal(v)
+		p.set(key, string(b))
+	}
 }
 
 func performRequest[T any](b *Bot, method string, p params, files ...File) (T, error) {
@@ -177,19 +183,27 @@ func (b *Bot) getMe() (*tg.User, error) {
 	return performRequest[*tg.User](b, "getMe", nil)
 }
 
+func (b *Bot) logOut() (bool, error) {
+	return performRequest[bool](b, "logOut", nil)
+}
+
+func (b *Bot) close() (bool, error) {
+	return performRequest[bool](b, "close", nil)
+}
+
 func (b *Bot) getUpdates(offset, timeout int, allowed ...string) ([]tg.Update, error) {
 	p := params{}
-	p.set("offset", offset)
-	//p.set("limit", limit)
-	p.set("timeout", timeout)
-	p.set("allowed_updates", allowed)
+	p.setInt("offset", offset)
+	//p.setInt("limit", limit)
+	p.setInt("timeout", timeout)
+	p.setJSON("allowed_updates", allowed)
 
 	return performRequest[[]tg.Update](b, "getUpdates", p)
 }
 
 type commandParams struct {
 	Commands []tg.Command
-	Scope    *tg.CommandScope
+	Scope    tg.CommandScope
 	Lang     string
 }
 
@@ -200,13 +214,13 @@ func (p *commandParams) params() params {
 	v := params{}
 	v.set("language_code", p.Lang)
 	if p.Scope != nil {
-		v.set("scope", p.Scope)
+		v.setJSON("scope", p.Scope)
 	}
-	v.set("commands", p.Commands)
+	v.setJSON("commands", p.Commands)
 	return v
 }
 
-func (b *Bot) getCommands(s *tg.CommandScope, lang string) ([]tg.Command, error) {
+func (b *Bot) getCommands(s tg.CommandScope, lang string) ([]tg.Command, error) {
 	p := commandParams{
 		Scope: s,
 		Lang:  lang,
@@ -218,7 +232,7 @@ func (b *Bot) setCommands(p *commandParams) error {
 	return performRequestEmpty(b, "setMyCommands", p.params())
 }
 
-func (b *Bot) deleteCommands(s *tg.CommandScope, lang string) error {
+func (b *Bot) deleteCommands(s tg.CommandScope, lang string) error {
 	p := commandParams{
 		Scope: s,
 		Lang:  lang,
@@ -228,13 +242,13 @@ func (b *Bot) deleteCommands(s *tg.CommandScope, lang string) error {
 
 func (b *Bot) setDefaultAdminRights(rights *tg.ChatAdministratorRights, forChannels bool) error {
 	p := params{}
-	p.set("rights", rights)
-	p.set("for_channels", forChannels)
+	p.setJSON("rights", rights)
+	p.setBool("for_channels", forChannels)
 	return performRequestEmpty(b, "setMyDefaultAdministratorRights", p)
 }
 
 func (b *Bot) getDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRights, error) {
 	p := params{}
-	p.set("for_channels", forChannels)
+	p.setBool("for_channels", forChannels)
 	return performRequest[*tg.ChatAdministratorRights](b, "getMyDefaultAdministratorRights", p)
 }
