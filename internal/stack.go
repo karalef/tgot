@@ -2,10 +2,8 @@ package internal
 
 import (
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 // BackTrace returns info about function invocations on the calling goroutine's stack.
@@ -33,11 +31,8 @@ func Caller(skip int) runtime.Frame {
 }
 
 // FramesString ...
-func FramesString(frames []runtime.Frame, trim bool) string {
+func FramesString(frames []runtime.Frame) string {
 	s := new(strings.Builder)
-	if trim {
-		TrimFramesPathPrefix(frames)
-	}
 	for i, f := range frames {
 		s.WriteString(f.Function + "\n\t" + f.File)
 		s.WriteString(":" + strconv.Itoa(f.Line))
@@ -46,31 +41,4 @@ func FramesString(frames []runtime.Frame, trim bool) string {
 		}
 	}
 	return s.String()
-}
-
-var pathPrefix string
-var pathPrefixOnce sync.Once
-
-// TrimFramesPathPrefix ...
-func TrimFramesPathPrefix(frames []runtime.Frame) {
-	if len(frames) == 0 {
-		return
-	}
-	pathPrefixOnce.Do(func() {
-		f := make([]string, len(frames))
-		for i := range frames {
-			f[i] = frames[i].File
-		}
-		sort.Strings(f)
-
-		for i := 0; i < len(f[0]); i++ {
-			if f[0][i] != f[len(f)-1][i] {
-				pathPrefix = f[0][:i]
-				break
-			}
-		}
-	})
-	for i := range frames {
-		frames[i].File = strings.Replace(frames[i].File, pathPrefix, ".../", 1)
-	}
 }

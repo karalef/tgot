@@ -96,14 +96,14 @@ type ChatPhoto struct {
 
 // ChatPermissions describes actions that a non-administrator user is allowed to take in a chat.
 type ChatPermissions struct {
-	CanSendMessages bool `json:"can_send_messages"`
-	CanSendMedia    bool `json:"can_send_media_messages"`
-	CanSendPolls    bool `json:"can_send_polls"`
-	CanSendOther    bool `json:"can_send_other_messages"`
-	CanAddPreviews  bool `json:"can_add_web_page_previews"`
-	CanChangeInfo   bool `json:"can_change_info"`
-	CanInviteUsers  bool `json:"can_invite_users"`
-	CanPinMessages  bool `json:"can_pin_messages"`
+	CanSendMessages bool `json:"can_send_messages,omitempty"`
+	CanSendMedia    bool `json:"can_send_media_messages,omitempty"`
+	CanSendPolls    bool `json:"can_send_polls,omitempty"`
+	CanSendOther    bool `json:"can_send_other_messages,omitempty"`
+	CanAddPreviews  bool `json:"can_add_web_page_previews,omitempty"`
+	CanChangeInfo   bool `json:"can_change_info,omitempty"`
+	CanInviteUsers  bool `json:"can_invite_users,omitempty"`
+	CanPinMessages  bool `json:"can_pin_messages,omitempty"`
 }
 
 // ChatAdministratorRights represents the rights of an administrator in a chat.
@@ -116,9 +116,9 @@ type ChatAdministratorRights struct {
 	CanPromoteMembers   bool `json:"can_promote_members"`
 	CanChangeInfo       bool `json:"can_change_info"`
 	CanInviteUsers      bool `json:"can_invite_users"`
-	CanPostMessages     bool `json:"can_post_messages"`
-	CanEditMessages     bool `json:"can_edit_messages"`
-	CanPinMessages      bool `json:"can_pin_messages"`
+	CanPostMessages     bool `json:"can_post_messages,omitempty"`
+	CanEditMessages     bool `json:"can_edit_messages,omitempty"`
+	CanPinMessages      bool `json:"can_pin_messages,omitempty"`
 }
 
 // ChatLocation represents a location to which a chat is connected.

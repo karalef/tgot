@@ -28,7 +28,8 @@ func (c *InlineContext) caller() string {
 
 // InlineAnswer represents answer to inline query.
 type InlineAnswer struct {
-	Results           []tg.InlineQueryResult
+	Results           []tg.InlineQueryResulter
+	CacheTime         *int
 	IsPersonal        bool
 	NextOffset        string
 	SwitchPMText      string
@@ -36,16 +37,16 @@ type InlineAnswer struct {
 }
 
 // Answer answers to inline query.
-func (c *InlineContext) Answer(answer *InlineAnswer, cacheTime ...uint) {
+func (c *InlineContext) Answer(answer *InlineAnswer) {
 	p := params{}.set("inline_query_id", c.inlineQueryID)
-	p.set("results", answer.Results)
-	if len(cacheTime) > 0 {
-		p.set("cache_time", cacheTime[0])
+	p.setJSON("results", answer.Results)
+	if answer.CacheTime != nil {
+		p.setInt("cache_time", *answer.CacheTime)
 	}
-	p.set("is_personal", answer.IsPersonal)
+	p.setBool("is_personal", answer.IsPersonal)
 	p.set("next_offset", answer.NextOffset)
 	p.set("switch_pm_text", answer.SwitchPMText)
 	p.set("switch_pm_parameter", answer.SwitchPMParameter)
 	api[internal.Empty](c, "answerInlineQuery", p)
-	c.bot.closeExecution()
+	c.Close()
 }

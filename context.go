@@ -55,7 +55,8 @@ func (c *contextBase) GetMe() tg.User {
 
 // GetUserPhotos returns a list of profile pictures for a user.
 func (c *contextBase) GetUserPhotos(userID int64) *tg.UserProfilePhotos {
-	p := params{}.set("user_id", userID)
+	p := params{}
+	p.setInt64("user_id", userID)
 	return api[*tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
 }
 
@@ -64,6 +65,60 @@ func (c *contextBase) GetUserPhotos(userID int64) *tg.UserProfilePhotos {
 func (c *contextBase) GetFile(fileID string) *tg.File {
 	p := params{}.set("file_id", fileID)
 	return api[*tg.File](c, "getFile", p)
+}
+
+// EditInlineLiveLocation edits inline live location messages.
+func (c *contextBase) EditInlineLiveLocation(inlineMsgID int, loc LiveLocation) {
+	p := params{}
+	p.setInt("inline_message_id", inlineMsgID)
+	loc.params(p)
+	api[bool](c, "editMessageLiveLocation", p)
+}
+
+// StopLiveLocation stops updating an inline live location message before live_period expires.
+func (c *contextBase) StopInlineLiveLocation(inlineMsgID int, replyMarkup *tg.InlineKeyboardMarkup) {
+	p := params{}
+	p.setInt("inline_message_id", inlineMsgID)
+	p.setJSON("reply_markup", replyMarkup)
+	api[bool](c, "stopMessageLiveLocation", p)
+}
+
+// EditMessageText edits inline text and game messages.
+func (c *contextBase) EditInlineMessageText(inlineMsgID int, e EditText) {
+	p := params{}
+	p.setInt("inline_message_id", inlineMsgID)
+	e.params(p)
+	api[bool](c, "editMessageText", p)
+}
+
+// EditMessageCaption edits captions of inline messages.
+func (c *contextBase) EditInlineMessageCaption(inlineMsgID int, e EditCaption) {
+	p := params{}
+	p.setInt("inline_message_id", inlineMsgID)
+	e.params(p)
+	api[bool](c, "editMessageCaption", p)
+}
+
+// EditMessageMedia edits inline animation, audio, document, photo, or video messages.
+func (c *contextBase) EditInlineMessageMedia(inlineMsgID int, m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) {
+	p := params{}
+	p.setInt("inline_message_id", inlineMsgID)
+	if len(replyMarkup) > 0 {
+		p.setJSON("reply_markup", replyMarkup[0])
+	}
+	files, err := prepareInputMedia(p, false, m)
+	if err != nil {
+		closeCtx(c, err)
+	}
+	api[bool](c, "editMessageMedia", p, files...)
+}
+
+// EditMessageReplyMarkup edits only the reply markup of inline messages.
+func (c *contextBase) EditInlineMessageReplyMarkup(inlineMsgID int, replyMarkup *tg.InlineKeyboardMarkup) {
+	p := params{}
+	p.setInt("inline_message_id", inlineMsgID)
+	p.setJSON("reply_markup", replyMarkup)
+	api[bool](c, "editMessageReplyMarkup", p)
 }
 
 // DownloadReader downloads file as io.ReadCloser from Telegram servers.
@@ -107,6 +162,19 @@ func closeCtx(c commonContext, err error) {
 
 func api[T any](c commonContext, method string, p params, files ...File) T {
 	bot := c.getBot()
+	upload := false
+	for i := range files {
+		if _, r := files[i].UploadData(); r != nil {
+			upload = true
+			break
+		}
+	}
+	if !upload {
+		for i := range files {
+			p.set(files[i].Field, files[i].Data())
+		}
+		files = nil
+	}
 	result, err := performRequest[T](bot, method, p, files...)
 	switch err.(type) {
 	case nil:
@@ -125,7 +193,7 @@ func api[T any](c commonContext, method string, p params, files ...File) T {
 }
 
 func backtrace() string {
-	return internal.FramesString(internal.BackTrace(3, 2), true)
+	return internal.FramesString(internal.BackTrace(3, 2))
 }
 
 func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
@@ -160,7 +228,9 @@ func (c *Context) Reply(text string, entities ...tg.MessageEntity) {
 		Text:     text,
 		Entities: entities,
 	}, SendOptions{
-		ReplyTo: c.msg.ID,
+		BaseSendOptions: BaseSendOptions{
+			ReplyTo: c.msg.ID,
+		},
 	})
 	c.Close()
 }
