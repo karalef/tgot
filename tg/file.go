@@ -84,16 +84,28 @@ type Voice struct {
 type Sticker struct {
 	FileData
 
-	Width        int          `json:"width"`
-	Height       int          `json:"height"`
-	IsAnimated   bool         `json:"is_animated"`
-	IsVideo      bool         `json:"is_video"`
-	Thumbnail    *PhotoSize   `json:"thumb"`
-	Emoji        string       `json:"emoji"`
-	SetName      string       `json:"set_name"`
-	Premium      *File        `json:"premium_animation"`
-	MaskPosition MaskPosition `json:"mask_position"`
+	Type          StickerType   `json:"type"`
+	Width         int           `json:"width"`
+	Height        int           `json:"height"`
+	IsAnimated    bool          `json:"is_animated"`
+	IsVideo       bool          `json:"is_video"`
+	Thumbnail     *PhotoSize    `json:"thumb"`
+	Emoji         string        `json:"emoji"`
+	SetName       string        `json:"set_name"`
+	Premium       *File         `json:"premium_animation"`
+	MaskPosition  *MaskPosition `json:"mask_position"`
+	CustomEmojiID string        `json:"custom_emoji_id"`
 }
+
+// StickerType is a Sticker type.
+type StickerType string
+
+// all available sticker types.
+const (
+	StickerRegular     StickerType = "regular"
+	StickerMask        StickerType = "mask"
+	StickerCustomEmoji StickerType = "custom_emoji"
+)
 
 // File object represents a file ready to be downloaded.
 type File struct {

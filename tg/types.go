@@ -90,13 +90,13 @@ type Venue struct {
 
 // StickerSet represents a sticker set.
 type StickerSet struct {
-	Name          string     `json:"name"`
-	Title         string     `json:"title"`
-	IsAnimated    bool       `json:"is_animated"`
-	IsVideo       bool       `json:"is_video"`
-	ContainsMasks bool       `json:"contains_masks"`
-	Stickers      []Sticker  `json:"stickers"`
-	Thumbnail     *PhotoSize `json:"thumb"`
+	Name        string      `json:"name"`
+	Title       string      `json:"title"`
+	StickerType StickerType `json:"sticker_type"`
+	IsAnimated  bool        `json:"is_animated"`
+	IsVideo     bool        `json:"is_video"`
+	Stickers    []Sticker   `json:"stickers"`
+	Thumbnail   *PhotoSize  `json:"thumb"`
 }
 
 // MaskPosition describes the position on faces where a mask should be placed by default.

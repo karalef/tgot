@@ -10,22 +10,23 @@ type Chat struct {
 	LastName  string   `json:"last_name"`
 
 	// Returned only in getChat.
-	Photo               *ChatPhoto       `json:"photo"`
-	Bio                 string           `json:"bio"`
-	HasPrivateForwards  bool             `json:"has_private_forwards"`
-	JoinToSend          bool             `json:"join_to_send_messages"`
-	JoinByRequest       bool             `json:"join_by_request"`
-	Description         string           `json:"description"`
-	InviteLink          string           `json:"invite_link"`
-	PinnedMessage       *Message         `json:"pinned_message"`
-	Permissions         *ChatPermissions `json:"permissions"`
-	SlowModeDelay       int              `json:"slow_mode_delay"`
-	AutoDeleteTime      int              `json:"message_auto_delete_time"`
-	HasProtectedContent bool             `json:"has_protected_content"`
-	StickerSetNme       string           `json:"sticker_set_name"`
-	CanSetStickerSet    bool             `json:"can_set_sticker_set"`
-	LinkedChatID        int64            `json:"linked_chat_id"`
-	Location            *ChatLocation    `json:"location"`
+	Photo                      *ChatPhoto       `json:"photo"`
+	Bio                        string           `json:"bio"`
+	HasPrivateForwards         bool             `json:"has_private_forwards"`
+	HasRestrictedVoiceAndVideo bool             `json:"has_restricted_voice_and_video_messages"`
+	JoinToSend                 bool             `json:"join_to_send_messages"`
+	JoinByRequest              bool             `json:"join_by_request"`
+	Description                string           `json:"description"`
+	InviteLink                 string           `json:"invite_link"`
+	PinnedMessage              *Message         `json:"pinned_message"`
+	Permissions                *ChatPermissions `json:"permissions"`
+	SlowModeDelay              int              `json:"slow_mode_delay"`
+	AutoDeleteTime             int              `json:"message_auto_delete_time"`
+	HasProtectedContent        bool             `json:"has_protected_content"`
+	StickerSetNme              string           `json:"sticker_set_name"`
+	CanSetStickerSet           bool             `json:"can_set_sticker_set"`
+	LinkedChatID               int64            `json:"linked_chat_id"`
+	Location                   *ChatLocation    `json:"location"`
 }
 
 // IsPrivate returns true if chat is private.

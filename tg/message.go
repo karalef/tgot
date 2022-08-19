@@ -80,12 +80,13 @@ type MessageID struct {
 // MessageEntity represents one special entitty in a text message.
 // For example, hashtag, usernames, URLs, etc.
 type MessageEntity struct {
-	Type     EntityType `json:"type"`
-	Offset   int        `json:"offset"` // in UTF-16
-	Length   int        `json:"length"`
-	URL      string     `json:"url,omitmepty"`
-	User     *User      `json:"user,omitmepty"`
-	Language string     `json:"language,omitmepty"`
+	Type          EntityType `json:"type"`
+	Offset        int        `json:"offset"` // in UTF-16
+	Length        int        `json:"length"`
+	URL           string     `json:"url,omitmepty"`
+	User          *User      `json:"user,omitmepty"`
+	Language      string     `json:"language,omitmepty"`
+	CustomEmojiID string     `json:"custom_emoji_id,omitempty"`
 }
 
 // EntityType is a MessageEntity type.
@@ -94,7 +95,6 @@ type EntityType string
 // all available entity types.
 const (
 	EntityMention       EntityType = "mention"
-	EntityTMention      EntityType = "text_mention"
 	EntityHashtag       EntityType = "hashtag"
 	EntityCashtag       EntityType = "cashtag"
 	EntityCommand       EntityType = "bot_command"
@@ -105,10 +105,12 @@ const (
 	EntityItalic        EntityType = "italic"
 	EntityUnderline     EntityType = "underline"
 	EntityStrikethrough EntityType = "strikethrough"
+	EntitySpoiler       EntityType = "spoiler"
 	EntityCode          EntityType = "code"
 	EntityCodeBlock     EntityType = "pre"
 	EntityTextLink      EntityType = "text_link"
-	EntitySpoiler       EntityType = "spoiler"
+	EntityTextMention   EntityType = "text_mention"
+	EntityCustomEmoji   EntityType = "custom_emoji"
 )
 
 // ProximityAlert represents the content of a service message,

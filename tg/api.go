@@ -27,7 +27,7 @@ type APIError struct {
 	} `json:"parameters"`
 }
 
-func (e *APIError) Error() string {
+func (e APIError) Error() string {
 	s := fmt.Sprintf("telegram (%d) %s", e.Code, e.Description)
 	if e.Parameters != nil {
 		if e.Parameters.MigrateTo != nil {
@@ -64,11 +64,11 @@ type Update struct {
 type CallbackQuery struct {
 	ID              string   `json:"id"`
 	From            *User    `json:"from"`
-	Message         *Message `json:"message,omitempty"`
-	InlineMessageID string   `json:"inline_message_id,omitempty"`
-	ChatInstance    string   `json:"chat_instance,omitempty"`
-	Data            string   `json:"data,omitempty"`
-	GameShortName   string   `json:"game_short_name,omitempty"`
+	Message         *Message `json:"message"`
+	InlineMessageID string   `json:"inline_message_id"`
+	ChatInstance    string   `json:"chat_instance"`
+	Data            string   `json:"data"`
+	GameShortName   string   `json:"game_short_name"`
 }
 
 // WebhookInfo describes the current status of a webhook.
