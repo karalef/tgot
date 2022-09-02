@@ -15,16 +15,15 @@ func makeHelp(b *Bot) *Command {
 			},
 		},
 	}
-	h.Run = func(ctx *Context, msg *tg.Message, args []string) {
+	h.Run = func(ctx MessageContext, msg *tg.Message, args []string) error {
 		if len(args) > 0 {
 			for _, c := range b.cmds {
 				if c.Cmd != args[0] {
 					continue
 				}
-				h, e := c.generateHelp()
-				ctx.Reply(h, e...)
+				return ctx.Reply(c.GenerateHelp())
 			}
-			ctx.Reply("command not found")
+			return ctx.ReplyText("command not found")
 		}
 		var sb strings.Builder
 		sb.WriteString("Commands list\n")
@@ -34,7 +33,7 @@ func makeHelp(b *Bot) *Command {
 			sb.WriteByte(Prefix)
 			sb.WriteString(c.Cmd + " - " + c.Description)
 		}
-		ctx.Reply(sb.String())
+		return ctx.ReplyText(sb.String())
 	}
 	return &h
 }
