@@ -6,39 +6,34 @@ import (
 	"strings"
 )
 
-// BackTrace returns info about function invocations on the calling goroutine's stack.
-func BackTrace(skip int, length int) []runtime.Frame {
-	pc := make([]uintptr, length)
-	n := runtime.Callers(2+skip, pc[:])
+// BackTrace returns a formatted info about function invocations on the calling goroutine's stack.
+func BackTrace(skip int) string {
+	pc := make([]uintptr, 0, 16)
+	for {
+		n := runtime.Callers(2+skip+len(pc), pc[len(pc):cap(pc)])
+		pc = pc[:len(pc)+n]
+		if len(pc) < cap(pc) {
+			pc = pc[:len(pc)-1]
+			break
+		}
 
-	stack := make([]runtime.Frame, 0, n)
-	frames := runtime.CallersFrames(pc[:n])
+		newpc := make([]uintptr, len(pc)*2)
+		copy(newpc, pc)
+		pc = newpc[:len(pc)]
+	}
+
+	var s strings.Builder
+	frames := runtime.CallersFrames(pc)
 
 	for {
 		f, more := frames.Next()
-		stack = append(stack, f)
+		s.WriteString(f.Function + "\n\t" + f.File)
+		s.WriteString(":" + strconv.Itoa(f.Line))
 		if !more {
 			break
 		}
+		s.WriteByte('\n')
 	}
 
-	return stack
-}
-
-// Caller returns runtime frame with info about func invocation.
-func Caller(skip int) runtime.Frame {
-	return BackTrace(2+skip, 1)[0]
-}
-
-// FramesString ...
-func FramesString(frames []runtime.Frame) string {
-	s := new(strings.Builder)
-	for i, f := range frames {
-		s.WriteString(f.Function + "\n\t" + f.File)
-		s.WriteString(":" + strconv.Itoa(f.Line))
-		if i < len(frames)-1 {
-			s.WriteByte('\n')
-		}
-	}
 	return s.String()
 }
