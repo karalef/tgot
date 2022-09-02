@@ -8,10 +8,18 @@ import (
 // Prefix is the character with which commands must begin.
 const Prefix = '/'
 
+func (b *Bot) onCommand(msg *tg.Message, cmd *Command, args []string) {
+	c := b.makeMessageContext(msg, "Commands::"+cmd.Cmd)
+	err := cmd.Run(c, msg, args)
+	if err != nil {
+		c.bot.log.Error("command %s ended with an error: %s", cmd.Cmd, err.Error())
+	}
+}
+
 // Command respresents conversation command.
 type Command struct {
 	Cmd string
-	Run func(*Context, *tg.Message, []string)
+	Run func(MessageContext, *tg.Message, []string) error
 
 	Description string
 	Help        string
@@ -25,7 +33,8 @@ type Arg struct {
 	Consts   []string
 }
 
-func (c *Command) generateHelp() (string, []tg.MessageEntity) {
+// GenerateHelp generates help message.
+func (c *Command) GenerateHelp() Message {
 	sb := strings.Builder{}
 	sb.WriteByte(Prefix)
 	sb.WriteString(c.Cmd)
@@ -39,7 +48,9 @@ func (c *Command) generateHelp() (string, []tg.MessageEntity) {
 		sb.WriteString(a.Name)
 
 		if len(a.Consts) > 0 {
-			sb.WriteByte(':')
+			if len(a.Name) > 0 {
+				sb.WriteByte(':')
+			}
 			sb.WriteString("\"" + strings.Join(a.Consts, "\"|\"") + "\"")
 		}
 		if a.Required {
@@ -48,11 +59,45 @@ func (c *Command) generateHelp() (string, []tg.MessageEntity) {
 			sb.WriteByte('}')
 		}
 	}
-	sb.WriteByte('\n')
-	sb.WriteString(c.Description)
-	return sb.String(), []tg.MessageEntity{{
-		Type:   "pre",
+	entities := make([]tg.MessageEntity, 2, 3)
+	entities[0] = tg.MessageEntity{
+		Type:   tg.EntityCodeBlock,
 		Offset: 0,
-		Length: sb.Len() - len(c.Description) - 1,
-	}}
+		Length: sb.Len(),
+	}
+	sb.WriteString("\n\n")
+	sb.WriteString(c.Description)
+	entities[1] = tg.MessageEntity{
+		Type:   tg.EntityBold,
+		Offset: entities[0].Length + 2,
+		Length: len(c.Description),
+	}
+	if len(c.Help) > 0 {
+		sb.WriteString("\n\n")
+		sb.WriteString(c.Help)
+		entities = append(entities, tg.MessageEntity{
+			Type:   tg.EntityItalic,
+			Offset: sb.Len() - len(c.Help) - 1,
+			Length: len(c.Help),
+		})
+	}
+
+	return Message{
+		Text:     sb.String(),
+		Entities: entities,
+	}
+}
+
+// ParseCommand parses and checks the input for command, mention and arguments.
+func ParseCommand(c string) (cmd string, mention string, args []string) {
+	if len(c) < 2 || c[0] != Prefix {
+		return "", "", nil
+	}
+	split := strings.Split(c[1:], " ")
+	cmd, args = split[0], split[1:]
+	if i := strings.Index(cmd, "@"); i != -1 && len(cmd) > i+1 {
+		mention = cmd[i+1:]
+		cmd = cmd[:i]
+	}
+	return
 }
