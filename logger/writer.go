@@ -2,52 +2,19 @@ package logger
 
 import (
 	"io"
-	"os"
 	"sync"
 	"time"
 )
 
-// DefaultWriter var.
-var DefaultWriter = NewWriter(os.Stderr, false)
-
-// NullWriter is a Writer that does nothing on Write call.
-var NullWriter = NewWriter(io.Discard, false)
-
-// NewWriter makes new writer.
-func NewWriter(w io.Writer, useColor bool) *Writer {
-	return &Writer{
-		out:      w,
-		useColor: useColor,
-	}
-}
-
-// NewWriterFile ...
-func NewWriterFile(path string) (*Writer, error) {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return nil, err
-	}
-	return NewWriter(f, false), nil
-}
-
-// Writer struct.
-type Writer struct {
-	last     time.Time
+type writer struct {
 	out      io.Writer
 	buf      []byte
 	mut      sync.Mutex
+	last     time.Time
 	useColor bool
 }
 
-func (w *Writer) lock() {
-	w.mut.Lock()
-}
-
-func (w *Writer) unlock() {
-	w.mut.Unlock()
-}
-
-func (w *Writer) writeBuf(text string, col ansiColor) {
+func (w *writer) writeBuf(text string, col ansiColor) {
 	if w.useColor {
 		text = col.wrap(text)
 	}
@@ -57,7 +24,7 @@ func (w *Writer) writeBuf(text string, col ansiColor) {
 
 const timecol = magenta
 
-func (w *Writer) write() {
+func (w *writer) write() {
 	t := time.Now()
 	if t.Minute() != w.last.Minute() {
 		w.last = t
