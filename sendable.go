@@ -15,7 +15,7 @@ type Sendable interface {
 // Fileable interface.
 type Fileable interface {
 	Sendable
-	files() []File
+	files() []file
 }
 
 // CaptionData represents caption with entities and parse mode.
@@ -25,7 +25,7 @@ type CaptionData struct {
 	Entities  []tg.MessageEntity
 }
 
-func (c *CaptionData) embed(p params) {
+func (c CaptionData) embed(p params) {
 	p.set("caption", c.Caption)
 	p.set("parse_mode", string(c.ParseMode))
 	p.setJSON("caption_entities", c.Entities)
@@ -33,19 +33,18 @@ func (c *CaptionData) embed(p params) {
 
 // BaseFile is common structure for single file with thumbnail.
 type BaseFile struct {
-	File      *tg.InputFile
-	Thumbnail *tg.InputFile
+	File      tg.FileSignature
+	Thumbnail tg.FileSignature
 }
 
-func (b *BaseFile) files(field string) []File {
-	var f []File
+func (b BaseFile) files(field string) (f []file) {
 	if b.Thumbnail != nil {
-		f = make([]File, 1, 2)
-		f[0] = File{"thumb", b.Thumbnail}
+		f = make([]file, 1, 2)
+		f[0] = file{"thumb", b.Thumbnail}
 	} else {
-		f = make([]File, 0, 1)
+		f = make([]file, 0, 1)
 	}
-	return append(f, File{field, b.File})
+	return append(f, file{field, b.File})
 }
 
 // BaseSendOptions contains common send* parameters for all send methods.
@@ -64,35 +63,22 @@ func (o BaseSendOptions) embed(p params) {
 }
 
 // SendOptions cointains common send* parameters.
-type SendOptions struct {
+type SendOptions[T tg.ReplyMarkup] struct {
 	BaseSendOptions
-	ReplyMarkup tg.ReplyMarkup
+	ReplyMarkup T
 }
 
-func (o SendOptions) embed(p params) {
+func (o SendOptions[T]) embed(p params) {
 	o.BaseSendOptions.embed(p)
 	p.setJSON("reply_markup", o.ReplyMarkup)
 }
 
 // MediaGroupSendOptions contains sending options for sendMediaGroup.
-type MediaGroupSendOptions struct {
-	BaseSendOptions
-}
-
-// InvoiceSendOptions contains sending options for sendInvoice.
-type InvoiceSendOptions struct {
-	BaseSendOptions
-	ReplyMarkup *tg.InlineKeyboardMarkup
-}
-
-func (o InvoiceSendOptions) embed(p params) {
-	o.BaseSendOptions.embed(p)
-	p.setJSON("reply_markup", o.ReplyMarkup)
-}
+type MediaGroupSendOptions = BaseSendOptions
 
 // NewMessage makes a new message.
-func NewMessage(text string) *Message {
-	return &Message{
+func NewMessage(text string) Message {
+	return Message{
 		Text: text,
 	}
 }
@@ -119,8 +105,8 @@ func (m Message) params(p params) {
 }
 
 // NewPhoto makes a new photo.
-func NewPhoto(photo *tg.InputFile) *Photo {
-	return &Photo{
+func NewPhoto(photo tg.FileSignature) Photo {
+	return Photo{
 		Photo: photo,
 	}
 }
@@ -129,7 +115,7 @@ var _ Sendable = Photo{}
 
 // Photo contains information about the photo to be sent.
 type Photo struct {
-	Photo *tg.InputFile
+	Photo tg.FileSignature
 	CaptionData
 }
 
@@ -141,13 +127,13 @@ func (ph Photo) params(p params) {
 	ph.CaptionData.embed(p)
 }
 
-func (ph Photo) files() []File {
-	return []File{{"photo", ph.Photo}}
+func (ph Photo) files() []file {
+	return []file{{"photo", ph.Photo}}
 }
 
 // NewAudio makes a new audio.
-func NewAudio(audio *tg.InputFile) *Audio {
-	return &Audio{
+func NewAudio(audio tg.FileSignature) Audio {
+	return Audio{
 		BaseFile: BaseFile{File: audio},
 	}
 }
@@ -174,13 +160,13 @@ func (a Audio) params(p params) {
 	p.set("title", a.Title)
 }
 
-func (a Audio) files() []File {
+func (a Audio) files() []file {
 	return a.BaseFile.files("audio")
 }
 
 // NewDocument makes a new document.
-func NewDocument(document *tg.InputFile) *Document {
-	return &Document{
+func NewDocument(document tg.FileSignature) Document {
+	return Document{
 		BaseFile: BaseFile{File: document},
 	}
 }
@@ -203,13 +189,13 @@ func (d Document) params(p params) {
 	p.setBool("disable_content_type_detection", d.DisableTypeDetection)
 }
 
-func (d Document) files() []File {
+func (d Document) files() []file {
 	return d.BaseFile.files("document")
 }
 
 // NewVideo makes a new video.
-func NewVideo(video *tg.InputFile) *Video {
-	return &Video{
+func NewVideo(video tg.FileSignature) Video {
+	return Video{
 		BaseFile: BaseFile{File: video},
 	}
 }
@@ -238,13 +224,13 @@ func (v Video) params(p params) {
 	p.setBool("supports_streaming", v.SupportsStreaming)
 }
 
-func (v Video) files() []File {
+func (v Video) files() []file {
 	return v.BaseFile.files("video")
 }
 
 // NewAnimation makes a new animation.
-func NewAnimation(animation *tg.InputFile) *Video {
-	return &Video{
+func NewAnimation(animation tg.FileSignature) Video {
+	return Video{
 		BaseFile: BaseFile{File: animation},
 	}
 }
@@ -271,13 +257,13 @@ func (a Animation) params(p params) {
 	a.CaptionData.embed(p)
 }
 
-func (a Animation) files() []File {
+func (a Animation) files() []file {
 	return a.BaseFile.files("animation")
 }
 
 // NewVoice makes a new voice.
-func NewVoice(voice *tg.InputFile) *Voice {
-	return &Voice{
+func NewVoice(voice tg.FileSignature) Voice {
+	return Voice{
 		Voice: voice,
 	}
 }
@@ -286,7 +272,7 @@ var _ Sendable = Voice{}
 
 // Voice contains information about the voice to be sent.
 type Voice struct {
-	Voice *tg.InputFile
+	Voice tg.FileSignature
 	CaptionData
 	Duration int
 }
@@ -300,13 +286,13 @@ func (v Voice) params(p params) {
 	p.setInt("duration", v.Duration)
 }
 
-func (v Voice) files() []File {
-	return []File{{"voice", v.Voice}}
+func (v Voice) files() []file {
+	return []file{{"voice", v.Voice}}
 }
 
 // NewVideoNote makes a new video note.
-func NewVideoNote(videoNote *tg.InputFile) *VideoNote {
-	return &VideoNote{
+func NewVideoNote(videoNote tg.FileSignature) VideoNote {
+	return VideoNote{
 		BaseFile: BaseFile{File: videoNote},
 	}
 }
@@ -329,52 +315,52 @@ func (v VideoNote) params(p params) {
 	p.setInt("length", v.Length)
 }
 
-func (v VideoNote) files() []File {
+func (v VideoNote) files() []file {
 	return v.BaseFile.files("video_note")
 }
 
 // MediaGroup contains information about the media group to be sent.
 type MediaGroup []tg.MediaInputter
 
-func (g MediaGroup) data(p params) ([]File, error) {
+func (g MediaGroup) data(p params) ([]file, error) {
 	return prepareInputMedia(p, true, g...)
 }
 
-func prepareInputMedia(p params, mediaGroup bool, media ...tg.MediaInputter) ([]File, error) {
+func prepareInputMedia(p params, mediaGroup bool, media ...tg.MediaInputter) ([]file, error) {
 	if len(media) == 0 {
 		return nil, nil
 	}
-	var files []File
+	var files []file
 	for i := range media {
 		n := strconv.Itoa(i)
-		var med, thumb **tg.InputFile
+		var med, thumb tg.FileSignature
 		switch m := media[i].(type) {
-		case tg.InputMedia[tg.InputMediaPhoto]:
-			med = &m.Media
-		case tg.InputMedia[tg.InputMediaVideo]:
-			med, thumb = &m.Media, &m.Data.Thumbnail
-		case tg.InputMedia[tg.InputMediaAudio]:
-			med, thumb = &m.Media, &m.Data.Thumbnail
-		case tg.InputMedia[tg.InputMediaDocument]:
-			med, thumb = &m.Media, &m.Data.Thumbnail
-		case tg.InputMedia[tg.InputMediaAnimation]:
-			med, thumb = &m.Media, &m.Data.Thumbnail
+		case *tg.InputMedia[tg.InputMediaPhoto]:
+			med = m.Media
+		case *tg.InputMedia[tg.InputMediaVideo]:
+			med, thumb = m.Media, m.Data.Thumbnail
+		case *tg.InputMedia[tg.InputMediaAudio]:
+			med, thumb = m.Media, m.Data.Thumbnail
+		case *tg.InputMedia[tg.InputMediaDocument]:
+			med, thumb = m.Media, m.Data.Thumbnail
+		case *tg.InputMedia[tg.InputMediaAnimation]:
+			med, thumb = m.Media, m.Data.Thumbnail
 		default:
 			return nil, errors.New("unsupported media group entry " + n + " type")
 		}
-		if *med == nil {
+		if med == nil {
 			return nil, errors.New("media group entry " + n + " does not exist")
 		}
-		if _, r := (*med).UploadData(); r != nil {
-			*med = tg.FileReader("file-"+n, r)
-			files = append(files, File{"file-" + n, *med})
+		if f, ok := med.(*tg.InputFile); ok {
+			field := "file-" + n
+			files = append(files, file{field, f.AsMedia(field)})
 		}
 		if thumb == nil {
 			continue
 		}
-		if _, r := (*thumb).UploadData(); r != nil {
-			*thumb = tg.FileReader("file-"+n+"-thumb", r)
-			files = append(files, File{"file-" + n + "-thumb", *thumb})
+		if f, ok := thumb.(*tg.InputFile); ok {
+			field := "file-" + n + "-thumb"
+			files = append(files, file{field, f.AsMedia(field)})
 		}
 	}
 
@@ -389,9 +375,7 @@ func prepareInputMedia(p params, mediaGroup bool, media ...tg.MediaInputter) ([]
 var _ Sendable = Location{}
 
 // Location contains information about the location to be sent.
-type Location struct {
-	tg.Location
-}
+type Location tg.Location
 
 func (Location) what() string {
 	return "Location"
@@ -508,32 +492,17 @@ func (d Dice) params(p params) {
 	p.set("emoji", string(d))
 }
 
-// Invoice contains information about the invoice to be sent.
-type Invoice struct {
-	tg.InputInvoiceMessageContent
-	StartParameter string
+// Sticker contains information about the sticker to be sent.
+type Sticker struct {
+	Sticker tg.FileSignature
 }
 
-func (i Invoice) params(p params) {
-	p.set("title", i.Title)
-	p.set("description", i.Description)
-	p.set("payload", i.Payload)
-	p.set("provider_token", i.ProviderToken)
-	p.set("currency", i.Currency)
-	p.setJSON("prices", i.Prices)
-	p.setInt("max_tip_amount", i.MaxTipAmount)
-	p.setJSON("suggested_tip_amounts", i.SuggestedTipAmounts)
-	p.set("start_parameter", i.StartParameter)
-	p.set("provider_data", i.ProviderData)
-	p.set("photo_url", i.PhotoURL)
-	p.setInt("photo_size", i.PhotoSize)
-	p.setInt("photo_width", i.PhotoWidth)
-	p.setInt("photo_height", i.PhotoHeight)
-	p.setBool("need_name", i.NeedName)
-	p.setBool("need_phone_number", i.NeedPhoneNumber)
-	p.setBool("need_email", i.NeedEmail)
-	p.setBool("need_shipping_address", i.NeedShippingAddress)
-	p.setBool("send_phone_number_to_provider", i.SendPhoneNumberToProvider)
-	p.setBool("send_email_to_provider", i.SendEmailToProvider)
-	p.setBool("is_flexible", i.IsFlexible)
+func (Sticker) what() string {
+	return "Sticker"
+}
+
+func (Sticker) params(params) {}
+
+func (s Sticker) files() []file {
+	return []file{{field: "sticker", FileSignature: s.Sticker}}
 }
