@@ -133,8 +133,8 @@ func (b *Bot) RunContext(ctx context.Context) error {
 		}
 		for i := range upds {
 			go b.handle(&upds[i])
+			offset = upds[i].ID
 		}
-		offset = upds[len(upds)-1].ID
 	}
 }
 
