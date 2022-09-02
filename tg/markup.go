@@ -1,5 +1,7 @@
 package tg
 
+import "encoding/json"
+
 // ReplyMarkup interface.
 type ReplyMarkup interface {
 	replyMarkup()
@@ -44,17 +46,32 @@ type ButtonPollType struct {
 // ReplyKeyboardRemove represents an object, on receipt of which Telegram clients
 // will remove the current custom keyboard and display the default letter-keyboard.
 type ReplyKeyboardRemove struct {
-	Remove    bool `json:"remove_keyboard"`
-	Selective bool `json:"selective,omitempty"`
+	Selective bool
+}
+
+// MarshalJSON is json.Marshaler implementation.
+func (r ReplyKeyboardRemove) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Remove    bool `json:"remove_keyboard"`
+		Selective bool `json:"selective,omitempty"`
+	}{true, r.Selective})
 }
 
 // ForceReply represents an object, on receipt of which Telegram clients
 // will display a reply interface to the user (act as if the user has
 // selected the bot's message and tapped 'Reply').
 type ForceReply struct {
-	ForceReply  bool   `json:"force_reply"`
-	Placeholder string `json:"input_field_placeholder,omitempty"`
-	Selective   bool   `json:"selective,omitempty"`
+	Placeholder string
+	Selective   bool
+}
+
+// MarshalJSON is json.Marshaler implementation.
+func (f ForceReply) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		ForceReply  bool   `json:"force_reply"`
+		Placeholder string `json:"input_field_placeholder,omitempty"`
+		Selective   bool   `json:"selective,omitempty"`
+	}{true, f.Placeholder, f.Selective})
 }
 
 // InlineKeyboardMarkup represents an inline keyboard that

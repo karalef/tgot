@@ -5,51 +5,61 @@ import (
 	"io"
 )
 
+// FileSignature is an interface for FileID, FileURL and InputFile.
+type FileSignature interface {
+	FileData() (string, io.Reader)
+}
+
+// FileID represents the file that has already been uploaded to Telegram.
+type FileID string
+
+// FileData returns the file data.
+func (f FileID) FileData() (string, io.Reader) {
+	return string(f), nil
+}
+
+// FileURL represents the file URL that is used without uploading.
+type FileURL string
+
+// FileData returns the file data.
+func (f FileURL) FileData() (string, io.Reader) {
+	return string(f), nil
+}
+
 // InputFile represents the contents of a file to be uploaded.
 type InputFile struct {
-	urlID string
-	name  string
-	data  io.Reader
+	Name string
+	Data io.Reader
+
+	field string
+}
+
+// FileData returns the file data.
+func (f *InputFile) FileData() (string, io.Reader) {
+	return f.Name, f.Data
+}
+
+// AsMedia sets the link to the multipart field.
+func (f *InputFile) AsMedia(field string) *InputFile {
+	f.field = field
+	return f
 }
 
 // MarshalJSON is json.Marshaler implementation
 // for sending as media.
 func (f InputFile) MarshalJSON() ([]byte, error) {
-	if f.urlID != "" {
-		return []byte("\"" + f.urlID + "\""), nil
-	}
-	return []byte("\"" + "attach://" + f.name + "\""), nil
+	return []byte("\"" + "attach://" + f.field + "\""), nil
 }
 
-// Data returns the file data to send when a file does not need to be uploaded.
-func (f InputFile) Data() string {
-	return f.urlID
-}
-
-// UploadData returns the file name and data reader for the file.
-func (f InputFile) UploadData() (string, io.Reader) {
-	return f.name, f.data
-}
-
-// FileID returns InputFile that has already been uploaded to Telegram.
-func FileID(fid string) *InputFile {
-	return &InputFile{urlID: fid}
-}
-
-// FileURL return InputFile as URL that is used without uploading.
-func FileURL(url string) *InputFile {
-	return &InputFile{urlID: url}
-}
-
-// FileReader returns InputFile that needs to be uploaded.
-func FileReader(name string, data io.Reader) *InputFile {
+// FileReader creates the InputFile from reader.
+func FileReader(name string, r io.Reader) *InputFile {
 	return &InputFile{
-		name: name,
-		data: data,
+		Name: name,
+		Data: r,
 	}
 }
 
-// FileBytes returns InputFile as bytes that needs to be uploaded.
+// FileBytes creates the InputFile from bytes.
 func FileBytes(name string, data []byte) *InputFile {
 	return FileReader(name, bytes.NewReader(data))
 }
@@ -69,27 +79,24 @@ type InputMediaData interface {
 
 // InputMedia represents the content of a media message to be sent.
 type InputMedia[T InputMediaData] struct {
-	Media     *InputFile
-	Caption   string
-	ParseMode ParseMode
-	Entities  []MessageEntity
-	Data      T
+	Media     FileSignature   `json:"media"`
+	Caption   string          `json:"caption,omitempty"`
+	ParseMode ParseMode       `json:"parse_mode,omitempty"`
+	Entities  []MessageEntity `json:"caption_entities,omitempty"`
+	Data      T               `json:"-"`
 }
 
-func (InputMedia[T]) inputMedia() {}
+func (*InputMedia[T]) inputMedia() {}
 
 func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
 	return mergeJSON(i.Data, struct {
-		Type      string          `json:"type"`
-		Media     *InputFile      `json:"media"`
-		Caption   string          `json:"caption,omitempty"`
-		ParseMode ParseMode       `json:"parse_mode,omitempty"`
-		Entities  []MessageEntity `json:"caption_entities,omitempty"`
-	}{i.Data.inputMediaType(), i.Media, i.Caption, i.ParseMode, i.Entities})
+		Type string `json:"type"`
+		InputMedia[T]
+	}{i.Data.inputMediaType(), i})
 }
 
 // NewInputMediaPhoto creates new InputMediaPhoto object.
-func NewInputMediaPhoto(file *InputFile) *InputMedia[InputMediaPhoto] {
+func NewInputMediaPhoto(file FileSignature) *InputMedia[InputMediaPhoto] {
 	return &InputMedia[InputMediaPhoto]{Media: file}
 }
 
@@ -102,11 +109,11 @@ func (InputMediaPhoto) inputMediaType() string {
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
-	Thumbnail         *InputFile `json:"thumb,omitempty"`
-	Width             int        `json:"width,omitempty"`
-	Height            int        `json:"height,omitempty"`
-	Duration          int        `json:"duration,omitempty"`
-	SupportsStreaming bool       `json:"supports_streaming,omitempty"`
+	Thumbnail         FileSignature `json:"thumb,omitempty"`
+	Width             int           `json:"width,omitempty"`
+	Height            int           `json:"height,omitempty"`
+	Duration          int           `json:"duration,omitempty"`
+	SupportsStreaming bool          `json:"supports_streaming,omitempty"`
 }
 
 func (InputMediaVideo) inputMediaType() string {
@@ -116,10 +123,10 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	Thumbnail *InputFile `json:"thumb,omitempty"`
-	Width     int        `json:"width,omitempty"`
-	Height    int        `json:"height,omitempty"`
-	Duration  int        `json:"duration,omitempty"`
+	Thumbnail FileSignature `json:"thumb,omitempty"`
+	Width     int           `json:"width,omitempty"`
+	Height    int           `json:"height,omitempty"`
+	Duration  int           `json:"duration,omitempty"`
 }
 
 func (InputMediaAnimation) inputMediaType() string {
@@ -128,10 +135,10 @@ func (InputMediaAnimation) inputMediaType() string {
 
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
-	Thumbnail *InputFile `json:"thumb,omitempty"`
-	Duration  int        `json:"duration,omitempty"`
-	Performer string     `json:"performer,omitempty"`
-	Title     string     `json:"title,omitempty"`
+	Thumbnail FileSignature `json:"thumb,omitempty"`
+	Duration  int           `json:"duration,omitempty"`
+	Performer string        `json:"performer,omitempty"`
+	Title     string        `json:"title,omitempty"`
 }
 
 func (InputMediaAudio) inputMediaType() string {
@@ -140,8 +147,8 @@ func (InputMediaAudio) inputMediaType() string {
 
 // InputMediaDocument represents a general file to be sent.
 type InputMediaDocument struct {
-	Thumbnail            *InputFile `json:"thumb,omitempty"`
-	DisableTypeDetection bool       `json:"disable_content_type_detection,omitempty"`
+	Thumbnail            FileSignature `json:"thumb,omitempty"`
+	DisableTypeDetection bool          `json:"disable_content_type_detection,omitempty"`
 }
 
 func (InputMediaDocument) inputMediaType() string {
