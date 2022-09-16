@@ -43,6 +43,7 @@ func New(token string, config Config) (*Bot, error) {
 		fileURL: config.FileURL,
 		client:  config.Client,
 		log:     config.Logger,
+		handler: config.Handler,
 		cmds:    config.Commands,
 	}
 	if config.MakeHelp {
@@ -66,9 +67,10 @@ type Bot struct {
 	client  *http.Client
 	log     *logger.Logger
 
-	wg      sync.WaitGroup
-	stop    context.CancelFunc
-	err     error
+	wg   sync.WaitGroup
+	cls  sync.Once
+	stop context.CancelFunc
+
 	handler Handler
 	cmds    []*Command
 
@@ -87,15 +89,19 @@ func (b *Bot) setupCommands() error {
 }
 
 func (b *Bot) cancel(err error) {
-	if b.err == nil {
-		b.err = err
+	if b.stop == nil {
+		return
 	}
-	b.stop()
+	b.cls.Do(func() {
+		b.stop()
+		if err != nil {
+			b.log.Error(err.Error())
+		}
+	})
 }
 
 // Stop stops polling for updates.
 // The call is similar to context cancellation.
-// It panics if the bot has not been run.
 func (b *Bot) Stop() {
 	b.cancel(nil)
 	b.wg.Wait()

@@ -8,14 +8,8 @@ import (
 
 // Sendable interface for Chat.Send.
 type Sendable interface {
-	what() string
-	params(params)
-}
-
-// Fileable interface.
-type Fileable interface {
-	Sendable
-	files() []file
+	method() string
+	data(params) []file
 }
 
 // CaptionData represents caption with entities and parse mode.
@@ -93,15 +87,16 @@ type Message struct {
 	DisableWebPagePreview bool
 }
 
-func (Message) what() string {
-	return "Message"
+func (Message) method() string {
+	return "sendMessage"
 }
 
-func (m Message) params(p params) {
+func (m Message) data(p params) []file {
 	p.set("text", m.Text)
 	p.set("parse_mode", string(m.ParseMode))
 	p.setJSON("entities", m.Entities)
 	p.setBool("disable_web_page_preview", m.DisableWebPagePreview)
+	return nil
 }
 
 // NewPhoto makes a new photo.
@@ -119,15 +114,12 @@ type Photo struct {
 	CaptionData
 }
 
-func (Photo) what() string {
-	return "Photo"
+func (Photo) method() string {
+	return "sendPhoto"
 }
 
-func (ph Photo) params(p params) {
+func (ph Photo) data(p params) []file {
 	ph.CaptionData.embed(p)
-}
-
-func (ph Photo) files() []file {
 	return []file{{"photo", ph.Photo}}
 }
 
@@ -149,18 +141,15 @@ type Audio struct {
 	Title     string
 }
 
-func (Audio) what() string {
-	return "Audio"
+func (Audio) method() string {
+	return "sendAudio"
 }
 
-func (a Audio) params(p params) {
+func (a Audio) data(p params) []file {
 	a.CaptionData.embed(p)
 	p.setInt("duration", a.Duration)
 	p.set("performer", a.Performer)
 	p.set("title", a.Title)
-}
-
-func (a Audio) files() []file {
 	return a.BaseFile.files("audio")
 }
 
@@ -180,16 +169,13 @@ type Document struct {
 	DisableTypeDetection bool
 }
 
-func (Document) what() string {
-	return "Document"
+func (Document) method() string {
+	return "sendDocument"
 }
 
-func (d Document) params(p params) {
+func (d Document) data(p params) []file {
 	d.CaptionData.embed(p)
 	p.setBool("disable_content_type_detection", d.DisableTypeDetection)
-}
-
-func (d Document) files() []file {
 	return d.BaseFile.files("document")
 }
 
@@ -212,19 +198,16 @@ type Video struct {
 	SupportsStreaming bool
 }
 
-func (Video) what() string {
-	return "Video"
+func (Video) method() string {
+	return "sendVideo"
 }
 
-func (v Video) params(p params) {
+func (v Video) data(p params) []file {
 	p.setInt("duration", v.Duration)
 	p.setInt("width", v.Width)
 	p.setInt("height", v.Height)
 	v.CaptionData.embed(p)
 	p.setBool("supports_streaming", v.SupportsStreaming)
-}
-
-func (v Video) files() []file {
 	return v.BaseFile.files("video")
 }
 
@@ -246,18 +229,15 @@ type Animation struct {
 	Height   int
 }
 
-func (Animation) what() string {
-	return "Animation"
+func (Animation) method() string {
+	return "sendAnimation"
 }
 
-func (a Animation) params(p params) {
+func (a Animation) data(p params) []file {
 	p.setInt("duration", a.Duration)
 	p.setInt("width", a.Width)
 	p.setInt("height", a.Height)
 	a.CaptionData.embed(p)
-}
-
-func (a Animation) files() []file {
 	return a.BaseFile.files("animation")
 }
 
@@ -277,16 +257,13 @@ type Voice struct {
 	Duration int
 }
 
-func (Voice) what() string {
-	return "Voice"
+func (Voice) method() string {
+	return "sendVoice"
 }
 
-func (v Voice) params(p params) {
+func (v Voice) data(p params) []file {
 	v.CaptionData.embed(p)
 	p.setInt("duration", v.Duration)
-}
-
-func (v Voice) files() []file {
 	return []file{{"voice", v.Voice}}
 }
 
@@ -306,16 +283,13 @@ type VideoNote struct {
 	Length   int
 }
 
-func (VideoNote) what() string {
-	return "VideoNote"
+func (VideoNote) method() string {
+	return "sendVideoNote"
 }
 
-func (v VideoNote) params(p params) {
+func (v VideoNote) data(p params) []file {
 	p.setInt("duration", v.Duration)
 	p.setInt("length", v.Length)
-}
-
-func (v VideoNote) files() []file {
 	return v.BaseFile.files("video_note")
 }
 
@@ -377,19 +351,20 @@ var _ Sendable = Location{}
 // Location contains information about the location to be sent.
 type Location tg.Location
 
-func (Location) what() string {
-	return "Location"
+func (Location) method() string {
+	return "sendLocation"
 }
 
-func (l Location) params(p params) {
+func (l Location) data(p params) []file {
 	p.setFloat("latitude", l.Lat)
 	p.setFloat("longitude", l.Long)
 	if l.HorizontalAccuracy != nil {
-		p.setFloat("horizontal_accuracy", *l.HorizontalAccuracy)
+		p.setFloat("horizontal_accuracy", *l.HorizontalAccuracy, true)
 	}
 	p.setInt("live_period", l.LivePeriod)
 	p.setInt("heading", l.Heading)
 	p.setInt("proximity_alert_radius", l.AlertRadius)
+	return nil
 }
 
 var _ Sendable = Venue{}
@@ -406,11 +381,11 @@ type Venue struct {
 	GooglePlaceType string
 }
 
-func (Venue) what() string {
-	return "Venue"
+func (Venue) method() string {
+	return "sendVenue"
 }
 
-func (v Venue) params(p params) {
+func (v Venue) data(p params) []file {
 	p.setFloat("latitude", v.Lat)
 	p.setFloat("longitude", v.Long)
 	p.set("title", v.Title)
@@ -419,6 +394,7 @@ func (v Venue) params(p params) {
 	p.set("foursquare_type", v.FoursquareType)
 	p.set("google_place_id", v.GooglePlaceID)
 	p.set("google_place_type", v.GooglePlaceType)
+	return nil
 }
 
 var _ Sendable = Contact{}
@@ -431,15 +407,16 @@ type Contact struct {
 	Vcard       string
 }
 
-func (Contact) what() string {
-	return "Contact"
+func (Contact) method() string {
+	return "sendContact"
 }
 
-func (c Contact) params(p params) {
+func (c Contact) data(p params) []file {
 	p.set("phone_number", c.PhoneNumber)
 	p.set("first_name", c.FirstName)
 	p.set("last_name", c.LastName)
 	p.set("vcard", c.Vcard)
+	return nil
 }
 
 var _ Sendable = Poll{}
@@ -460,11 +437,11 @@ type Poll struct {
 	IsClosed             bool
 }
 
-func (Poll) what() string {
-	return "Poll"
+func (Poll) method() string {
+	return "sendPoll"
 }
 
-func (poll Poll) params(p params) {
+func (poll Poll) data(p params) []file {
 	p.set("question", poll.Question)
 	p.setJSON("options", poll.Options)
 	p.setBool("is_anonymous", poll.IsAnonymous)
@@ -477,6 +454,7 @@ func (poll Poll) params(p params) {
 	p.setInt("open_period", poll.OpenPeriod)
 	p.setInt64("close_date", poll.CloseDate)
 	p.setBool("is_closed", poll.IsClosed)
+	return nil
 }
 
 var _ Sendable = Dice("")
@@ -484,12 +462,13 @@ var _ Sendable = Dice("")
 // Dice contains information about the dice to be sent.
 type Dice tg.DiceEmoji
 
-func (Dice) what() string {
-	return "Dice"
+func (Dice) method() string {
+	return "sendDice"
 }
 
-func (d Dice) params(p params) {
+func (d Dice) data(p params) []file {
 	p.set("emoji", string(d))
+	return nil
 }
 
 // Sticker contains information about the sticker to be sent.
@@ -497,12 +476,10 @@ type Sticker struct {
 	Sticker tg.FileSignature
 }
 
-func (Sticker) what() string {
-	return "Sticker"
+func (Sticker) method() string {
+	return "sendSticker"
 }
 
-func (Sticker) params(params) {}
-
-func (s Sticker) files() []file {
+func (s Sticker) data(params) []file {
 	return []file{{field: "sticker", FileSignature: s.Sticker}}
 }

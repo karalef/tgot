@@ -32,23 +32,31 @@ func (c MessageContext) ReplyText(text string) error {
 
 // MessageSignature creates a chat message signature.
 //
-// Returns nil if the message is not sent by the current bot.
-func (c Context) MessageSignature(msg *tg.Message) *MessageSignature {
+// It returns empty signature if the message is not sent by the current bot.
+func (c Context) MessageSignature(msg *tg.Message) MessageSignature {
 	if msg.From.ID != c.bot.me.ID {
-		return nil
+		return MessageSignature{}
 	}
-	return &MessageSignature{
+	return MessageSignature{
 		chatID: msg.Chat.ID,
 		msgID:  msg.ID,
 	}
 }
 
-// InlineSignature creates a chat message signature.
-func (c Context) InlineSignature(i *tg.InlineChosen) *MessageSignature {
-	return &MessageSignature{inline: i.InlineMessageID}
+// InlineSignature creates an inline message signature.
+func (c Context) InlineSignature(i *tg.InlineChosen) MessageSignature {
+	return MessageSignature{inline: i.InlineMessageID}
 }
 
-func (c Context) sig(sig *MessageSignature, method string, p params, files ...file) (*tg.Message, error) {
+// CallbackSignature creates a MessageSignature of any callback message type.
+func (c Context) CallbackSignature(q *tg.CallbackQuery) MessageSignature {
+	if q.Message != nil {
+		return c.MessageSignature(q.Message)
+	}
+	return MessageSignature{inline: q.InlineMessageID}
+}
+
+func (c Context) sig(sig MessageSignature, method string, p params, files ...file) (*tg.Message, error) {
 	sig.signature(p)
 	if sig.isInline() {
 		return nil, c.api(method, p, files...)
@@ -86,12 +94,12 @@ type LiveLocation struct {
 }
 
 // EditLiveLocation edits live location messages.
-func (c Context) EditLiveLocation(sig *MessageSignature, l LiveLocation, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c Context) EditLiveLocation(sig MessageSignature, l LiveLocation, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	p := params{}
 	p.setFloat("latitude", l.Lat)
 	p.setFloat("longitude", l.Long)
 	if l.HorizontalAccuracy != nil {
-		p.setFloat("horizontal_accuracy", *l.HorizontalAccuracy)
+		p.setFloat("horizontal_accuracy", *l.HorizontalAccuracy, true)
 	}
 	p.setInt("heading", l.Heading)
 	p.setInt("proximity_alert_radius", l.AlertRadius)
@@ -102,7 +110,7 @@ func (c Context) EditLiveLocation(sig *MessageSignature, l LiveLocation, replyMa
 }
 
 // StopLiveLocation stops updating a live location message before live_period expires.
-func (c Context) StopLiveLocation(sig *MessageSignature, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c Context) StopLiveLocation(sig MessageSignature, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	p := params{}
 	if len(replyMarkup) > 0 {
 		p.setJSON("reply_markup", replyMarkup[0])
@@ -119,7 +127,7 @@ type EditText struct {
 }
 
 // EditText edits text and game messages.
-func (c Context) EditText(sig *MessageSignature, t EditText, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c Context) EditText(sig MessageSignature, t EditText, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	p := params{}
 	p.set("text", t.Text)
 	p.set("parse_mode", string(t.ParseMode))
@@ -132,7 +140,7 @@ func (c Context) EditText(sig *MessageSignature, t EditText, replyMarkup ...tg.I
 }
 
 // EditCaption edits captions of messages.
-func (c Context) EditCaption(sig *MessageSignature, cap CaptionData, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c Context) EditCaption(sig MessageSignature, cap CaptionData, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	p := params{}
 	cap.embed(p)
 	if len(replyMarkup) > 0 {
@@ -142,7 +150,7 @@ func (c Context) EditCaption(sig *MessageSignature, cap CaptionData, replyMarkup
 }
 
 // EditMedia edits animation, audio, document, photo, or video messages.
-func (c Context) EditMedia(sig *MessageSignature, m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c Context) EditMedia(sig MessageSignature, m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	p := params{}
 	files, err := prepareInputMedia(p, false, m)
 	if err != nil {
@@ -155,7 +163,7 @@ func (c Context) EditMedia(sig *MessageSignature, m tg.MediaInputter, replyMarku
 }
 
 // EditReplyMarkup edits only the reply markup of messages.
-func (c Context) EditReplyMarkup(sig *MessageSignature, replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c Context) EditReplyMarkup(sig MessageSignature, replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	p := params{}
 	p.setJSON("reply_markup", replyMarkup)
 	return c.sig(sig, "editMessageReplyMarkup", p)

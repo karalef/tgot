@@ -65,35 +65,40 @@ func (p params) set(k, v string) params {
 	return p
 }
 
-func (p params) setInt(key string, v int) {
-	if v != 0 {
+func (p params) setInt(key string, v int, force ...bool) params {
+	if v != 0 || len(force) > 0 && force[0] {
 		p.set(key, strconv.Itoa(v))
 	}
+	return p
 }
 
-func (p params) setInt64(key string, v int64) {
-	if v != 0 {
+func (p params) setInt64(key string, v int64, force ...bool) params {
+	if v != 0 || len(force) > 0 && force[0] {
 		p.set(key, strconv.FormatInt(v, 10))
 	}
+	return p
 }
 
-func (p params) setFloat(key string, v float32) {
-	if v != 0 {
+func (p params) setFloat(key string, v float32, force ...bool) params {
+	if v != 0 || len(force) > 0 && force[0] {
 		p.set(key, strconv.FormatFloat(float64(v), 'f', 6, 32))
 	}
+	return p
 }
 
-func (p params) setBool(key string, v bool) {
+func (p params) setBool(key string, v bool) params {
 	if v {
 		p.set(key, strconv.FormatBool(v))
 	}
+	return p
 }
 
-func (p params) setJSON(key string, v interface{}) {
+func (p params) setJSON(key string, v interface{}) params {
 	if v != nil && !reflect.ValueOf(v).IsZero() {
 		b, _ := json.Marshal(v)
 		p.set(key, string(b))
 	}
+	return p
 }
 
 type file struct {
@@ -303,8 +308,7 @@ func (b *Bot) SetDefaultAdminRights(rights *tg.ChatAdministratorRights, forChann
 
 // GetDefaultAdminRights returns the current default administrator rights of the bot.
 func (b *Bot) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRights, error) {
-	p := params{}
-	p.setBool("for_channels", forChannels)
+	p := params{}.setBool("for_channels", forChannels)
 	return performRequest[*tg.ChatAdministratorRights](b, "getMyDefaultAdministratorRights", p)
 }
 
@@ -313,8 +317,7 @@ func (b *Bot) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRigh
 // This method is a wrapper for setChatMenuButton without specifying the chat id.
 // Full implementation of this method is available in the [Chat].
 func (b *Bot) SetDefaultChatMenuButton(menu tg.MenuButton) error {
-	p := params{}
-	p.setJSON("menu_button", menu)
+	p := params{}.setJSON("menu_button", menu)
 	return performRequestEmpty(b, "setChatMenuButton", p)
 }
 

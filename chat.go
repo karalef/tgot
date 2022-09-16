@@ -48,6 +48,11 @@ func (c *Chat) setChatID(p params, key ...string) {
 	}
 }
 
+func (c *Chat) method(method string, p params, files ...file) error {
+	_, err := chatMethod[bool](c, method, p, files...)
+	return err
+}
+
 func chatMethod[T any](c *Chat, method string, p params, files ...file) (T, error) {
 	if p == nil {
 		p = params{}
@@ -55,11 +60,6 @@ func chatMethod[T any](c *Chat, method string, p params, files ...file) (T, erro
 
 	c.setChatID(p)
 	return api[T](c.Context, method, p, files...)
-}
-
-func boolChatMethod(c *Chat, method string, p params, files ...file) error {
-	_, err := chatMethod[bool](c, method, p, files...)
-	return err
 }
 
 // GetInfo returns up to date information about the chat.
@@ -79,14 +79,13 @@ func (c *Chat) MemberCount() (int, error) {
 
 // GetMember returns information about a member of a chat.
 func (c *Chat) GetMember(userID int64) (*tg.ChatMember, error) {
-	p := params{}
-	p.setInt64("user_id", userID)
+	p := params{}.setInt64("user_id", userID)
 	return chatMethod[*tg.ChatMember](c, "getChatMember", p)
 }
 
 // Leave a group, supergroup or channel.
 func (c *Chat) Leave() error {
-	return boolChatMethod(c, "leaveChat", nil)
+	return c.method("leaveChat", nil)
 }
 
 // Forward contains paramenets for forwarding the message.
@@ -147,18 +146,13 @@ func (c *Chat) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Messag
 		return nil, nil
 	}
 
-	m := "send" + s.what()
 	p := params{}
-	s.params(p)
+	files := s.data(p)
 	if len(opts) > 0 {
 		opts[0].embed(p)
 	}
-	var files []file
-	if f, ok := s.(Fileable); ok {
-		files = f.files()
-	}
 
-	return chatMethod[*tg.Message](c, m, p, files...)
+	return chatMethod[*tg.Message](c, s.method(), p, files...)
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
@@ -178,7 +172,7 @@ func (c *Chat) SendMediaGroup(mg MediaGroup, opts ...MediaGroupSendOptions) ([]t
 // is happening on the bot's side.
 func (c *Chat) SendChatAction(act tg.ChatAction) error {
 	p := params{}.set("action", string(act))
-	return boolChatMethod(c, "sendChatAction", p)
+	return c.method("sendChatAction", p)
 }
 
 // SendInvoice sends an invoice.
@@ -213,9 +207,8 @@ func (c *Chat) StopPoll(msgID int, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.
 
 // DeleteMessage deletes a message, including service messages.
 func (c *Chat) DeleteMessage(msgID int) error {
-	p := params{}
-	p.setInt("message_id", msgID)
-	return boolChatMethod(c, "deleteMessage", p)
+	p := params{}.setInt("message_id", msgID)
+	return c.method("deleteMessage", p)
 }
 
 // Ban contains parameters for banning a chat member.
@@ -230,35 +223,32 @@ func (c *Chat) Ban(b Ban) error {
 	p := params{}
 	p.setInt64("user_id", b.UserID)
 	if b.UntilDate != nil {
-		p.setInt64("until_date", *b.UntilDate)
+		p.setInt64("until_date", *b.UntilDate, true)
 	}
 	p.setBool("revoke_messages", b.RevokeMessages)
-	return boolChatMethod(c, "banChatMember", p)
+	return c.method("banChatMember", p)
 }
 
 // Unban unbans a previously banned user in a supergroup or channel.
 func (c *Chat) Unban(userID int64, onlyIfBanned bool) error {
-	p := params{}
-	p.setInt64("user_id", userID)
+	p := params{}.setInt64("user_id", userID)
 	p.setBool("only_if_banned", onlyIfBanned)
-	return boolChatMethod(c, "unbanChatMember", p)
+	return c.method("unbanChatMember", p)
 }
 
 // Restrict restricts a user in a supergroup.
 func (c *Chat) Restrict(userID int64, perms tg.ChatPermissions, until *int64) error {
-	p := params{}
-	p.setInt64("user_id", userID)
+	p := params{}.setInt64("user_id", userID)
 	p.setJSON("permissions", perms)
 	if until != nil {
-		p.setInt64("until_date", *until)
+		p.setInt64("until_date", *until, true)
 	}
-	return boolChatMethod(c, "restrictChatMember", p)
+	return c.method("restrictChatMember", p)
 }
 
 // Promote promotes or demotes a user in a supergroup or a channel.
 func (c *Chat) Promote(userID int64, rights tg.ChatAdministratorRights) error {
-	p := params{}
-	p.setInt64("user_id", userID)
+	p := params{}.setInt64("user_id", userID)
 	p.setBool("is_anonymous", rights.IsAnonymous)
 	p.setBool("can_manage_chat", rights.CanManageChat)
 	p.setBool("can_delete_messages", rights.CanDeleteMessages)
@@ -270,7 +260,7 @@ func (c *Chat) Promote(userID int64, rights tg.ChatAdministratorRights) error {
 	p.setBool("can_post_messages", rights.CanPostMessages)
 	p.setBool("can_edit_messages", rights.CanEditMessages)
 	p.setBool("can_pin_messages", rights.CanPinMessages)
-	return boolChatMethod(c, "promoteChatMember", p)
+	return c.method("promoteChatMember", p)
 }
 
 // SetAdminTitle sets a custom title for an administrator in a supergroup promoted by the bot.
@@ -278,28 +268,25 @@ func (c *Chat) SetAdminTitle(userID int64, title string) error {
 	p := params{}
 	p.setInt64("user_id", userID)
 	p.set("custom_title", title)
-	return boolChatMethod(c, "setChatAdministratorCustomTitle", p)
+	return c.method("setChatAdministratorCustomTitle", p)
 }
 
 // BanSenderChat bans a channel chat in a supergroup or a channel.
 func (c *Chat) BanSenderChat(senderID int64) error {
-	p := params{}
-	p.setInt64("sender_chat_id", senderID)
-	return boolChatMethod(c, "banChatSenderChat", p)
+	p := params{}.setInt64("sender_chat_id", senderID)
+	return c.method("banChatSenderChat", p)
 }
 
 // UnbanSenderChat unbans a previously banned channel chat in a supergroup or channel.
 func (c *Chat) UnbanSenderChat(senderID int64) error {
-	p := params{}
-	p.setInt64("sender_chat_id", senderID)
-	return boolChatMethod(c, "unbanChatSenderChat", p)
+	p := params{}.setInt64("sender_chat_id", senderID)
+	return c.method("unbanChatSenderChat", p)
 }
 
 // SetPermissions sets default chat permissions for all members.
 func (c *Chat) SetPermissions(perms tg.ChatPermissions) error {
-	p := params{}
-	p.setJSON("permissions", perms)
-	return boolChatMethod(c, "setChatPermissions", p)
+	p := params{}.setJSON("permissions", perms)
+	return c.method("setChatPermissions", p)
 }
 
 // ExportInviteLink generates a new primary invite link for a chat;
@@ -316,51 +303,48 @@ type InviteLink struct {
 	CreatesJoinRequest bool
 }
 
-// CreateInviteLink creates an additional invite link for a chat.
-func (c *Chat) CreateInviteLink(i InviteLink) (*tg.ChatInviteLink, error) {
-	p := params{}
+func (i InviteLink) params(p params) {
 	p.set("name", i.Name)
 	p.setInt64("expire_date", i.ExpireDate)
 	p.setInt("member_limit", i.MemberLimit)
 	p.setBool("creates_join_request", i.CreatesJoinRequest)
+}
+
+// CreateInviteLink creates an additional invite link for a chat.
+func (c *Chat) CreateInviteLink(i InviteLink) (*tg.ChatInviteLink, error) {
+	p := params{}
+	i.params(p)
 	return chatMethod[*tg.ChatInviteLink](c, "createChatInviteLink", p)
 }
 
 // EditInviteLink edits a non-primary invite link created by the bot.
 func (c *Chat) EditInviteLink(link string, i InviteLink) (*tg.ChatInviteLink, error) {
-	p := params{}
-	p.set("invite_link", link)
-	p.set("name", i.Name)
-	p.setInt64("expire_date", i.ExpireDate)
-	p.setInt("member_limit", i.MemberLimit)
-	p.setBool("creates_join_request", i.CreatesJoinRequest)
+	p := params{}.set("invite_link", link)
+	i.params(p)
 	return chatMethod[*tg.ChatInviteLink](c, "editChatInviteLink", p)
 }
 
 // RevokeInviteLink revokes an invite link created by the bot.
 func (c *Chat) RevokeInviteLink(link string) (*tg.ChatInviteLink, error) {
-	p := params{}
-	p.set("invite_link", link)
+	p := params{}.set("invite_link", link)
 	return chatMethod[*tg.ChatInviteLink](c, "revokeChatInviteLink", p)
 }
 
 // ApproveJoinRequest approves a chat join request.
 func (c *Chat) ApproveJoinRequest(userID int64) error {
-	p := params{}
-	p.setInt64("user_id", userID)
-	return boolChatMethod(c, "approveChatJoinRequest", p)
+	p := params{}.setInt64("user_id", userID)
+	return c.method("approveChatJoinRequest", p)
 }
 
 // DeclineJoinRequest declines a chat join request.
 func (c *Chat) DeclineJoinRequest(userID int64) error {
-	p := params{}
-	p.setInt64("user_id", userID)
-	return boolChatMethod(c, "declineChatJoinRequest", p)
+	p := params{}.setInt64("user_id", userID)
+	return c.method("declineChatJoinRequest", p)
 }
 
 // SetPhoto sets a new profile photo for the chat.
 func (c *Chat) SetPhoto(photo *tg.InputFile) error {
-	return boolChatMethod(c, "setChatPhoto", nil, file{
+	return c.method("setChatPhoto", nil, file{
 		field:         "photo",
 		FileSignature: photo,
 	})
@@ -368,60 +352,54 @@ func (c *Chat) SetPhoto(photo *tg.InputFile) error {
 
 // DeletePhoto deletes a chat photo.
 func (c *Chat) DeletePhoto() error {
-	return boolChatMethod(c, "deleteChatPhoto", nil)
+	return c.method("deleteChatPhoto", nil)
 }
 
 // SetTitle change the title of a chat.
 func (c *Chat) SetTitle(title string) error {
-	p := params{}
-	p.set("title", title)
-	return boolChatMethod(c, "setChatTitle", p)
+	p := params{}.set("title", title)
+	return c.method("setChatTitle", p)
 }
 
 // SetDescription changes the description of a group, a supergroup or a channel.
 func (c *Chat) SetDescription(description string) error {
-	p := params{}
-	p.set("description", description)
-	return boolChatMethod(c, "setChatDescription", p)
+	p := params{}.set("description", description)
+	return c.method("setChatDescription", p)
 }
 
 // PinMessage adds a message to the list of pinned messages in a chat.
 func (c *Chat) PinMessage(msgID int, notify bool) error {
-	p := params{}
-	p.setInt("message_id", msgID)
+	p := params{}.setInt("message_id", msgID)
 	p.setBool("disable_notification", !notify)
-	return boolChatMethod(c, "pinChatMessage", p)
+	return c.method("pinChatMessage", p)
 }
 
 // UnpinMessage removes a message from the list of pinned messages in a chat.
 func (c *Chat) UnpinMessage(msgID int) error {
-	p := params{}
-	p.setInt("message_id", msgID)
-	return boolChatMethod(c, "unpinChatMessage", p)
+	p := params{}.setInt("message_id", msgID)
+	return c.method("unpinChatMessage", p)
 }
 
 // UnpinAllMessages clears the list of pinned messages in a chat.
 func (c *Chat) UnpinAllMessages() error {
-	return boolChatMethod(c, "unpinAllChatMessages", nil)
+	return c.method("unpinAllChatMessages", nil)
 }
 
 // SetStickerSet sets a new group sticker set for a supergroup.
 func (c *Chat) SetStickerSet(stickerSet string) error {
-	p := params{}
-	p.set("sticker_set_name", stickerSet)
-	return boolChatMethod(c, "setChatStickerSet", p)
+	p := params{}.set("sticker_set_name", stickerSet)
+	return c.method("setChatStickerSet", p)
 }
 
 // DeleteStickerSet deletes a group sticker set from a supergroup.
 func (c *Chat) DeleteStickerSet() error {
-	return boolChatMethod(c, "deleteChatStickerSet", nil)
+	return c.method("deleteChatStickerSet", nil)
 }
 
 // SetMenuButton changes the bot's menu button in a private chat.
 func (c *Chat) SetMenuButton(menu tg.MenuButton) error {
-	p := params{}
-	p.setJSON("menu_button", menu)
-	return boolChatMethod(c, "setChatMenuButton", p)
+	p := params{}.setJSON("menu_button", menu)
+	return c.method("setChatMenuButton", p)
 }
 
 // GetMenuButton returns the current value of the bot's menu button in a private chat.

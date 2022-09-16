@@ -17,11 +17,12 @@ type QueryContext[T interface {
 	once sync.Once
 }
 
-func (c *QueryContext[T]) Answer(answer T) {
+func (c *QueryContext[T]) Answer(answer T) (err error) {
 	c.once.Do(func() {
 		p := params{}
-		c.api(answer.answerData(p, c.queryID), p)
+		err = c.api(answer.answerData(p, c.queryID), p)
 	})
+	return
 }
 
 var _ QueryContext[InlineAnswer]
@@ -40,7 +41,7 @@ func (a InlineAnswer) answerData(p params, queryID string) string {
 	p.set("inline_query_id", queryID)
 	p.setJSON("results", a.Results)
 	if a.CacheTime != nil {
-		p.setInt("cache_time", *a.CacheTime)
+		p.setInt("cache_time", *a.CacheTime, true)
 	}
 	p.setBool("is_personal", a.IsPersonal)
 	p.set("next_offset", a.NextOffset)
@@ -56,7 +57,7 @@ type CallbackAnswer struct {
 	Text      string
 	ShowAlert bool
 	URL       string
-	CacheTime *int
+	CacheTime int
 }
 
 func (a CallbackAnswer) answerData(p params, queryID string) string {
@@ -64,8 +65,6 @@ func (a CallbackAnswer) answerData(p params, queryID string) string {
 	p.set("text", a.Text)
 	p.setBool("show_alert", a.ShowAlert)
 	p.set("url", a.URL)
-	if a.CacheTime != nil {
-		p.setInt("cache_time", *a.CacheTime)
-	}
+	p.setInt("cache_time", a.CacheTime)
 	return "answerCallbackQuery"
 }

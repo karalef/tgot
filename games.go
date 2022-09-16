@@ -19,7 +19,7 @@ type SetGameScore struct {
 }
 
 // SetGameScore sets the score of the specified user in a game message.
-func (c Context) SetGameScore(sig *MessageSignature, userID int64, s SetGameScore) (*tg.Message, error) {
+func (c Context) SetGameScore(sig MessageSignature, userID int64, s SetGameScore) (*tg.Message, error) {
 	p := params{}
 	p.setInt64("user_id", userID)
 	p.setInt("score", s.Score)
@@ -29,9 +29,8 @@ func (c Context) SetGameScore(sig *MessageSignature, userID int64, s SetGameScor
 }
 
 // GetGameHighScores returns data for high score tables.
-func (c Context) GetGameHighScores(sig *MessageSignature, userID int64) ([]tg.GameHighScore, error) {
-	p := params{}
+func (c Context) GetGameHighScores(sig MessageSignature, userID int64) ([]tg.GameHighScore, error) {
+	p := params{}.setInt64("user_id", userID)
 	sig.signature(p)
-	p.setInt64("user_id", userID)
 	return api[[]tg.GameHighScore](c, "getGameHighScores", p)
 }
