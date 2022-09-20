@@ -16,35 +16,73 @@ import (
 	"tghwbot/bot/tg"
 )
 
-// Error type.
-type Error struct {
+func makeError[T error](method string, p params, f []file, err T) baseError[T] {
+	return baseError[T]{
+		Method: method,
+		Params: p,
+		Files:  f,
+		Err:    err,
+	}
+}
+
+type baseError[T error] struct {
 	Method string
 	Params params
-	Err    tg.APIError
-	cancel bool
+	Files  []file
+	Err    T
 }
 
-func (e *Error) Error() string {
-	return fmt.Sprintf("%s\n%s %v", e.Err.Error(), e.Method, e.Params)
+func (e baseError[T]) Error() string {
+	return fmt.Sprintf("%s\n%s %s", e.Err.Error(), e.Method, e.formatData())
 }
 
-func (e *Error) Unwrap() error {
+func (e baseError[T]) Unwrap() error {
 	return e.Err
 }
 
-type jsonError struct {
-	Method   string
-	Params   params
+func (e baseError[T]) formatData() string {
+	if len(e.Files) == 0 {
+		return url.Values(e.Params).Encode()
+	}
+	var sb strings.Builder
+	sb.WriteString(url.Values(e.Params).Encode())
+	sb.WriteByte('\n')
+	for _, f := range e.Files {
+		name, r := f.FileData()
+		sb.WriteString("(file) " + f.field + ": " + name)
+		if r != nil {
+			sb.WriteString(" (upload data)")
+		}
+	}
+	return sb.String()
+}
+
+// Error represents a telegram api error and also contains method and data.
+type Error struct {
+	baseError[tg.APIError]
+}
+
+// Is implements errors.Is interface.
+func (e Error) Is(err error) bool {
+	if tge, ok := err.(tg.APIError); ok {
+		return e.Err.Code != tge.Code
+	}
+	return false
+}
+
+// HTTPError represents http error.
+type HTTPError struct {
+	baseError[error]
+}
+
+// JSONError represents JSON error.
+type JSONError struct {
+	baseError[error]
 	Response []byte
-	Err      error
 }
 
-func (e *jsonError) Error() string {
-	return fmt.Sprintf("%s\n%s %v\nresponse:\n%s", e.Err.Error(), e.Method, e.Params, string(e.Response))
-}
-
-func (e *jsonError) Unwrap() error {
-	return e.Err
+func (e *JSONError) Error() string {
+	return e.baseError.Error() + "\nresponse:\n" + string(e.Response)
 }
 
 type params url.Values
@@ -106,7 +144,16 @@ type file struct {
 	tg.FileSignature
 }
 
-func performRequestContext[T any](ctx context.Context, b *Bot, method string, p params, files ...file) (T, error) {
+func (b *Bot) requestEmpty(method string, p params, files ...file) error {
+	_, err := request[internal.Empty](b, method, p, files...)
+	return err
+}
+
+func request[T any](b *Bot, method string, p params, files ...file) (T, error) {
+	return requestContext[T](context.Background(), b, method, p, files...)
+}
+
+func requestContext[T any](ctx context.Context, b *Bot, method string, p params, files ...file) (T, error) {
 	var ctype = "application/x-www-form-urlencoded"
 	var data io.Reader
 	upload := false
@@ -131,7 +178,7 @@ func performRequestContext[T any](ctx context.Context, b *Bot, method string, p 
 	u := b.apiURL + b.token + "/" + method
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, data)
 	if err != nil {
-		return nilResult, err
+		return nilResult, &HTTPError{makeError(method, p, files, err)}
 	}
 	req.Header.Set("Content-Type", ctype)
 	resp, err := b.client.Do(req)
@@ -140,43 +187,23 @@ func performRequestContext[T any](ctx context.Context, b *Bot, method string, p 
 		case context.Canceled, context.DeadlineExceeded:
 			return nilResult, e
 		default:
-			return nilResult, err
+			return nilResult, &HTTPError{makeError(method, p, files, err)}
 		}
 	}
 	defer resp.Body.Close()
 
 	r, raw, err := internal.DecodeJSON[tg.APIResponse[T]](resp.Body)
 	if err != nil {
-		return nilResult, &jsonError{
-			Method:   method,
-			Params:   p,
-			Response: raw,
-			Err:      err,
+		return nilResult, &JSONError{
+			baseError: makeError(method, p, files, err),
+			Response:  raw,
 		}
 	}
 	if r.APIError != nil {
-		e := &Error{
-			Method: method,
-			Params: p,
-			Err:    *r.APIError,
-		}
-		if e.Err.Code == http.StatusUnauthorized {
-			b.cancel(e.Err)
-			e.cancel = true
-		}
-		return nilResult, e
+		return nilResult, &Error{makeError(method, p, files, *r.APIError)}
 	}
 
 	return r.Result, nil
-}
-
-func performRequest[T any](b *Bot, method string, p params, files ...file) (T, error) {
-	return performRequestContext[T](context.Background(), b, method, p, files...)
-}
-
-func performRequestEmpty(b *Bot, method string, p params) error {
-	_, err := performRequest[internal.Empty](b, method, p)
-	return err
 }
 
 func writeMultipart(p params, files []file) (string, io.Reader) {
@@ -233,21 +260,21 @@ func (b *Bot) downloadFile(path string) (io.ReadCloser, error) {
 
 // GetMe returns basic information about the bot in form of a User object.
 func (b *Bot) GetMe() (*tg.User, error) {
-	return performRequest[*tg.User](b, "getMe", nil)
+	return request[*tg.User](b, "getMe", nil)
 }
 
 // LogOut method.
 //
 // Use this method to log out from the cloud Bot API server before launching the bot locally.
 func (b *Bot) LogOut() error {
-	return performRequestEmpty(b, "logOut", nil)
+	return b.requestEmpty("logOut", nil)
 }
 
 // Close method.
 //
 // Use this method to close the bot instance before moving it from one local server to another.
 func (b *Bot) Close() error {
-	return performRequestEmpty(b, "close", nil)
+	return b.requestEmpty("close", nil)
 }
 
 func (b *Bot) getUpdates(ctx context.Context, offset, timeout, limit int, allowed []string) ([]tg.Update, error) {
@@ -257,7 +284,7 @@ func (b *Bot) getUpdates(ctx context.Context, offset, timeout, limit int, allowe
 	p.setInt("timeout", timeout)
 	p.setJSON("allowed_updates", allowed)
 
-	return performRequestContext[[]tg.Update](ctx, b, "getUpdates", p)
+	return requestContext[[]tg.Update](ctx, b, "getUpdates", p)
 }
 
 type commandParams struct {
@@ -282,11 +309,11 @@ func (b *Bot) getCommands(s tg.CommandScope, lang string) ([]tg.Command, error) 
 		Scope: s,
 		Lang:  lang,
 	}
-	return performRequest[[]tg.Command](b, "getMyCommands", p.params())
+	return request[[]tg.Command](b, "getMyCommands", p.params())
 }
 
 func (b *Bot) setCommands(p *commandParams) error {
-	return performRequestEmpty(b, "setMyCommands", p.params())
+	return b.requestEmpty("setMyCommands", p.params())
 }
 
 func (b *Bot) deleteCommands(s tg.CommandScope, lang string) error {
@@ -294,7 +321,7 @@ func (b *Bot) deleteCommands(s tg.CommandScope, lang string) error {
 		Scope: s,
 		Lang:  lang,
 	}
-	return performRequestEmpty(b, "deleteMyCommands", p.params())
+	return b.requestEmpty("deleteMyCommands", p.params())
 }
 
 // SetDefaultAdminRights changes the default administrator rights requested by the bot
@@ -303,13 +330,13 @@ func (b *Bot) SetDefaultAdminRights(rights *tg.ChatAdministratorRights, forChann
 	p := params{}
 	p.setJSON("rights", rights)
 	p.setBool("for_channels", forChannels)
-	return performRequestEmpty(b, "setMyDefaultAdministratorRights", p)
+	return b.requestEmpty("setMyDefaultAdministratorRights", p)
 }
 
 // GetDefaultAdminRights returns the current default administrator rights of the bot.
 func (b *Bot) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRights, error) {
 	p := params{}.setBool("for_channels", forChannels)
-	return performRequest[*tg.ChatAdministratorRights](b, "getMyDefaultAdministratorRights", p)
+	return request[*tg.ChatAdministratorRights](b, "getMyDefaultAdministratorRights", p)
 }
 
 // SetDefaultChatMenuButton changes the bot's default menu button.
@@ -318,7 +345,7 @@ func (b *Bot) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRigh
 // Full implementation of this method is available in the [Chat].
 func (b *Bot) SetDefaultChatMenuButton(menu tg.MenuButton) error {
 	p := params{}.setJSON("menu_button", menu)
-	return performRequestEmpty(b, "setChatMenuButton", p)
+	return b.requestEmpty("setChatMenuButton", p)
 }
 
 // GetDefaultChatMenuButton returns the current value of the bot's default menu button.
@@ -326,5 +353,5 @@ func (b *Bot) SetDefaultChatMenuButton(menu tg.MenuButton) error {
 // This method is a wrapper for getChatMenuButton without specifying the chat id.
 // Full implementation of this method is available in the [Chat].
 func (b *Bot) GetDefaultChatMenuButton() (*tg.MenuButton, error) {
-	return performRequest[*tg.MenuButton](b, "getChatMenuButton", nil)
+	return request[*tg.MenuButton](b, "getChatMenuButton", nil)
 }

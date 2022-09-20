@@ -103,15 +103,14 @@ func api[T any](c Context, method string, p params, files ...file) (T, error) {
 }
 
 func api1[T any](c Context, method string, p params, files ...file) (T, error) {
-	result, err := performRequest[T](c.bot, method, p, files...)
+	result, err := request[T](c.bot, method, p, files...)
 	if err == nil {
 		return result, nil
 	}
 	if e, ok := err.(*Error); ok {
-		if !e.cancel {
+		if e.Err.Code != 401 {
 			return result, err
 		}
-		err = nil
 	}
 
 	if err != nil {
