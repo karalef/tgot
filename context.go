@@ -8,7 +8,11 @@ import (
 	"tghwbot/bot/tg"
 )
 
-func (b *Bot) makeContext(name string) Context {
+// MakeContext creates new context.
+//
+// The context must be used in a separate goroutine because in case of fatal
+// errors the context will be cancelled and the goroutine will be terminated.
+func (b *Bot) MakeContext(name string) Context {
 	return Context{bot: b, name: name}
 }
 
@@ -16,6 +20,12 @@ func (b *Bot) makeContext(name string) Context {
 type Context struct {
 	bot  *Bot
 	name string
+}
+
+// Child creates sub context.
+func (c Context) Child(name string) Context {
+	c.name += "::" + name
+	return c
 }
 
 // Logger returns context logger.

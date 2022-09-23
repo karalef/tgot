@@ -158,47 +158,47 @@ func (b *Bot) handle(upd *tg.Update) {
 	case upd.Message != nil:
 		b.onMessage(upd.Message)
 	case upd.EditedMessage != nil:
-		ctx := b.makeMessageContext(upd.EditedMessage, "Edited message handler")
+		ctx := b.makeMessageContext(upd.EditedMessage, "EditedMessage")
 		h.OnEditedMessage(ctx, upd.EditedMessage)
 	case upd.ChannelPost != nil:
 		b.onChannelPost(upd.ChannelPost)
 	case upd.EditedChannelPost != nil:
-		ctx := b.makeMessageContext(upd.EditedChannelPost, "Edited channel post handler")
+		ctx := b.makeMessageContext(upd.EditedChannelPost, "EditedPost")
 		h.OnEditedChannelPost(ctx, upd.EditedChannelPost)
 	case upd.CallbackQuery != nil:
 		h.OnCallbackQuery(QueryContext[CallbackAnswer]{
-			Context: b.makeContext("Callback handler"),
+			Context: b.MakeContext("Callback"),
 			queryID: upd.CallbackQuery.ID,
 		}, upd.CallbackQuery)
 	case upd.InlineQuery != nil:
 		h.OnInlineQuery(QueryContext[InlineAnswer]{
-			Context: b.makeContext("Inline handler"),
+			Context: b.MakeContext("Inline"),
 			queryID: upd.InlineQuery.ID,
 		}, upd.InlineQuery)
 	case upd.InlineChosen != nil:
-		h.OnInlineChosen(b.makeContext("Inline chosen handler"), upd.InlineChosen)
+		h.OnInlineChosen(b.MakeContext("InlineChosen"), upd.InlineChosen)
 	case upd.ShippingQuery != nil:
 		h.OnShippingQuery(QueryContext[ShippingAnswer]{
-			Context: b.makeContext("Shipping query handler"),
+			Context: b.MakeContext("ShippingQuery"),
 			queryID: upd.ShippingQuery.ID,
 		}, upd.ShippingQuery)
 	case upd.PreCheckoutQuery != nil:
 		h.OnPreCheckoutQuery(QueryContext[PreCheckoutAnswer]{
-			Context: b.makeContext("Pre checkout query handler"),
+			Context: b.MakeContext("PreCheckoutQuery"),
 			queryID: upd.PreCheckoutQuery.ID,
 		}, upd.PreCheckoutQuery)
 	case upd.Poll != nil:
-		h.OnPoll(b.makeContext("Poll handler"), upd.Poll)
+		h.OnPoll(b.MakeContext("Poll"), upd.Poll)
 	case upd.PollAnswer != nil:
-		h.OnPollAnswer(b.makeContext("Poll answer handler"), upd.PollAnswer)
+		h.OnPollAnswer(b.MakeContext("PollAnswer"), upd.PollAnswer)
 	case upd.MyChatMember != nil:
-		ctx := b.makeChatContext(upd.MyChatMember.Chat, "My chat member handler")
+		ctx := b.makeChatContext(upd.MyChatMember.Chat, "MyChatMember")
 		h.OnMyChatMember(ctx, upd.MyChatMember)
 	case upd.ChatMember != nil:
-		ctx := b.makeChatContext(upd.ChatMember.Chat, "Chat member handler")
+		ctx := b.makeChatContext(upd.ChatMember.Chat, "ChatMember")
 		h.OnChatMember(ctx, upd.ChatMember)
 	case upd.ChatJoinRequest != nil:
-		ctx := b.makeChatContext(upd.ChatJoinRequest.Chat, "Chat join request handler")
+		ctx := b.makeChatContext(upd.ChatJoinRequest.Chat, "JoinRequest")
 		h.OnChatJoinRequest(ctx, upd.ChatJoinRequest)
 	}
 }
@@ -235,7 +235,7 @@ func (b *Bot) onMessage(msg *tg.Message) {
 	}
 
 	if b.handler.OnMessage != nil {
-		b.handler.OnMessage(b.makeMessageContext(msg, "Message handler"), msg)
+		b.handler.OnMessage(b.makeMessageContext(msg, "Message"), msg)
 	}
 }
 
@@ -249,7 +249,7 @@ func (b *Bot) onChannelPost(msg *tg.Message) {
 	}
 
 	if b.handler.OnChannelPost != nil {
-		b.handler.OnChannelPost(b.makeMessageContext(msg, "Channel post handler"), msg)
+		b.handler.OnChannelPost(b.makeMessageContext(msg, "Post"), msg)
 	}
 }
 

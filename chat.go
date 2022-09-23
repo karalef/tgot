@@ -5,7 +5,7 @@ import (
 )
 
 func (b *Bot) makeChatContext(chat *tg.Chat, name string) ChatContext {
-	return ChatContext{Chat: b.makeContext(name).OpenChat(chat.ID)}
+	return ChatContext{Chat: b.MakeContext(name).OpenChat(chat.ID)}
 }
 
 // ChatContext type.
