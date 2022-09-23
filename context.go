@@ -1,11 +1,12 @@
-package bot
+package tgot
 
 import (
 	"io"
 	"runtime"
-	"tghwbot/bot/internal"
-	"tghwbot/bot/logger"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/internal"
+	"github.com/karalef/tgot/logger"
+	"github.com/karalef/tgot/tg"
 )
 
 // MakeContext creates new context.

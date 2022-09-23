@@ -1,4 +1,4 @@
-package bot
+package tgot
 
 import (
 	"context"
@@ -12,8 +12,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"tghwbot/bot/internal"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/internal"
+	"github.com/karalef/tgot/tg"
 )
 
 func makeError[T error](method string, p params, f []file, err T) baseError[T] {

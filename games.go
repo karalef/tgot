@@ -1,6 +1,6 @@
-package bot
+package tgot
 
-import "tghwbot/bot/tg"
+import "github.com/karalef/tgot/tg"
 
 // Game contains information about the game to be sent.
 type Game struct {

@@ -1,8 +1,9 @@
-package bot
+package tgot
 
 import (
 	"strings"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/tg"
 )
 
 func makeHelp(b *Bot) *Command {

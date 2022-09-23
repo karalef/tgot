@@ -1,6 +1,6 @@
-package bot
+package tgot
 
-import "tghwbot/bot/tg"
+import "github.com/karalef/tgot/tg"
 
 // Invoice contains information about the invoice to be sent.
 type Invoice struct {

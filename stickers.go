@@ -1,6 +1,6 @@
-package bot
+package tgot
 
-import "tghwbot/bot/tg"
+import "github.com/karalef/tgot/tg"
 
 // GetStickerSet returns a sticker set.
 func (c Context) GetStickerSet(name string) (*tg.StickerSet, error) {

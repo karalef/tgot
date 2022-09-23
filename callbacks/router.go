@@ -2,16 +2,17 @@ package callbacks
 
 import (
 	"sync"
-	"tghwbot/bot"
-	"tghwbot/bot/tg"
 	"time"
 	"unsafe"
+
+	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/tg"
 )
 
 // NewRouter makes new inited callback router.
 func NewRouter() *Router {
 	return &Router{
-		handlers: make(map[bot.MessageSignature]*handler),
+		handlers: make(map[tgot.MessageSignature]*handler),
 	}
 }
 
@@ -19,11 +20,8 @@ func NewRouter() *Router {
 type Handler interface {
 	Name() string
 
-	// It should return nil if the user passed the filter.
-	Filter(from int64) bool
-
 	// If unreg is true, handler will be automatically deleted.
-	Handle(bot.Context, *tg.CallbackQuery) (ans bot.CallbackAnswer, unreg bool, err error)
+	Handle(tgot.Context, *tg.CallbackQuery) (ans tgot.CallbackAnswer, unreg bool, err error)
 
 	// Specifies when the handler will be automatically unreged.
 	Timeout() time.Time
@@ -31,7 +29,7 @@ type Handler interface {
 	// Called when the handler times out.
 	// The current handler will be automatically unreged so do not
 	// call Unreg from this function as this will cause a deadlock.
-	Close(bot.Context, bot.MessageSignature) error
+	Close(tgot.Context, tgot.MessageSignature) error
 }
 
 type handler struct {
@@ -50,11 +48,11 @@ func (h *handler) unlock() {
 
 // Router routes callback queries.
 type Router struct {
-	handlers map[bot.MessageSignature]*handler
+	handlers map[tgot.MessageSignature]*handler
 	mut      sync.Mutex
 }
 
-func (r *Router) gc(ctx bot.Context, current bot.MessageSignature) (cur bool) {
+func (r *Router) gc(ctx tgot.Context, current tgot.MessageSignature) (cur bool) {
 	t := time.Now()
 	for sig, h := range r.handlers {
 		if t.After(h.Timeout()) {
@@ -76,8 +74,8 @@ func (r *Router) gc(ctx bot.Context, current bot.MessageSignature) (cur bool) {
 // It can be used as [Handler.OnCallbackQuery].
 //
 // myHandler.OnCallbackQuery = myCallbackSystem.Route.
-func (r *Router) Route(qc bot.QueryContext[bot.CallbackAnswer], q *tg.CallbackQuery) {
-	ans := bot.CallbackAnswer{}
+func (r *Router) Route(qc tgot.QueryContext[tgot.CallbackAnswer], q *tg.CallbackQuery) {
+	ans := tgot.CallbackAnswer{}
 	sig := qc.CallbackSignature(q)
 	r.mut.Lock()
 	if r.gc(qc.Context, sig) {
@@ -93,7 +91,7 @@ func (r *Router) Route(qc bot.QueryContext[bot.CallbackAnswer], q *tg.CallbackQu
 	}
 	h.lock()
 	defer h.unlock()
-	if h.invalid || !h.Filter(q.From.ID) {
+	if h.invalid {
 		qc.Answer(ans)
 		r.mut.Unlock()
 		return
@@ -119,7 +117,7 @@ func isNil(a any) bool {
 }
 
 // Reg registers callback handler for message.
-func (r *Router) Reg(sig bot.MessageSignature, h Handler) {
+func (r *Router) Reg(sig tgot.MessageSignature, h Handler) {
 	if isNil(h) || h.Timeout().Before(time.Now()) {
 		return
 	}
@@ -129,7 +127,7 @@ func (r *Router) Reg(sig bot.MessageSignature, h Handler) {
 }
 
 // Unreg deletes handler associated with a message.
-func (r *Router) Unreg(sig bot.MessageSignature) {
+func (r *Router) Unreg(sig tgot.MessageSignature) {
 	r.mut.Lock()
 	delete(r.handlers, sig)
 	r.mut.Unlock()

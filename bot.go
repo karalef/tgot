@@ -1,12 +1,13 @@
-package bot
+package tgot
 
 import (
 	"context"
 	"errors"
 	"net/http"
 	"sync"
-	"tghwbot/bot/logger"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/logger"
+	"github.com/karalef/tgot/tg"
 )
 
 // Config contains bot configuration.

@@ -1,8 +1,9 @@
-package bot
+package tgot
 
 import (
 	"sync"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/tg"
 )
 
 // QueryContext is the common context for all queries that require an answer.

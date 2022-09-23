@@ -1,8 +1,9 @@
-package bot
+package tgot
 
 import (
 	"strings"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/tg"
 )
 
 // Prefix is the character with which commands must begin.

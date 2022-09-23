@@ -1,9 +1,10 @@
-package bot
+package tgot
 
 import (
 	"errors"
 	"strconv"
-	"tghwbot/bot/tg"
+
+	"github.com/karalef/tgot/tg"
 )
 
 // Sendable interface for Chat.Send.
