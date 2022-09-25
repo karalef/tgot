@@ -90,9 +90,12 @@ func (*InputMedia[T]) inputMedia() {}
 
 func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
 	return mergeJSON(i.Data, struct {
-		Type string `json:"type"`
-		InputMedia[T]
-	}{i.Data.inputMediaType(), i})
+		Type      string          `json:"type"`
+		Media     FileSignature   `json:"media"`
+		Caption   string          `json:"caption,omitempty"`
+		ParseMode ParseMode       `json:"parse_mode,omitempty"`
+		Entities  []MessageEntity `json:"caption_entities,omitempty"`
+	}{i.Data.inputMediaType(), i.Media, i.Caption, i.ParseMode, i.Entities})
 }
 
 // NewInputMediaPhoto creates new InputMediaPhoto object.
