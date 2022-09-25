@@ -9,6 +9,9 @@ func mergeJSON(v ...interface{}) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		if string(d) == "{}" {
+			continue
+		}
 		if len(data) == 0 {
 			data = append(data, d...)
 		} else {

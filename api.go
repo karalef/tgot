@@ -47,8 +47,8 @@ func (e baseError[T]) formatData() string {
 	}
 	var sb strings.Builder
 	sb.WriteString(url.Values(e.Params).Encode())
-	sb.WriteByte('\n')
 	for _, f := range e.Files {
+		sb.WriteByte('\n')
 		name, r := f.FileData()
 		sb.WriteString("(file) " + f.field + ": " + name)
 		if r != nil {
