@@ -22,7 +22,7 @@ type SetGameScore struct {
 func (c Context) SetGameScore(sig MessageSignature, userID int64, s SetGameScore) (*tg.Message, error) {
 	p := params{}
 	p.setInt64("user_id", userID)
-	p.setInt("score", s.Score)
+	p.setInt("score", s.Score, true)
 	p.setBool("force", s.Force)
 	p.setBool("disable_edit_message", s.DisableEdit)
 	return c.sig(sig, "setGameScore", p)
