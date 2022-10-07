@@ -1,15 +1,15 @@
 package updates
 
 import (
-	"context"
-
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/tg"
 )
 
 // Poller represents any blocking updates poller.
 type Poller interface {
-	Run(ctx context.Context, api *api.API, handler Handler, allowed []string) error
+	Run(api *api.API, handler Handler, allowed []string) error
+	Shutdown()
+	Close()
 }
 
 var _ Poller = &LongPoller{}
@@ -20,7 +20,8 @@ type Handler func(*tg.Update)
 
 // WebhookPoller represents a webhook server that can send api requests in response to webhook requests.
 type WebhookPoller interface {
-	RunWH(ctx context.Context, api *api.API, handler WHHandler, allowed []string) error
+	Poller
+	RunWH(api *api.API, handler WHHandler, allowed []string) error
 }
 
 var _ WebhookPoller = &Webhooker{}

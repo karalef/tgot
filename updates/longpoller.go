@@ -2,6 +2,7 @@ package updates
 
 import (
 	"context"
+	"sync"
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/tg"
@@ -28,18 +29,39 @@ type LongPoller struct {
 	timeout int
 	limit   int
 
+	wg     sync.WaitGroup
+	cancel context.CancelFunc
+
 	Filter Filter
 }
 
+// Shutdown stops the long poller and waits for all handlers to be completed.
+func (lp *LongPoller) Shutdown() {
+	lp.Close()
+	lp.wg.Wait()
+}
+
+// Close stops the long poller.
+// It panics if the poller is not running.
+func (lp *LongPoller) Close() {
+	lp.cancel()
+}
+
 // Run starts long polling.
-func (lp *LongPoller) Run(ctx context.Context, a *api.API, h Handler, allowed []string) error {
+func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
 	if h == nil {
 		panic("LongPoller: nil handler")
 	}
+
+	ctx := context.Background()
+	ctx, lp.cancel = context.WithCancel(ctx)
+	defer lp.cancel()
+
 	d := api.Data{}
 	d.SetInt("limit", lp.limit)
 	d.SetInt("timeout", lp.timeout)
 	d.SetJSON("allowed", allowed)
+
 	for {
 		d.SetInt("offset", lp.offset)
 		upds, err := api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
@@ -54,7 +76,13 @@ func (lp *LongPoller) Run(ctx context.Context, a *api.API, h Handler, allowed []
 			lp.offset = upds[len(upds)-1].ID
 		}
 		for i := range filter(upds, lp.Filter) {
-			go h(&upds[i])
+			go lp.handle(h, &upds[i])
 		}
 	}
+}
+
+func (lp *LongPoller) handle(h Handler, upd *tg.Update) {
+	lp.wg.Add(1)
+	h(upd)
+	lp.wg.Done()
 }

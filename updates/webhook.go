@@ -57,17 +57,27 @@ type WebhookConfig struct {
 	SecretToken string
 }
 
+// Shutdown gracefully shuts down the server without interrupting any active connections.
+func (wh *Webhooker) Shutdown() {
+	wh.serv.Shutdown(context.Background())
+}
+
+// Close immediately stops the server.
+func (wh *Webhooker) Close() {
+	wh.serv.Close()
+}
+
 // Run starts webhook server.
-func (wh *Webhooker) Run(ctx context.Context, a *api.API, h Handler, allowed []string) error {
+func (wh *Webhooker) Run(a *api.API, h Handler, allowed []string) error {
 	whhandler := func(upd *tg.Update) (string, api.Data) {
 		h(upd)
 		return "", api.Data{}
 	}
-	return wh.RunWH(ctx, a, whhandler, allowed)
+	return wh.RunWH(a, whhandler, allowed)
 }
 
 // RunWH starts webhook server.
-func (wh *Webhooker) RunWH(ctx context.Context, api *api.API, h WHHandler, allowed []string) error {
+func (wh *Webhooker) RunWH(api *api.API, h WHHandler, allowed []string) error {
 	if h == nil {
 		panic("Webhooker: nil handler")
 	}
@@ -97,9 +107,14 @@ func (wh *Webhooker) RunWH(ctx context.Context, api *api.API, h WHHandler, allow
 
 	wh.handler = h
 	if !tls {
-		return wh.serv.ListenAndServe()
+		err = wh.serv.ListenAndServe()
+	} else {
+		err = wh.serv.ListenAndServeTLS(wh.cfg.CertFile, wh.cfg.KeyFile)
 	}
-	return wh.serv.ListenAndServeTLS(wh.cfg.CertFile, wh.cfg.KeyFile)
+	if err == http.ErrServerClosed {
+		err = nil
+	}
+	return err
 }
 
 func writeErr(w http.ResponseWriter, err string) {
