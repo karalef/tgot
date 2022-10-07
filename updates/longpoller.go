@@ -28,7 +28,7 @@ type LongPoller struct {
 	timeout int
 	limit   int
 
-	Filter func(*tg.Update) bool
+	Filter Filter
 }
 
 // Run starts long polling.

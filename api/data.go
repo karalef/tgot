@@ -18,7 +18,8 @@ type Data struct {
 	Files  []File
 }
 
-func (d Data) data() (string, io.Reader) {
+// Data encodes the values into “URL encoded” form or multipart/form-data.
+func (d Data) Data() (string, io.Reader) {
 	for i := range d.Files {
 		if _, r := d.Files[i].FileData(); r != nil {
 			return writeMultipart(d)

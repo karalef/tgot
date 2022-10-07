@@ -65,7 +65,7 @@ func RequestContext[T any](ctx context.Context, a *API, method string, d ...Data
 	if len(d) > 0 {
 		data = d[0]
 	}
-	ctype, reader := data.data()
+	ctype, reader := data.Data()
 
 	var nilResult T
 	u := a.apiURL + a.token + "/" + method
