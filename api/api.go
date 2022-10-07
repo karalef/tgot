@@ -112,3 +112,17 @@ func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
 func (a *API) GetMe() (*tg.User, error) {
 	return Request[*tg.User](a, "getMe")
 }
+
+// LogOut method.
+//
+// Use this method to log out from the cloud Bot API server before launching the bot locally.
+func (a *API) LogOut() error {
+	return a.Request("logOut")
+}
+
+// Close method.
+//
+// Use this method to close the bot instance before moving it from one local server to another.
+func (a *API) Close() error {
+	return a.Request("close")
+}
