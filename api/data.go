@@ -96,7 +96,7 @@ func (d Data) SetJSON(key string, v interface{}) Data {
 }
 
 // SetFile sets file with thumbnail.
-func (d *Data) SetFile(field string, file, thumb tg.FileSignature) {
+func (d *Data) SetFile(field string, file, thumb tg.Inputtable) {
 	if thumb != nil {
 		d.Files = make([]File, 2)
 		d.Files[1] = File{"thumb", thumb}
@@ -107,7 +107,7 @@ func (d *Data) SetFile(field string, file, thumb tg.FileSignature) {
 }
 
 // AddFile adds file.
-func (d *Data) AddFile(field string, file tg.FileSignature) {
+func (d *Data) AddFile(field string, file tg.Inputtable) {
 	d.Files = append(d.Files, File{field, file})
 }
 
@@ -115,7 +115,7 @@ func (d *Data) AddFile(field string, file tg.FileSignature) {
 type File struct {
 	// contains query key or multipart field.
 	Field string
-	tg.FileSignature
+	tg.Inputtable
 }
 
 func writeMultipart(d Data) (string, io.Reader) {
@@ -133,7 +133,7 @@ func writeMultipart(d Data) (string, io.Reader) {
 		}
 
 		for _, file := range d.Files {
-			if _, ok := file.FileSignature.(*tg.InputFile); !ok {
+			if _, ok := file.Inputtable.(*tg.InputFile); !ok {
 				urlid, _ := file.FileData()
 				err := mp.WriteField(file.Field, urlid)
 				if err != nil {

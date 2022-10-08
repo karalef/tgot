@@ -176,8 +176,8 @@ func SetWebhook(a *api.API, s WebhookData) error {
 	d := api.NewData().Set("url", s.URL)
 	if s.Certificate != nil {
 		d.Files = []api.File{{
-			Field:         "certificate",
-			FileSignature: s.Certificate,
+			Field:      "certificate",
+			Inputtable: s.Certificate,
 		}}
 	}
 	d.Set("ip_address", s.IPAddress)

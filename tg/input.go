@@ -5,8 +5,8 @@ import (
 	"io"
 )
 
-// FileSignature is an interface for FileID, FileURL and InputFile.
-type FileSignature interface {
+// Inputtable is an interface for FileID, FileURL and InputFile.
+type Inputtable interface {
 	FileData() (string, io.Reader)
 }
 
@@ -79,7 +79,7 @@ type InputMediaData interface {
 
 // InputMedia represents the content of a media message to be sent.
 type InputMedia[T InputMediaData] struct {
-	Media     FileSignature   `json:"media"`
+	Media     Inputtable      `json:"media"`
 	Caption   string          `json:"caption,omitempty"`
 	ParseMode ParseMode       `json:"parse_mode,omitempty"`
 	Entities  []MessageEntity `json:"caption_entities,omitempty"`
@@ -91,7 +91,7 @@ func (*InputMedia[T]) inputMedia() {}
 func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
 	return mergeJSON(i.Data, struct {
 		Type      string          `json:"type"`
-		Media     FileSignature   `json:"media"`
+		Media     Inputtable      `json:"media"`
 		Caption   string          `json:"caption,omitempty"`
 		ParseMode ParseMode       `json:"parse_mode,omitempty"`
 		Entities  []MessageEntity `json:"caption_entities,omitempty"`
@@ -99,7 +99,7 @@ func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
 }
 
 // NewInputMediaPhoto creates new InputMediaPhoto object.
-func NewInputMediaPhoto(file FileSignature) *InputMedia[InputMediaPhoto] {
+func NewInputMediaPhoto(file Inputtable) *InputMedia[InputMediaPhoto] {
 	return &InputMedia[InputMediaPhoto]{Media: file}
 }
 
@@ -112,11 +112,11 @@ func (InputMediaPhoto) inputMediaType() string {
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
-	Thumbnail         FileSignature `json:"thumb,omitempty"`
-	Width             int           `json:"width,omitempty"`
-	Height            int           `json:"height,omitempty"`
-	Duration          int           `json:"duration,omitempty"`
-	SupportsStreaming bool          `json:"supports_streaming,omitempty"`
+	Thumbnail         Inputtable `json:"thumb,omitempty"`
+	Width             int        `json:"width,omitempty"`
+	Height            int        `json:"height,omitempty"`
+	Duration          int        `json:"duration,omitempty"`
+	SupportsStreaming bool       `json:"supports_streaming,omitempty"`
 }
 
 func (InputMediaVideo) inputMediaType() string {
@@ -126,10 +126,10 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	Thumbnail FileSignature `json:"thumb,omitempty"`
-	Width     int           `json:"width,omitempty"`
-	Height    int           `json:"height,omitempty"`
-	Duration  int           `json:"duration,omitempty"`
+	Thumbnail Inputtable `json:"thumb,omitempty"`
+	Width     int        `json:"width,omitempty"`
+	Height    int        `json:"height,omitempty"`
+	Duration  int        `json:"duration,omitempty"`
 }
 
 func (InputMediaAnimation) inputMediaType() string {
@@ -138,10 +138,10 @@ func (InputMediaAnimation) inputMediaType() string {
 
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
-	Thumbnail FileSignature `json:"thumb,omitempty"`
-	Duration  int           `json:"duration,omitempty"`
-	Performer string        `json:"performer,omitempty"`
-	Title     string        `json:"title,omitempty"`
+	Thumbnail Inputtable `json:"thumb,omitempty"`
+	Duration  int        `json:"duration,omitempty"`
+	Performer string     `json:"performer,omitempty"`
+	Title     string     `json:"title,omitempty"`
 }
 
 func (InputMediaAudio) inputMediaType() string {
@@ -150,8 +150,8 @@ func (InputMediaAudio) inputMediaType() string {
 
 // InputMediaDocument represents a general file to be sent.
 type InputMediaDocument struct {
-	Thumbnail            FileSignature `json:"thumb,omitempty"`
-	DisableTypeDetection bool          `json:"disable_content_type_detection,omitempty"`
+	Thumbnail            Inputtable `json:"thumb,omitempty"`
+	DisableTypeDetection bool       `json:"disable_content_type_detection,omitempty"`
 }
 
 func (InputMediaDocument) inputMediaType() string {

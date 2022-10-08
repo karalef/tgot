@@ -76,7 +76,7 @@ func (r *Router) gc(ctx tgot.Context, current tgot.MessageSignature) (cur bool) 
 // myHandler.OnCallbackQuery = myCallbackSystem.Route.
 func (r *Router) Route(qc tgot.QueryContext[tgot.CallbackAnswer], q *tg.CallbackQuery) {
 	ans := tgot.CallbackAnswer{}
-	sig := qc.CallbackSignature(q)
+	sig := tgot.CallbackSignature(q)
 	r.mut.Lock()
 	if r.gc(qc.Context, sig) {
 		qc.Answer(ans)
