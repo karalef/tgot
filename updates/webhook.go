@@ -19,7 +19,7 @@ func NewWebhook(port int, filter Filter, cfg WebhookConfig) *Webhooker {
 	if cfg.CertFile != "" && cfg.KeyFile == "" || cfg.URL == "" {
 		return nil
 	}
-	wh := &Webhooker{cfg: cfg}
+	wh := &Webhooker{cfg: cfg, Filter: filter}
 	wh.serv = &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
 		Handler: http.HandlerFunc(wh.handle),
@@ -114,6 +114,7 @@ func (wh *Webhooker) RunWH(api *api.API, h WHHandler, allowed []string) error {
 	if err == http.ErrServerClosed {
 		err = nil
 	}
+	wh.Shutdown()
 	return err
 }
 
