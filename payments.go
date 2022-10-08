@@ -1,6 +1,9 @@
 package tgot
 
-import "github.com/karalef/tgot/tg"
+import (
+	"github.com/karalef/tgot/api"
+	"github.com/karalef/tgot/tg"
+)
 
 // Invoice contains information about the invoice to be sent.
 type Invoice struct {
@@ -8,28 +11,30 @@ type Invoice struct {
 	StartParameter string
 }
 
-func (i Invoice) params(p params) {
-	p.set("title", i.Title)
-	p.set("description", i.Description)
-	p.set("payload", i.Payload)
-	p.set("provider_token", i.ProviderToken)
-	p.set("currency", i.Currency)
-	p.setJSON("prices", i.Prices)
-	p.setInt("max_tip_amount", i.MaxTipAmount)
-	p.setJSON("suggested_tip_amounts", i.SuggestedTipAmounts)
-	p.set("start_parameter", i.StartParameter)
-	p.set("provider_data", i.ProviderData)
-	p.set("photo_url", i.PhotoURL)
-	p.setInt("photo_size", i.PhotoSize)
-	p.setInt("photo_width", i.PhotoWidth)
-	p.setInt("photo_height", i.PhotoHeight)
-	p.setBool("need_name", i.NeedName)
-	p.setBool("need_phone_number", i.NeedPhoneNumber)
-	p.setBool("need_email", i.NeedEmail)
-	p.setBool("need_shipping_address", i.NeedShippingAddress)
-	p.setBool("send_phone_number_to_provider", i.SendPhoneNumberToProvider)
-	p.setBool("send_email_to_provider", i.SendEmailToProvider)
-	p.setBool("is_flexible", i.IsFlexible)
+func (i Invoice) data() api.Data {
+	d := api.NewData()
+	d.Set("title", i.Title)
+	d.Set("description", i.Description)
+	d.Set("payload", i.Payload)
+	d.Set("provider_token", i.ProviderToken)
+	d.Set("currency", i.Currency)
+	d.SetJSON("prices", i.Prices)
+	d.SetInt("max_tip_amount", i.MaxTipAmount)
+	d.SetJSON("suggested_tip_amounts", i.SuggestedTipAmounts)
+	d.Set("start_parameter", i.StartParameter)
+	d.Set("provider_data", i.ProviderData)
+	d.Set("photo_url", i.PhotoURL)
+	d.SetInt("photo_size", i.PhotoSize)
+	d.SetInt("photo_width", i.PhotoWidth)
+	d.SetInt("photo_height", i.PhotoHeight)
+	d.SetBool("need_name", i.NeedName)
+	d.SetBool("need_phone_number", i.NeedPhoneNumber)
+	d.SetBool("need_email", i.NeedEmail)
+	d.SetBool("need_shipping_address", i.NeedShippingAddress)
+	d.SetBool("send_phone_number_to_provider", i.SendPhoneNumberToProvider)
+	d.SetBool("send_email_to_provider", i.SendEmailToProvider)
+	d.SetBool("is_flexible", i.IsFlexible)
+	return d
 }
 
 // CreateInvoiceLink contains parameters for creating an invoice link.
@@ -37,22 +42,20 @@ type CreateInvoiceLink struct {
 	tg.InputInvoiceMessageContent
 }
 
-func (c CreateInvoiceLink) params(p params) {
+func (c CreateInvoiceLink) data() api.Data {
 	// since the parameters are exactly the same, except for
 	// StartParameter (since it is empty, it will not be included),
 	// it is possible to use the already existing serialization function.
-	i := Invoice{c.InputInvoiceMessageContent, ""}
-	i.params(p)
+	return Invoice{c.InputInvoiceMessageContent, ""}.data()
 }
 
 // CreateInvoiceLink creates a link for an invoice.
 func (c Context) CreateInvoiceLink(l CreateInvoiceLink) (string, error) {
-	p := params{}
-	l.params(p)
-	return api[string](c, "createInvoiceLink", p)
+	return method[string](c, "createInvoiceLink", l.data())
 }
 
-var _ QueryContext[ShippingAnswer]
+// ShippingContext type.
+type ShippingContext = QueryContext[ShippingAnswer]
 
 // ShippingAnswer represents an answer to shipping query.
 type ShippingAnswer struct {
@@ -61,15 +64,17 @@ type ShippingAnswer struct {
 	ErrorMessage    string
 }
 
-func (a ShippingAnswer) answerData(p params, queryID string) string {
-	p.set("shipping_query_id", queryID)
-	p.setBool("ok", a.OK)
-	p.setJSON("shipping_options", a.ShippingOptions)
-	p.set("error_message", a.ErrorMessage)
-	return "answerShippingQuery"
+func (a ShippingAnswer) answerData(queryID string) (string, api.Data) {
+	d := api.NewData()
+	d.Set("shipping_query_id", queryID)
+	d.SetBool("ok", a.OK)
+	d.SetJSON("shipping_options", a.ShippingOptions)
+	d.Set("error_message", a.ErrorMessage)
+	return "answerShippingQuery", d
 }
 
-var _ QueryContext[PreCheckoutAnswer]
+// PreCheckoutContext type.
+type PreCheckoutContext = QueryContext[PreCheckoutAnswer]
 
 // PreCheckoutAnswer represents an answer to pre-checkout query.
 type PreCheckoutAnswer struct {
@@ -77,9 +82,10 @@ type PreCheckoutAnswer struct {
 	ErrorMessage string
 }
 
-func (a PreCheckoutAnswer) answerData(p params, queryID string) string {
-	p.set("pre_checkout_query_id", queryID)
-	p.setBool("ok", a.OK)
-	p.set("error_message", a.ErrorMessage)
-	return "answerPreCheckoutQuery"
+func (a PreCheckoutAnswer) answerData(queryID string) (string, api.Data) {
+	d := api.NewData()
+	d.Set("pre_checkout_query_id", queryID)
+	d.SetBool("ok", a.OK)
+	d.Set("error_message", a.ErrorMessage)
+	return "answerPreCheckoutQuery", d
 }

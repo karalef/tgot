@@ -1,6 +1,9 @@
 package tgot
 
-import "github.com/karalef/tgot/tg"
+import (
+	"github.com/karalef/tgot/api"
+	"github.com/karalef/tgot/tg"
+)
 
 func (b *Bot) makeChatContext(chat *tg.Chat, name string) ChatContext {
 	return ChatContext{Chat: b.MakeContext(name).OpenChat(chat.ID)}
@@ -13,7 +16,7 @@ type ChatContext struct {
 
 // Send sends the Sendable and returns only an error.
 // It is short version for [ChatContext.Chat.Send].
-func (c ChatContext) Send(s Sendable) error {
+func (c ChatContext) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) error {
 	_, err := c.Chat.Send(s)
 	return err
 }
@@ -34,56 +37,59 @@ type Chat struct {
 	username string
 }
 
-func (c *Chat) setChatID(p params, key ...string) {
+func (c *Chat) setChatID(d *api.Data, key ...string) {
 	k := "chat_id"
 	if len(key) > 0 {
 		k = key[0]
 	}
 	if c.chatID != 0 {
-		p.setInt64(k, c.chatID)
+		d.SetInt64(k, c.chatID)
 	} else {
-		p.set(k, c.username)
+		d.Set(k, c.username)
 	}
 }
 
-func (c *Chat) method(method string, p params, files ...file) error {
-	_, err := chatMethod[bool](c, method, p, files...)
+func (c *Chat) method(method string, d ...api.Data) error {
+	_, err := chatMethod[bool](c, method, d...)
 	return err
 }
 
-func chatMethod[T any](c *Chat, method string, p params, files ...file) (T, error) {
-	if p == nil {
-		p = params{}
+func chatMethod[T any](c *Chat, meth string, d ...api.Data) (T, error) {
+	var data api.Data
+	if len(d) > 0 {
+		data = d[0]
+	} else {
+		data = api.NewData()
 	}
 
-	c.setChatID(p)
-	return api[T](c.Context, method, p, files...)
+	c.setChatID(&data)
+	return method[T](c.Context, meth, data)
 }
 
 // GetInfo returns up to date information about the chat.
 func (c *Chat) GetInfo() (*tg.Chat, error) {
-	return chatMethod[*tg.Chat](c, "getChat", nil)
+	return chatMethod[*tg.Chat](c, "getChat")
 }
 
 // GetAdmins returns a list of administrators in a chat.
 func (c *Chat) GetAdmins() ([]tg.ChatMember, error) {
-	return chatMethod[[]tg.ChatMember](c, "getChatAdministrators", nil)
+	return chatMethod[[]tg.ChatMember](c, "getChatAdministrators")
 }
 
 // MemberCount returns the number of members in a chat.
 func (c *Chat) MemberCount() (int, error) {
-	return chatMethod[int](c, "getChatMemberCount", nil)
+	return chatMethod[int](c, "getChatMemberCount")
 }
 
 // GetMember returns information about a member of a chat.
 func (c *Chat) GetMember(userID int64) (*tg.ChatMember, error) {
-	p := params{}.setInt64("user_id", userID)
-	return chatMethod[*tg.ChatMember](c, "getChatMember", p)
+	d := api.NewData().SetInt64("user_id", userID)
+	return chatMethod[*tg.ChatMember](c, "getChatMember", d)
 }
 
 // Leave a group, supergroup or channel.
 func (c *Chat) Leave() error {
-	return c.method("leaveChat", nil)
+	return c.method("leaveChat")
 }
 
 // Forward contains paramenets for forwarding the message.
@@ -96,12 +102,12 @@ type Forward struct {
 // Forward forwards messages of any kind.
 // Service messages can't be forwarded.
 func (c *Chat) Forward(from *Chat, fwd Forward) (*tg.Message, error) {
-	p := params{}
-	from.setChatID(p, "from_chat_id")
-	p.setInt("message_id", fwd.MessageID)
-	p.setBool("disable_notification", fwd.DisableNotification)
-	p.setBool("protect_content", fwd.ProtectContent)
-	return chatMethod[*tg.Message](c, "forwardMessage", p)
+	d := api.NewData()
+	from.setChatID(&d, "from_chat_id")
+	d.SetInt("message_id", fwd.MessageID)
+	d.SetBool("disable_notification", fwd.DisableNotification)
+	d.SetBool("protect_content", fwd.ProtectContent)
+	return chatMethod[*tg.Message](c, "forwardMessage", d)
 }
 
 // ForwardTo forwards the message to the specified chat instead of current.
@@ -117,19 +123,19 @@ type Copy struct {
 
 // Copy copies messages of any kind.
 // Service messages and invoice messages can't be copied.
-func (c *Chat) Copy(from *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Message, error) {
-	p := params{}
-	from.setChatID(p, "from_chat_id")
-	p.setInt("message_id", cp.MessageID)
-	cp.CaptionData.embed(p)
+func (c *Chat) Copy(from *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
+	d := api.NewData()
+	from.setChatID(&d, "from_chat_id")
+	d.SetInt("message_id", cp.MessageID)
+	cp.CaptionData.embed(&d)
 	if len(opts) > 0 {
-		opts[0].embed(p)
+		opts[0].embed(&d)
 	}
-	return chatMethod[*tg.Message](c, "copyMessage", p)
+	return chatMethod[*tg.MessageID](c, "copyMessage", d)
 }
 
 // CopyTo copies the message to the specified chat instead of current.
-func (c *Chat) CopyTo(to *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Message, error) {
+func (c *Chat) CopyTo(to *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
 	return to.Copy(c, cp)
 }
 
@@ -144,69 +150,65 @@ func (c *Chat) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Messag
 		return nil, nil
 	}
 
-	p := params{}
-	files := s.data(p)
+	method, d := s.data()
 	if len(opts) > 0 {
-		opts[0].embed(p)
+		opts[0].embed(&d)
 	}
 
-	return chatMethod[*tg.Message](c, s.method(), p, files...)
+	return chatMethod[*tg.Message](c, method, d)
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
-func (c *Chat) SendMediaGroup(mg MediaGroup, opts ...MediaGroupSendOptions) ([]tg.Message, error) {
-	p := params{}
-	files, err := mg.data(p)
+func (c *Chat) SendMediaGroup(mg MediaGroup, opts ...BaseSendOptions) ([]tg.Message, error) {
+	d, err := mg.data()
 	if err != nil {
 		return nil, err
 	}
 	if len(opts) > 0 {
-		opts[0].embed(p)
+		opts[0].embed(&d)
 	}
-	return chatMethod[[]tg.Message](c, "sendMediaGroup", p, files...)
+	return chatMethod[[]tg.Message](c, "sendMediaGroup", d)
 }
 
 // SendChatAction sends chat action to tell the user that something
 // is happening on the bot's side.
 func (c *Chat) SendChatAction(act tg.ChatAction) error {
-	p := params{}.set("action", string(act))
-	return c.method("sendChatAction", p)
+	d := api.NewData().Set("action", string(act))
+	return c.method("sendChatAction", d)
 }
 
 // SendInvoice sends an invoice.
 func (c *Chat) SendInvoice(i Invoice, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
-	p := params{}
-	i.params(p)
+	d := i.data()
 	if len(opts) > 0 {
-		opts[0].embed(p)
+		opts[0].embed(&d)
 	}
-	return chatMethod[*tg.Message](c, "sendInvoice", p)
+	return chatMethod[*tg.Message](c, "sendInvoice", d)
 }
 
 // SendGame sends a game.
 func (c *Chat) SendGame(g Game, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
-	p := params{}
-	g.params(p)
+	d := g.data()
 	if len(opts) > 0 {
-		opts[0].embed(p)
+		opts[0].embed(&d)
 	}
-	return chatMethod[*tg.Message](c, "sendGame", p)
+	return chatMethod[*tg.Message](c, "sendGame", d)
 }
 
 // StopPoll stops a poll which was sent by the bot.
 func (c *Chat) StopPoll(msgID int, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Poll, error) {
-	p := params{}
-	p.setInt("message_id", msgID)
+	d := api.NewData()
+	d.SetInt("message_id", msgID)
 	if len(replyMarkup) > 0 {
-		p.setJSON("reply_markup", replyMarkup[0])
+		d.SetJSON("reply_markup", replyMarkup[0])
 	}
-	return chatMethod[*tg.Poll](c, "stopPoll", p)
+	return chatMethod[*tg.Poll](c, "stopPoll", d)
 }
 
 // DeleteMessage deletes a message, including service messages.
 func (c *Chat) DeleteMessage(msgID int) error {
-	p := params{}.setInt("message_id", msgID)
-	return c.method("deleteMessage", p)
+	d := api.NewData().SetInt("message_id", msgID)
+	return c.method("deleteMessage", d)
 }
 
 // Ban contains parameters for banning a chat member.
@@ -218,79 +220,79 @@ type Ban struct {
 
 // Ban bans a user in a group, a supergroup or a channel.
 func (c *Chat) Ban(b Ban) error {
-	p := params{}
-	p.setInt64("user_id", b.UserID)
+	d := api.NewData()
+	d.SetInt64("user_id", b.UserID)
 	if b.UntilDate != nil {
-		p.setInt64("until_date", *b.UntilDate, true)
+		d.SetInt64("until_date", *b.UntilDate, true)
 	}
-	p.setBool("revoke_messages", b.RevokeMessages)
-	return c.method("banChatMember", p)
+	d.SetBool("revoke_messages", b.RevokeMessages)
+	return c.method("banChatMember", d)
 }
 
 // Unban unbans a previously banned user in a supergroup or channel.
 func (c *Chat) Unban(userID int64, onlyIfBanned bool) error {
-	p := params{}.setInt64("user_id", userID)
-	p.setBool("only_if_banned", onlyIfBanned)
-	return c.method("unbanChatMember", p)
+	d := api.NewData().SetInt64("user_id", userID)
+	d.SetBool("only_if_banned", onlyIfBanned)
+	return c.method("unbanChatMember", d)
 }
 
 // Restrict restricts a user in a supergroup.
 func (c *Chat) Restrict(userID int64, perms tg.ChatPermissions, until *int64) error {
-	p := params{}.setInt64("user_id", userID)
-	p.setJSON("permissions", perms)
+	d := api.NewData().SetInt64("user_id", userID)
+	d.SetJSON("permissions", perms)
 	if until != nil {
-		p.setInt64("until_date", *until, true)
+		d.SetInt64("until_date", *until, true)
 	}
-	return c.method("restrictChatMember", p)
+	return c.method("restrictChatMember", d)
 }
 
 // Promote promotes or demotes a user in a supergroup or a channel.
 func (c *Chat) Promote(userID int64, rights tg.ChatAdministratorRights) error {
-	p := params{}.setInt64("user_id", userID)
-	p.setBool("is_anonymous", rights.IsAnonymous)
-	p.setBool("can_manage_chat", rights.CanManageChat)
-	p.setBool("can_delete_messages", rights.CanDeleteMessages)
-	p.setBool("can_manage_video_chats", rights.CanManageVideoChats)
-	p.setBool("can_restrict_members", rights.CanRestrictMembers)
-	p.setBool("can_promote_members", rights.CanPromoteMembers)
-	p.setBool("can_change_info", rights.CanChangeInfo)
-	p.setBool("can_invite_users", rights.CanInviteUsers)
-	p.setBool("can_post_messages", rights.CanPostMessages)
-	p.setBool("can_edit_messages", rights.CanEditMessages)
-	p.setBool("can_pin_messages", rights.CanPinMessages)
-	return c.method("promoteChatMember", p)
+	d := api.NewData().SetInt64("user_id", userID)
+	d.SetBool("is_anonymous", rights.IsAnonymous)
+	d.SetBool("can_manage_chat", rights.CanManageChat)
+	d.SetBool("can_delete_messages", rights.CanDeleteMessages)
+	d.SetBool("can_manage_video_chats", rights.CanManageVideoChats)
+	d.SetBool("can_restrict_members", rights.CanRestrictMembers)
+	d.SetBool("can_promote_members", rights.CanPromoteMembers)
+	d.SetBool("can_change_info", rights.CanChangeInfo)
+	d.SetBool("can_invite_users", rights.CanInviteUsers)
+	d.SetBool("can_post_messages", rights.CanPostMessages)
+	d.SetBool("can_edit_messages", rights.CanEditMessages)
+	d.SetBool("can_pin_messages", rights.CanPinMessages)
+	return c.method("promoteChatMember", d)
 }
 
 // SetAdminTitle sets a custom title for an administrator in a supergroup promoted by the bot.
 func (c *Chat) SetAdminTitle(userID int64, title string) error {
-	p := params{}
-	p.setInt64("user_id", userID)
-	p.set("custom_title", title)
-	return c.method("setChatAdministratorCustomTitle", p)
+	d := api.NewData()
+	d.SetInt64("user_id", userID)
+	d.Set("custom_title", title)
+	return c.method("setChatAdministratorCustomTitle", d)
 }
 
 // BanSenderChat bans a channel chat in a supergroup or a channel.
 func (c *Chat) BanSenderChat(senderID int64) error {
-	p := params{}.setInt64("sender_chat_id", senderID)
-	return c.method("banChatSenderChat", p)
+	d := api.NewData().SetInt64("sender_chat_id", senderID)
+	return c.method("banChatSenderChat", d)
 }
 
 // UnbanSenderChat unbans a previously banned channel chat in a supergroup or channel.
 func (c *Chat) UnbanSenderChat(senderID int64) error {
-	p := params{}.setInt64("sender_chat_id", senderID)
-	return c.method("unbanChatSenderChat", p)
+	d := api.NewData().SetInt64("sender_chat_id", senderID)
+	return c.method("unbanChatSenderChat", d)
 }
 
 // SetPermissions sets default chat permissions for all members.
 func (c *Chat) SetPermissions(perms tg.ChatPermissions) error {
-	p := params{}.setJSON("permissions", perms)
-	return c.method("setChatPermissions", p)
+	d := api.NewData().SetJSON("permissions", perms)
+	return c.method("setChatPermissions", d)
 }
 
 // ExportInviteLink generates a new primary invite link for a chat;
 // any previously generated primary link is revoked.
 func (c *Chat) ExportInviteLink() (string, error) {
-	return chatMethod[string](c, "exportChatInviteLink", nil)
+	return chatMethod[string](c, "exportChatInviteLink")
 }
 
 // InviteLink contains parameters for manipulations with invite links.
@@ -301,106 +303,104 @@ type InviteLink struct {
 	CreatesJoinRequest bool
 }
 
-func (i InviteLink) params(p params) {
-	p.set("name", i.Name)
-	p.setInt64("expire_date", i.ExpireDate)
-	p.setInt("member_limit", i.MemberLimit)
-	p.setBool("creates_join_request", i.CreatesJoinRequest)
+func (i InviteLink) data() api.Data {
+	d := api.NewData()
+	d.Set("name", i.Name)
+	d.SetInt64("expire_date", i.ExpireDate)
+	d.SetInt("member_limit", i.MemberLimit)
+	d.SetBool("creates_join_request", i.CreatesJoinRequest)
+	return d
 }
 
 // CreateInviteLink creates an additional invite link for a chat.
 func (c *Chat) CreateInviteLink(i InviteLink) (*tg.ChatInviteLink, error) {
-	p := params{}
-	i.params(p)
-	return chatMethod[*tg.ChatInviteLink](c, "createChatInviteLink", p)
+	return chatMethod[*tg.ChatInviteLink](c, "createChatInviteLink", i.data())
 }
 
 // EditInviteLink edits a non-primary invite link created by the bot.
 func (c *Chat) EditInviteLink(link string, i InviteLink) (*tg.ChatInviteLink, error) {
-	p := params{}.set("invite_link", link)
-	i.params(p)
-	return chatMethod[*tg.ChatInviteLink](c, "editChatInviteLink", p)
+	d := i.data().Set("invite_link", link)
+	return chatMethod[*tg.ChatInviteLink](c, "editChatInviteLink", d)
 }
 
 // RevokeInviteLink revokes an invite link created by the bot.
 func (c *Chat) RevokeInviteLink(link string) (*tg.ChatInviteLink, error) {
-	p := params{}.set("invite_link", link)
-	return chatMethod[*tg.ChatInviteLink](c, "revokeChatInviteLink", p)
+	d := api.NewData().Set("invite_link", link)
+	return chatMethod[*tg.ChatInviteLink](c, "revokeChatInviteLink", d)
 }
 
 // ApproveJoinRequest approves a chat join request.
 func (c *Chat) ApproveJoinRequest(userID int64) error {
-	p := params{}.setInt64("user_id", userID)
-	return c.method("approveChatJoinRequest", p)
+	d := api.NewData().SetInt64("user_id", userID)
+	return c.method("approveChatJoinRequest", d)
 }
 
 // DeclineJoinRequest declines a chat join request.
 func (c *Chat) DeclineJoinRequest(userID int64) error {
-	p := params{}.setInt64("user_id", userID)
-	return c.method("declineChatJoinRequest", p)
+	d := api.NewData().SetInt64("user_id", userID)
+	return c.method("declineChatJoinRequest", d)
 }
 
 // SetPhoto sets a new profile photo for the chat.
 func (c *Chat) SetPhoto(photo *tg.InputFile) error {
-	return c.method("setChatPhoto", nil, file{
-		field:         "photo",
-		FileSignature: photo,
-	})
+	d := api.NewData()
+	d.SetFile("photo", photo, nil)
+	return c.method("setChatPhoto", d)
 }
 
 // DeletePhoto deletes a chat photo.
 func (c *Chat) DeletePhoto() error {
-	return c.method("deleteChatPhoto", nil)
+	return c.method("deleteChatPhoto")
 }
 
 // SetTitle change the title of a chat.
 func (c *Chat) SetTitle(title string) error {
-	p := params{}.set("title", title)
-	return c.method("setChatTitle", p)
+	d := api.NewData().Set("title", title)
+	return c.method("setChatTitle", d)
 }
 
 // SetDescription changes the description of a group, a supergroup or a channel.
 func (c *Chat) SetDescription(description string) error {
-	p := params{}.set("description", description)
-	return c.method("setChatDescription", p)
+	d := api.NewData().Set("description", description)
+	return c.method("setChatDescription", d)
 }
 
 // PinMessage adds a message to the list of pinned messages in a chat.
 func (c *Chat) PinMessage(msgID int, notify bool) error {
-	p := params{}.setInt("message_id", msgID)
-	p.setBool("disable_notification", !notify)
-	return c.method("pinChatMessage", p)
+	d := api.NewData().SetInt("message_id", msgID)
+	d.SetBool("disable_notification", !notify)
+	return c.method("pinChatMessage", d)
 }
 
 // UnpinMessage removes a message from the list of pinned messages in a chat.
 func (c *Chat) UnpinMessage(msgID int) error {
-	p := params{}.setInt("message_id", msgID)
-	return c.method("unpinChatMessage", p)
+	d := api.NewData().SetInt("message_id", msgID)
+	return c.method("unpinChatMessage", d)
 }
 
 // UnpinAllMessages clears the list of pinned messages in a chat.
 func (c *Chat) UnpinAllMessages() error {
-	return c.method("unpinAllChatMessages", nil)
+	return c.method("unpinAllChatMessages")
 }
 
 // SetStickerSet sets a new group sticker set for a supergroup.
 func (c *Chat) SetStickerSet(stickerSet string) error {
-	p := params{}.set("sticker_set_name", stickerSet)
-	return c.method("setChatStickerSet", p)
+	d := api.NewData().Set("sticker_set_name", stickerSet)
+	return c.method("setChatStickerSet", d)
 }
 
 // DeleteStickerSet deletes a group sticker set from a supergroup.
 func (c *Chat) DeleteStickerSet() error {
-	return c.method("deleteChatStickerSet", nil)
+	return c.method("deleteChatStickerSet")
 }
 
 // SetMenuButton changes the bot's menu button in a private chat.
 func (c *Chat) SetMenuButton(menu tg.MenuButton) error {
-	p := params{}.setJSON("menu_button", menu)
-	return c.method("setChatMenuButton", p)
+	d := api.NewData().SetJSON("menu_button", menu)
+	return c.method("setChatMenuButton", d)
 }
 
 // GetMenuButton returns the current value of the bot's menu button in a private chat.
 func (c *Chat) GetMenuButton() (*tg.MenuButton, error) {
-	return chatMethod[*tg.MenuButton](c, "getChatMenuButton", nil)
+	return chatMethod[*tg.MenuButton](c, "getChatMenuButton")
 }

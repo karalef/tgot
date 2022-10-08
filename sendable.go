@@ -4,13 +4,13 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/tg"
 )
 
 // Sendable interface for Chat.Send.
 type Sendable interface {
-	method() string
-	data(params) []file
+	data() (string, api.Data)
 }
 
 // CaptionData represents caption with entities and parse mode.
@@ -20,26 +20,10 @@ type CaptionData struct {
 	Entities  []tg.MessageEntity
 }
 
-func (c CaptionData) embed(p params) {
-	p.set("caption", c.Caption)
-	p.set("parse_mode", string(c.ParseMode))
-	p.setJSON("caption_entities", c.Entities)
-}
-
-// BaseFile is common structure for single file with thumbnail.
-type BaseFile struct {
-	File      tg.FileSignature
-	Thumbnail tg.FileSignature
-}
-
-func (b BaseFile) files(field string) (f []file) {
-	if b.Thumbnail != nil {
-		f = make([]file, 1, 2)
-		f[0] = file{"thumb", b.Thumbnail}
-	} else {
-		f = make([]file, 0, 1)
-	}
-	return append(f, file{field, b.File})
+func (c CaptionData) embed(d *api.Data) {
+	d.Set("caption", c.Caption)
+	d.Set("parse_mode", string(c.ParseMode))
+	d.SetJSON("caption_entities", c.Entities)
 }
 
 // BaseSendOptions contains common send* parameters for all send methods.
@@ -50,11 +34,11 @@ type BaseSendOptions struct {
 	AllowSendingWithoutReply bool
 }
 
-func (o BaseSendOptions) embed(p params) {
-	p.setBool("disable_notification", o.DisableNotification)
-	p.setBool("protect_content", o.ProtectContent)
-	p.setInt("reply_to_message_id", o.ReplyTo)
-	p.setBool("allow_sending_without_reply", o.AllowSendingWithoutReply)
+func (o BaseSendOptions) embed(d *api.Data) {
+	d.SetBool("disable_notification", o.DisableNotification)
+	d.SetBool("protect_content", o.ProtectContent)
+	d.SetInt("reply_to_message_id", o.ReplyTo)
+	d.SetBool("allow_sending_without_reply", o.AllowSendingWithoutReply)
 }
 
 // SendOptions cointains common send* parameters.
@@ -63,20 +47,13 @@ type SendOptions[T tg.ReplyMarkup] struct {
 	ReplyMarkup T
 }
 
-func (o SendOptions[T]) embed(p params) {
-	o.BaseSendOptions.embed(p)
-	p.setJSON("reply_markup", o.ReplyMarkup)
+func (o SendOptions[T]) embed(d *api.Data) {
+	o.BaseSendOptions.embed(d)
+	d.SetJSON("reply_markup", o.ReplyMarkup)
 }
-
-// MediaGroupSendOptions contains sending options for sendMediaGroup.
-type MediaGroupSendOptions = BaseSendOptions
 
 // NewMessage makes a new message.
-func NewMessage(text string) Message {
-	return Message{
-		Text: text,
-	}
-}
+func NewMessage(text string) Message { return Message{Text: text} }
 
 var _ Sendable = Message{}
 
@@ -88,110 +65,79 @@ type Message struct {
 	DisableWebPagePreview bool
 }
 
-func (Message) method() string {
-	return "sendMessage"
-}
-
-func (m Message) data(p params) []file {
-	p.set("text", m.Text)
-	p.set("parse_mode", string(m.ParseMode))
-	p.setJSON("entities", m.Entities)
-	p.setBool("disable_web_page_preview", m.DisableWebPagePreview)
-	return nil
+func (m Message) data() (string, api.Data) {
+	d := api.NewData()
+	d.Set("text", m.Text)
+	d.Set("parse_mode", string(m.ParseMode))
+	d.SetJSON("entities", m.Entities)
+	d.SetBool("disable_web_page_preview", m.DisableWebPagePreview)
+	return "sendMessage", d
 }
 
 // NewPhoto makes a new photo.
-func NewPhoto(photo tg.FileSignature) Photo {
-	return Photo{
-		Photo: photo,
-	}
-}
+func NewPhoto(photo tg.Inputtable) Photo { return Photo{Photo: photo} }
 
 var _ Sendable = Photo{}
 
 // Photo contains information about the photo to be sent.
 type Photo struct {
-	Photo tg.FileSignature
+	Photo tg.Inputtable
 	CaptionData
 }
 
-func (Photo) method() string {
-	return "sendPhoto"
-}
-
-func (ph Photo) data(p params) []file {
-	ph.CaptionData.embed(p)
-	return []file{{"photo", ph.Photo}}
-}
-
-// NewAudio makes a new audio.
-func NewAudio(audio tg.FileSignature) Audio {
-	return Audio{
-		BaseFile: BaseFile{File: audio},
-	}
+func (ph Photo) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("photo", ph.Photo, nil)
+	ph.CaptionData.embed(&d)
+	return "sendPhoto", d
 }
 
 var _ Sendable = Audio{}
 
 // Audio contains information about the audio to be sent.
 type Audio struct {
-	BaseFile
+	Audio     tg.Inputtable
+	Thumbnail tg.Inputtable
 	CaptionData
 	Duration  int
 	Performer string
 	Title     string
 }
 
-func (Audio) method() string {
-	return "sendAudio"
-}
-
-func (a Audio) data(p params) []file {
-	a.CaptionData.embed(p)
-	p.setInt("duration", a.Duration)
-	p.set("performer", a.Performer)
-	p.set("title", a.Title)
-	return a.BaseFile.files("audio")
-}
-
-// NewDocument makes a new document.
-func NewDocument(document tg.FileSignature) Document {
-	return Document{
-		BaseFile: BaseFile{File: document},
-	}
+func (a Audio) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("audio", a.Audio, a.Thumbnail)
+	a.CaptionData.embed(&d)
+	d.SetInt("duration", a.Duration)
+	d.Set("performer", a.Performer)
+	d.Set("title", a.Title)
+	return "sendAudio", d
 }
 
 var _ Sendable = Document{}
 
 // Document contains information about the document to be sent.
 type Document struct {
-	BaseFile
+	Document  tg.Inputtable
+	Thumbnail tg.Inputtable
 	CaptionData
 	DisableTypeDetection bool
 }
 
-func (Document) method() string {
-	return "sendDocument"
-}
-
-func (d Document) data(p params) []file {
-	d.CaptionData.embed(p)
-	p.setBool("disable_content_type_detection", d.DisableTypeDetection)
-	return d.BaseFile.files("document")
-}
-
-// NewVideo makes a new video.
-func NewVideo(video tg.FileSignature) Video {
-	return Video{
-		BaseFile: BaseFile{File: video},
-	}
+func (d Document) data() (string, api.Data) {
+	data := api.NewData()
+	data.SetFile("document", d.Document, d.Thumbnail)
+	d.CaptionData.embed(&data)
+	data.SetBool("disable_content_type_detection", d.DisableTypeDetection)
+	return "sendDocument", data
 }
 
 var _ Sendable = Video{}
 
 // Video contains information about the video to be sent.
 type Video struct {
-	BaseFile
+	Video     tg.Inputtable
+	Thumbnail tg.Inputtable
 	CaptionData
 	Duration          int
 	Width             int
@@ -199,116 +145,89 @@ type Video struct {
 	SupportsStreaming bool
 }
 
-func (Video) method() string {
-	return "sendVideo"
-}
-
-func (v Video) data(p params) []file {
-	p.setInt("duration", v.Duration)
-	p.setInt("width", v.Width)
-	p.setInt("height", v.Height)
-	v.CaptionData.embed(p)
-	p.setBool("supports_streaming", v.SupportsStreaming)
-	return v.BaseFile.files("video")
-}
-
-// NewAnimation makes a new animation.
-func NewAnimation(animation tg.FileSignature) Video {
-	return Video{
-		BaseFile: BaseFile{File: animation},
-	}
+func (v Video) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("video", v.Video, v.Thumbnail)
+	v.CaptionData.embed(&d)
+	d.SetInt("duration", v.Duration)
+	d.SetInt("width", v.Width)
+	d.SetInt("height", v.Height)
+	d.SetBool("supports_streaming", v.SupportsStreaming)
+	return "sendVideo", d
 }
 
 var _ Sendable = Animation{}
 
 // Animation contains information about the animation to be sent.
 type Animation struct {
-	BaseFile
+	Animation tg.Inputtable
+	Thumbnail tg.Inputtable
 	CaptionData
 	Duration int
 	Width    int
 	Height   int
 }
 
-func (Animation) method() string {
-	return "sendAnimation"
-}
-
-func (a Animation) data(p params) []file {
-	p.setInt("duration", a.Duration)
-	p.setInt("width", a.Width)
-	p.setInt("height", a.Height)
-	a.CaptionData.embed(p)
-	return a.BaseFile.files("animation")
-}
-
-// NewVoice makes a new voice.
-func NewVoice(voice tg.FileSignature) Voice {
-	return Voice{
-		Voice: voice,
-	}
+func (a Animation) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("animation", a.Animation, a.Thumbnail)
+	a.CaptionData.embed(&d)
+	d.SetInt("duration", a.Duration)
+	d.SetInt("width", a.Width)
+	d.SetInt("height", a.Height)
+	return "sendAnimation", d
 }
 
 var _ Sendable = Voice{}
 
 // Voice contains information about the voice to be sent.
 type Voice struct {
-	Voice tg.FileSignature
+	Voice tg.Inputtable
 	CaptionData
 	Duration int
 }
 
-func (Voice) method() string {
-	return "sendVoice"
-}
-
-func (v Voice) data(p params) []file {
-	v.CaptionData.embed(p)
-	p.setInt("duration", v.Duration)
-	return []file{{"voice", v.Voice}}
-}
-
-// NewVideoNote makes a new video note.
-func NewVideoNote(videoNote tg.FileSignature) VideoNote {
-	return VideoNote{
-		BaseFile: BaseFile{File: videoNote},
-	}
+func (v Voice) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("voice", v.Voice, nil)
+	v.CaptionData.embed(&d)
+	d.SetInt("duration", v.Duration)
+	return "sendVoice", d
 }
 
 var _ Sendable = VideoNote{}
 
 // VideoNote contains information about the video note to be sent.
 type VideoNote struct {
-	BaseFile
-	Duration int
-	Length   int
+	VideoNote tg.Inputtable
+	Thumbnail tg.Inputtable
+	Duration  int
+	Length    int
 }
 
-func (VideoNote) method() string {
-	return "sendVideoNote"
-}
-
-func (v VideoNote) data(p params) []file {
-	p.setInt("duration", v.Duration)
-	p.setInt("length", v.Length)
-	return v.BaseFile.files("video_note")
+func (v VideoNote) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("video_note", v.VideoNote, v.Thumbnail)
+	d.SetInt("duration", v.Duration)
+	d.SetInt("length", v.Length)
+	return "sendVideoNote", d
 }
 
 // MediaGroup contains information about the media group to be sent.
 type MediaGroup []tg.MediaInputter
 
-func (g MediaGroup) data(p params) ([]file, error) {
-	return prepareInputMedia(p, true, g...)
+func (g MediaGroup) data() (api.Data, error) {
+	d := api.NewData()
+	return d, prepareInputMedia(&d, true, g...)
 }
 
-func prepareInputMedia(p params, mediaGroup bool, media ...tg.MediaInputter) ([]file, error) {
+func prepareInputMedia(d *api.Data, mediaGroup bool, media ...tg.MediaInputter) error {
 	if len(media) == 0 {
-		return nil, nil
+		return nil
 	}
-	var files []file
 	for i := range media {
 		n := strconv.Itoa(i)
-		var med, thumb tg.FileSignature
+		var med, thumb tg.Inputtable
 		switch m := media[i].(type) {
 		case *tg.InputMedia[tg.InputMediaPhoto]:
 			med = m.Media
@@ -321,30 +240,30 @@ func prepareInputMedia(p params, mediaGroup bool, media ...tg.MediaInputter) ([]
 		case *tg.InputMedia[tg.InputMediaAnimation]:
 			med, thumb = m.Media, m.Data.Thumbnail
 		default:
-			return nil, errors.New("unsupported media group entry " + n + " type")
+			return errors.New("unsupported media group entry " + n + " type")
 		}
 		if med == nil {
-			return nil, errors.New("media group entry " + n + " does not exist")
+			return errors.New("media group entry " + n + " does not exist")
 		}
 		if f, ok := med.(*tg.InputFile); ok {
 			field := "file-" + n
-			files = append(files, file{field, f.AsMedia(field)})
+			d.AddFile(field, f.AsMedia(field))
 		}
 		if thumb == nil {
 			continue
 		}
 		if f, ok := thumb.(*tg.InputFile); ok {
 			field := "file-" + n + "-thumb"
-			files = append(files, file{field, f.AsMedia(field)})
+			d.AddFile(field, f.AsMedia(field))
 		}
 	}
 
 	if !mediaGroup {
-		p.setJSON("media", media[0])
+		d.SetJSON("media", media[0])
 	} else {
-		p.setJSON("media", media)
+		d.SetJSON("media", media)
 	}
-	return files, nil
+	return nil
 }
 
 var _ Sendable = Location{}
@@ -352,20 +271,17 @@ var _ Sendable = Location{}
 // Location contains information about the location to be sent.
 type Location tg.Location
 
-func (Location) method() string {
-	return "sendLocation"
-}
-
-func (l Location) data(p params) []file {
-	p.setFloat("latitude", l.Lat)
-	p.setFloat("longitude", l.Long)
+func (l Location) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFloat("latitude", l.Lat)
+	d.SetFloat("longitude", l.Long)
 	if l.HorizontalAccuracy != nil {
-		p.setFloat("horizontal_accuracy", *l.HorizontalAccuracy, true)
+		d.SetFloat("horizontal_accuracy", *l.HorizontalAccuracy, true)
 	}
-	p.setInt("live_period", l.LivePeriod)
-	p.setInt("heading", l.Heading)
-	p.setInt("proximity_alert_radius", l.AlertRadius)
-	return nil
+	d.SetInt("live_period", l.LivePeriod)
+	d.SetInt("heading", l.Heading)
+	d.SetInt("proximity_alert_radius", l.AlertRadius)
+	return "sendLocation", d
 }
 
 var _ Sendable = Venue{}
@@ -382,20 +298,17 @@ type Venue struct {
 	GooglePlaceType string
 }
 
-func (Venue) method() string {
-	return "sendVenue"
-}
-
-func (v Venue) data(p params) []file {
-	p.setFloat("latitude", v.Lat)
-	p.setFloat("longitude", v.Long)
-	p.set("title", v.Title)
-	p.set("address", v.Address)
-	p.set("foursquare_id", v.FoursquareID)
-	p.set("foursquare_type", v.FoursquareType)
-	p.set("google_place_id", v.GooglePlaceID)
-	p.set("google_place_type", v.GooglePlaceType)
-	return nil
+func (v Venue) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFloat("latitude", v.Lat)
+	d.SetFloat("longitude", v.Long)
+	d.Set("title", v.Title)
+	d.Set("address", v.Address)
+	d.Set("foursquare_id", v.FoursquareID)
+	d.Set("foursquare_type", v.FoursquareType)
+	d.Set("google_place_id", v.GooglePlaceID)
+	d.Set("google_place_type", v.GooglePlaceType)
+	return "sendVenue", d
 }
 
 var _ Sendable = Contact{}
@@ -408,16 +321,13 @@ type Contact struct {
 	Vcard       string
 }
 
-func (Contact) method() string {
-	return "sendContact"
-}
-
-func (c Contact) data(p params) []file {
-	p.set("phone_number", c.PhoneNumber)
-	p.set("first_name", c.FirstName)
-	p.set("last_name", c.LastName)
-	p.set("vcard", c.Vcard)
-	return nil
+func (c Contact) data() (string, api.Data) {
+	d := api.NewData()
+	d.Set("phone_number", c.PhoneNumber)
+	d.Set("first_name", c.FirstName)
+	d.Set("last_name", c.LastName)
+	d.Set("vcard", c.Vcard)
+	return "sendContact", d
 }
 
 var _ Sendable = Poll{}
@@ -438,24 +348,21 @@ type Poll struct {
 	IsClosed             bool
 }
 
-func (Poll) method() string {
-	return "sendPoll"
-}
-
-func (poll Poll) data(p params) []file {
-	p.set("question", poll.Question)
-	p.setJSON("options", poll.Options)
-	p.setBool("is_anonymous", poll.IsAnonymous)
-	p.set("type", string(poll.Type))
-	p.setBool("allows_multiple_answers", poll.MultipleAnswers)
-	p.setInt("correct_option_id", poll.CorrectOption)
-	p.set("explanation", poll.Explanation)
-	p.set("explanation_parse_mode", string(poll.ExplanationParseMode))
-	p.setJSON("explanation_entities", poll.ExplanationEntities)
-	p.setInt("open_period", poll.OpenPeriod)
-	p.setInt64("close_date", poll.CloseDate)
-	p.setBool("is_closed", poll.IsClosed)
-	return nil
+func (poll Poll) data() (string, api.Data) {
+	d := api.NewData()
+	d.Set("question", poll.Question)
+	d.SetJSON("options", poll.Options)
+	d.SetBool("is_anonymous", poll.IsAnonymous)
+	d.Set("type", string(poll.Type))
+	d.SetBool("allows_multiple_answers", poll.MultipleAnswers)
+	d.SetInt("correct_option_id", poll.CorrectOption)
+	d.Set("explanation", poll.Explanation)
+	d.Set("explanation_parse_mode", string(poll.ExplanationParseMode))
+	d.SetJSON("explanation_entities", poll.ExplanationEntities)
+	d.SetInt("open_period", poll.OpenPeriod)
+	d.SetInt64("close_date", poll.CloseDate)
+	d.SetBool("is_closed", poll.IsClosed)
+	return "sendPoll", d
 }
 
 var _ Sendable = Dice("")
@@ -463,24 +370,17 @@ var _ Sendable = Dice("")
 // Dice contains information about the dice to be sent.
 type Dice tg.DiceEmoji
 
-func (Dice) method() string {
-	return "sendDice"
-}
-
-func (d Dice) data(p params) []file {
-	p.set("emoji", string(d))
-	return nil
+func (d Dice) data() (string, api.Data) {
+	return "sendDice", api.NewData().Set("emoji", string(d))
 }
 
 // Sticker contains information about the sticker to be sent.
 type Sticker struct {
-	Sticker tg.FileSignature
+	Sticker tg.Inputtable
 }
 
-func (Sticker) method() string {
-	return "sendSticker"
-}
-
-func (s Sticker) data(params) []file {
-	return []file{{field: "sticker", FileSignature: s.Sticker}}
+func (s Sticker) data() (string, api.Data) {
+	d := api.NewData()
+	d.SetFile("sticker", s.Sticker, nil)
+	return "sendSticker", d
 }

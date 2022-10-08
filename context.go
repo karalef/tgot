@@ -4,6 +4,7 @@ import (
 	"io"
 	"runtime"
 
+	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/internal"
 	"github.com/karalef/tgot/logger"
 	"github.com/karalef/tgot/tg"
@@ -52,31 +53,30 @@ func (c Context) OpenChannel(username string) Chat {
 
 // GetMe returns basic information about the bot.
 func (c Context) GetMe() (*tg.User, error) {
-	return api[*tg.User](c, "getMe", nil)
+	return method[*tg.User](c, "getMe")
 }
 
 // GetUserPhotos returns a list of profile pictures for a user.
 func (c Context) GetUserPhotos(userID int64) (*tg.UserProfilePhotos, error) {
-	p := params{}
-	p.setInt64("user_id", userID)
-	return api[*tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
+	d := api.NewData().SetInt64("user_id", userID)
+	return method[*tg.UserProfilePhotos](c, "getUserProfilePhotos", d)
 }
 
 // GetFile returns basic information about a file
 // and prepares it for downloading.
 func (c Context) GetFile(fileID string) (*tg.File, error) {
-	p := params{}.set("file_id", fileID)
-	return api[*tg.File](c, "getFile", p)
+	d := api.NewData().Set("file_id", fileID)
+	return method[*tg.File](c, "getFile", d)
 }
 
 // DownloadReader downloads file as io.ReadCloser from Telegram servers.
 func (c Context) DownloadReader(f *tg.File) (io.ReadCloser, error) {
-	return c.bot.downloadFile(f.FilePath)
+	return c.bot.api.DownloadFile(f.FilePath)
 }
 
 // Download downloads file from Telegram servers.
 func (c Context) Download(f *tg.File) ([]byte, error) {
-	rc, err := c.bot.downloadFile(f.FilePath)
+	rc, err := c.DownloadReader(f)
 	if err != nil {
 		return nil, err
 	}
@@ -104,21 +104,21 @@ func (c Context) DownloadFile(fid string) ([]byte, error) {
 }
 
 // like api(Context, ...) but it only returns an error.
-func (c Context) api(method string, p params, files ...file) error {
-	_, err := api1[internal.Empty](c, method, p, files...)
+func (c Context) method(method string, d ...api.Data) error {
+	_, err := method1[internal.Empty](c, method, d...)
 	return err
 }
 
-func api[T any](c Context, method string, p params, files ...file) (T, error) {
-	return api1[T](c, method, p, files...)
+func method[T any](c Context, method string, d ...api.Data) (T, error) {
+	return method1[T](c, method, d...)
 }
 
-func api1[T any](c Context, method string, p params, files ...file) (T, error) {
-	result, err := request[T](c.bot, method, p, files...)
+func method1[T any](c Context, method string, d ...api.Data) (T, error) {
+	result, err := api.Request[T](c.bot.api, method, d...)
 	if err == nil {
 		return result, nil
 	}
-	if e, ok := err.(*Error); ok {
+	if e, ok := err.(*api.Error); ok {
 		if e.Err.Code != 401 {
 			return result, err
 		}
