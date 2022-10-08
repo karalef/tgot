@@ -57,7 +57,7 @@ func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
 	ctx, lp.cancel = context.WithCancel(ctx)
 	defer lp.wg.Wait()
 
-	d := api.Data{}
+	d := api.NewData()
 	d.SetInt("limit", lp.limit)
 	d.SetInt("timeout", lp.timeout)
 	d.SetJSON("allowed", allowed)

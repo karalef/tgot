@@ -173,7 +173,7 @@ type WebhookData struct {
 // SetWebhook specifies a webhook URL.
 // Use this method to specify a URL and receive incoming updates via an outgoing webhook.
 func SetWebhook(a *api.API, s WebhookData) error {
-	d := api.Data{}.Set("url", s.URL)
+	d := api.NewData().Set("url", s.URL)
 	if s.Certificate != nil {
 		d.Files = []api.File{{
 			Field:         "certificate",
@@ -190,7 +190,7 @@ func SetWebhook(a *api.API, s WebhookData) error {
 
 // DeleteWebhook removes webhook integration if you decide to switch back to getUpdates.
 func DeleteWebhook(a *api.API, dropPending bool) error {
-	d := api.Data{}.SetBool("drop_pending_updates", dropPending)
+	d := api.NewData().SetBool("drop_pending_updates", dropPending)
 	return a.Request("deleteWebhook", d)
 }
 

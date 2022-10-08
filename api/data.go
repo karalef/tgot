@@ -12,6 +12,11 @@ import (
 	"github.com/karalef/tgot/tg"
 )
 
+// NewData creates new Data object.
+func NewData() Data {
+	return Data{Params: url.Values{}}
+}
+
 // Data contains query parameters and files data.
 type Data struct {
 	Params url.Values
@@ -88,6 +93,22 @@ func (d Data) SetJSON(key string, v interface{}) Data {
 		d.Set(key, string(b))
 	}
 	return d
+}
+
+// SetFile sets file with thumbnail.
+func (d *Data) SetFile(field string, file, thumb tg.FileSignature) {
+	if thumb != nil {
+		d.Files = make([]File, 2)
+		d.Files[1] = File{"thumb", thumb}
+	} else {
+		d.Files = make([]File, 1)
+	}
+	d.Files[0] = File{field, file}
+}
+
+// AddFile adds file.
+func (d *Data) AddFile(field string, file tg.FileSignature) {
+	d.Files = append(d.Files, File{field, file})
 }
 
 // File contains the file data with field.
