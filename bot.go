@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/internal"
 	"github.com/karalef/tgot/logger"
 	"github.com/karalef/tgot/tg"
 	"github.com/karalef/tgot/updates"
@@ -19,19 +18,8 @@ type Config struct {
 	Client   *http.Client   // http.DefaultClient if empty
 	Logger   *logger.Logger // logger.Default if empty
 	Handler  Handler
-	Commands []*Command
-	Options  Options
+	Commands Commands
 }
-
-// Options contains bot options.
-type Options = internal.Flag
-
-// available options.
-const (
-	CaptionCommands Options = 1 << iota
-	ChannelCommands
-	MakeHelp
-)
 
 // New creates new bot.
 func New(token string, poller updates.Poller, config Config) (*Bot, error) {
@@ -43,19 +31,15 @@ func New(token string, poller updates.Poller, config Config) (*Bot, error) {
 		return nil, err
 	}
 	if config.Logger == nil {
-		config.Logger = logger.Default("TGO")
+		config.Logger = logger.Default("BOT")
 	}
 	b := Bot{
 		api:     a,
 		log:     config.Logger,
 		poller:  poller,
-		opts:    config.Options,
 		handler: config.Handler,
 		cmds:    config.Commands,
 		me:      *me,
-	}
-	if config.Options.Has(MakeHelp) {
-		b.cmds = append(b.cmds, makeHelp(&b))
 	}
 
 	return &b, nil
@@ -63,28 +47,17 @@ func New(token string, poller updates.Poller, config Config) (*Bot, error) {
 
 // Bot type.
 type Bot struct {
-	api    *api.API
+	api *api.API
+
 	log    *logger.Logger
 	poller updates.Poller
-	opts   Options
 
 	cls sync.Once
 
 	handler Handler
-	cmds    []*Command
+	cmds    Commands
 
 	me tg.User
-}
-
-func (b *Bot) setupCommands() error {
-	commands := make([]tg.Command, len(b.cmds))
-	for i := range b.cmds {
-		commands[i] = tg.Command{
-			Command:     b.cmds[i].Cmd,
-			Description: b.cmds[i].Description,
-		}
-	}
-	return b.api.SetCommands(&api.CommandsData{Commands: commands})
 }
 
 func (b *Bot) cancel(err error) {
@@ -105,9 +78,10 @@ func (b *Bot) Stop() {
 
 // Run starts bot.
 func (b *Bot) Run() error {
-	err := b.setupCommands()
-	if err != nil {
-		return err
+	if b.cmds != nil {
+		if err := b.cmds.Init(b.api); err != nil {
+			return err
+		}
 	}
 
 	allowed := b.handler.allowed(b)
@@ -126,7 +100,7 @@ func (b *Bot) handle(upd *tg.Update) {
 		ctx := b.makeMessageContext(upd.EditedMessage, "EditedMessage")
 		h.OnEditedMessage(ctx, upd.EditedMessage)
 	case upd.ChannelPost != nil:
-		b.onChannelPost(upd.ChannelPost)
+		b.onMessage(upd.ChannelPost)
 	case upd.EditedChannelPost != nil:
 		ctx := b.makeMessageContext(upd.EditedChannelPost, "EditedPost")
 		h.OnEditedChannelPost(ctx, upd.EditedChannelPost)
@@ -168,53 +142,34 @@ func (b *Bot) handle(upd *tg.Update) {
 	}
 }
 
-func (b *Bot) parseCommand(c string) (cmd *Command, args []string) {
-	c, mention, args := ParseCommand(c)
-	if mention != "" && mention != b.me.Username {
-		return nil, nil
+func (b *Bot) onCommand(msg *tg.Message, cmd string, args []string) bool {
+	command := b.cmds.Get(cmd, msg)
+	if command == nil {
+		return false
 	}
-	for _, cmd := range b.cmds {
-		if c == cmd.Cmd {
-			return cmd, args
-		}
+	c := b.makeMessageContext(msg, "Commands::"+command.Name())
+	err := command.Run(c, msg, args)
+	if err != nil {
+		c.bot.log.Error("command %s ended with an error: %s", command.Name(), err.Error())
 	}
-	return nil, nil
-}
-
-func (b *Bot) parseMessage(msg *tg.Message) (cmd *Command, args []string) {
-	text := msg.Text
-	if text == "" {
-		if !b.opts.Has(CaptionCommands) {
-			return
-		}
-		text = msg.Caption
-	}
-	return b.parseCommand(text)
+	return true
 }
 
 func (b *Bot) onMessage(msg *tg.Message) {
-	cmd, args := b.parseMessage(msg)
-	if cmd != nil {
-		b.onCommand(msg, cmd, args)
-		return
-	}
-
-	if b.handler.OnMessage != nil {
-		b.handler.OnMessage(b.makeMessageContext(msg, "Message"), msg)
-	}
-}
-
-func (b *Bot) onChannelPost(msg *tg.Message) {
-	if b.opts.Has(ChannelCommands) {
-		cmd, args := b.parseMessage(msg)
-		if cmd != nil {
-			b.onCommand(msg, cmd, args)
+	if b.cmds != nil {
+		cmd, mention, args := ParseCommandMsg(msg)
+		if cmd != "" && (mention == "" || mention == b.me.Username) &&
+			b.onCommand(msg, cmd, args) {
 			return
 		}
 	}
 
-	if b.handler.OnChannelPost != nil {
-		b.handler.OnChannelPost(b.makeMessageContext(msg, "Post"), msg)
+	h, n := b.handler.OnMessage, "Message"
+	if msg.Chat.IsChannel() {
+		h, n = b.handler.OnChannelPost, "Post"
+	}
+	if h != nil {
+		h(b.makeMessageContext(msg, n), msg)
 	}
 }
 
@@ -246,9 +201,9 @@ func (h *Handler) allowed(b *Bot) []string {
 			list = append(list, s)
 		}
 	}
-	add(h.OnMessage != nil || len(b.cmds) > 0, "message")
+	add(h.OnMessage != nil || b.cmds != nil, "message")
 	add(h.OnEditedMessage != nil, "edited_message")
-	add(h.OnChannelPost != nil || (len(b.cmds) > 0 && b.opts.Has(ChannelCommands)), "channel_post")
+	add(h.OnChannelPost != nil || b.cmds != nil, "channel_post")
 	add(h.OnEditedChannelPost != nil, "edited_channel_post")
 	add(h.OnCallbackQuery != nil, "callback_query")
 	add(h.OnInlineQuery != nil, "inline_query")
