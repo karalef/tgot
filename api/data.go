@@ -26,13 +26,12 @@ type Data struct {
 // Data encodes the values into “URL encoded” form or multipart/form-data.
 func (d Data) Data() (string, io.Reader) {
 	for i := range d.Files {
-		if _, r := d.Files[i].FileData(); r != nil {
+		n, r := d.Files[i].FileData()
+		if r != nil {
 			return writeMultipart(d)
 		}
-	}
-	for i := range d.Files {
-		urlid, _ := d.Files[i].FileData()
-		d.Set(d.Files[i].Field, urlid)
+		d.Set(d.Files[0].Field, n)
+		d.Files = d.Files[1:]
 	}
 	return "application/x-www-form-urlencoded", strings.NewReader(d.Params.Encode())
 }
