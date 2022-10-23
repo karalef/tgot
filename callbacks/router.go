@@ -52,13 +52,10 @@ type Router struct {
 	mut      sync.Mutex
 }
 
-func (r *Router) gc(ctx tgot.Context, current tgot.MessageSignature) (cur bool) {
+func (r *Router) gc(ctx tgot.Context) {
 	t := time.Now()
 	for sig, h := range r.handlers {
 		if t.After(h.Timeout()) {
-			if sig == current {
-				cur = true
-			}
 			delete(r.handlers, sig)
 			err := h.Close(ctx.Child(h.Name()), sig)
 			if err != nil {
@@ -66,7 +63,6 @@ func (r *Router) gc(ctx tgot.Context, current tgot.MessageSignature) (cur bool) 
 			}
 		}
 	}
-	return
 }
 
 // Route handles callback query.
@@ -78,20 +74,13 @@ func (r *Router) Route(qc tgot.QueryContext[tgot.CallbackAnswer], q *tg.Callback
 	ans := tgot.CallbackAnswer{}
 	sig := tgot.CallbackSignature(q)
 	r.mut.Lock()
-	if r.gc(qc.Context, sig) {
-		qc.Answer(ans)
-		r.mut.Unlock()
-		return
-	}
+	r.gc(qc.Context)
 	h, ok := r.handlers[sig]
-	if !ok {
-		qc.Answer(ans)
-		r.mut.Unlock()
-		return
+	if ok {
+		h.lock()
+		defer h.unlock()
 	}
-	h.lock()
-	defer h.unlock()
-	if h.invalid {
+	if !ok || h.invalid {
 		qc.Answer(ans)
 		r.mut.Unlock()
 		return
