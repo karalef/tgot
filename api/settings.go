@@ -10,7 +10,7 @@ type CommandsData struct {
 }
 
 func (cd *CommandsData) data() Data {
-	d := Data{}
+	d := NewData()
 	if cd == nil {
 		return d
 	}
@@ -46,13 +46,13 @@ func (a *API) DeleteCommands(s tg.CommandScope, lang string) error {
 // SetDefaultAdminRights changes the default administrator rights requested by the bot
 // when it's added as an administrator to groups or channels.
 func (a *API) SetDefaultAdminRights(rights *tg.ChatAdministratorRights, forChannels bool) error {
-	d := Data{}.SetJSON("rights", rights).SetBool("for_channels", forChannels)
+	d := NewData().SetJSON("rights", rights).SetBool("for_channels", forChannels)
 	return a.Request("setMyDefaultAdministratorRights", d)
 }
 
 // GetDefaultAdminRights returns the current default administrator rights of the bot.
 func (a *API) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRights, error) {
-	d := Data{}.SetBool("for_channels", forChannels)
+	d := NewData().SetBool("for_channels", forChannels)
 	return Request[*tg.ChatAdministratorRights](a, "getMyDefaultAdministratorRights", d)
 }
 
@@ -60,7 +60,7 @@ func (a *API) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRigh
 //
 // This method is a wrapper for setChatMenuButton without specifying the chat id.
 func (a *API) SetDefaultChatMenuButton(menu tg.MenuButton) error {
-	d := Data{}.SetJSON("menu_button", menu)
+	d := NewData().SetJSON("menu_button", menu)
 	return a.Request("setChatMenuButton", d)
 }
 
