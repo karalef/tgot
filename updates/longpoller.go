@@ -35,16 +35,11 @@ type LongPoller struct {
 	Filter Filter
 }
 
-// Shutdown stops the long poller and waits for all handlers to be completed.
-func (lp *LongPoller) Shutdown() {
-	lp.Close()
-	lp.wg.Wait()
-}
-
-// Close stops the long poller.
+// Close stops the long poller and waits for all active handlers to complete.
 // It panics if the poller is not running.
 func (lp *LongPoller) Close() {
 	lp.cancel()
+	lp.wg.Wait()
 }
 
 // Run starts long polling.
@@ -83,6 +78,6 @@ func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
 
 func (lp *LongPoller) handle(h Handler, upd *tg.Update) {
 	lp.wg.Add(1)
+	defer lp.wg.Done()
 	h(upd)
-	lp.wg.Done()
 }

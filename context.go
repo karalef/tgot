@@ -103,7 +103,6 @@ func (c Context) DownloadFile(fid string) ([]byte, error) {
 	return c.Download(f)
 }
 
-// like api(Context, ...) but it only returns an error.
 func (c Context) method(method string, d ...api.Data) error {
 	_, err := method1[internal.Empty](c, method, d...)
 	return err
@@ -119,14 +118,14 @@ func method1[T any](c Context, method string, d ...api.Data) (T, error) {
 		return result, nil
 	}
 	if e, ok := err.(*api.Error); ok {
-		if e.Err.Code != 401 {
+		if c := e.Err.Code; c != 401 && c != 404 && c != 500 {
 			return result, err
 		}
 	}
 
-	if err != nil {
-		c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, internal.BackTrace(2))
-	}
+	c.bot.cancel(err)
+	c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, internal.BackTrace(2))
 	runtime.Goexit()
+
 	return result, err
 }

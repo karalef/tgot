@@ -3,7 +3,7 @@ package tgot
 import (
 	"errors"
 	"net/http"
-	"sync"
+	"sync/atomic"
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/logger"
@@ -52,7 +52,7 @@ type Bot struct {
 	log    *logger.Logger
 	poller updates.Poller
 
-	cls sync.Once
+	err atomic.Pointer[error]
 
 	handler Handler
 	cmds    Commands
@@ -61,19 +61,15 @@ type Bot struct {
 }
 
 func (b *Bot) cancel(err error) {
-	b.cls.Do(func() {
-		if err != nil {
-			b.poller.Close()
-			b.log.Error(err.Error())
-		} else {
-			b.Stop()
-		}
-	})
+	if !b.err.CompareAndSwap(nil, &err) {
+		return
+	}
+	go b.Stop()
 }
 
 // Stop stops polling for updates.
 func (b *Bot) Stop() {
-	b.poller.Shutdown()
+	b.poller.Close()
 }
 
 // Run starts bot.
@@ -85,7 +81,11 @@ func (b *Bot) Run() error {
 	}
 
 	allowed := b.handler.allowed(b)
-	return b.poller.Run(b.api, b.handle, allowed)
+	err := b.poller.Run(b.api, b.handle, allowed)
+	if e := b.err.Load(); e != nil {
+		return *e
+	}
+	return err
 }
 
 func (b *Bot) handle(upd *tg.Update) {

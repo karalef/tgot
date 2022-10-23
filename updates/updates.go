@@ -8,7 +8,6 @@ import (
 // Poller represents any blocking updates poller.
 type Poller interface {
 	Run(api *api.API, handler Handler, allowed []string) error
-	Shutdown()
 	Close()
 }
 

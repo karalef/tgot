@@ -57,14 +57,9 @@ type WebhookConfig struct {
 	SecretToken string
 }
 
-// Shutdown gracefully shuts down the server without interrupting any active connections.
-func (wh *Webhooker) Shutdown() {
-	wh.serv.Shutdown(context.Background())
-}
-
-// Close immediately stops the server.
+// Close shuts down the server without interrupting any active connections.
 func (wh *Webhooker) Close() {
-	wh.serv.Close()
+	wh.serv.Shutdown(context.Background())
 }
 
 // Run starts webhook server.
@@ -114,7 +109,6 @@ func (wh *Webhooker) RunWH(api *api.API, h WHHandler, allowed []string) error {
 	if err == http.ErrServerClosed {
 		err = nil
 	}
-	wh.Shutdown()
 	return err
 }
 
@@ -152,6 +146,11 @@ func (wh *Webhooker) handle(w http.ResponseWriter, r *http.Request) {
 	meth, data := wh.handler(&upd)
 	if meth == "" {
 		return
+	}
+	if data.Params == nil {
+		f := data.Files
+		data = api.NewData()
+		data.Files = f
 	}
 	data.Set("method", meth)
 	ctype, reader := data.Data()
