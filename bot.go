@@ -61,10 +61,9 @@ type Bot struct {
 }
 
 func (b *Bot) cancel(err error) {
-	if !b.err.CompareAndSwap(nil, &err) {
-		return
+	if b.err.CompareAndSwap(nil, &err) {
+		go b.Stop()
 	}
-	go b.Stop()
 }
 
 // Stop stops polling for updates.
@@ -178,8 +177,7 @@ type Handler struct {
 	// It only handles messages that are NOT commands.
 	OnMessage       func(MessageContext, *tg.Message)
 	OnEditedMessage func(MessageContext, *tg.Message)
-	// It only handles messages that are NOT commands
-	// or if commands in the channels are disabled.
+	// It only handles messages that are NOT commands.
 	OnChannelPost       func(MessageContext, *tg.Message)
 	OnEditedChannelPost func(MessageContext, *tg.Message)
 	OnCallbackQuery     func(CallbackContext, *tg.CallbackQuery)
