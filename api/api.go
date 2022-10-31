@@ -2,12 +2,12 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 
-	"github.com/karalef/tgot/internal"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // New creates a new API instance and returns the getMe result if successful.
@@ -50,7 +50,7 @@ type API struct {
 // Request performs a request to the Bot API with background context,
 // but doesn't parse the result.
 func (a *API) Request(method string, d ...Data) error {
-	_, err := Request[internal.Empty](a, method, d...)
+	_, err := Request[Empty](a, method, d...)
 	return err
 }
 
@@ -85,7 +85,7 @@ func RequestContext[T any](ctx context.Context, a *API, method string, d ...Data
 	}
 	defer resp.Body.Close()
 
-	r, raw, err := internal.DecodeJSON[tg.APIResponse[T]](resp.Body)
+	r, raw, err := DecodeJSON[tg.APIResponse[T]](resp.Body)
 	if err != nil {
 		return nilResult, &JSONError{
 			baseError: makeError(method, data, err),
@@ -126,3 +126,22 @@ func (a *API) LogOut() error {
 func (a *API) Close() error {
 	return a.Request("close")
 }
+
+// DecodeJSON decodes reader into object or
+// returns raw json data if error occured.
+func DecodeJSON[T any](r io.Reader) (*T, []byte, error) {
+	var v T
+	dec := json.NewDecoder(r)
+	err := dec.Decode(&v)
+	if err == nil {
+		return &v, nil, nil
+	}
+	b, _ := io.ReadAll(io.MultiReader(dec.Buffered(), r))
+	return nil, b, err
+}
+
+// Empty type is used to avoid spending resources on unmarshaling.
+type Empty struct{}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (e *Empty) UnmarshalJSON([]byte) error { return nil }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 func makeError[T error](method string, d Data, err T) baseError[T] {

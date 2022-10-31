@@ -1,6 +1,6 @@
 package api
 
-import "github.com/karalef/tgot/tg"
+import "github.com/karalef/tgot/api/tg"
 
 // CommandsData contains parameters for setMyCommands method.
 type CommandsData struct {

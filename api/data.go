@@ -8,8 +8,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unsafe"
 
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // NewData creates new Data object.
@@ -107,7 +108,9 @@ func (d *Data) SetFile(field string, file, thumb tg.Inputtable) {
 
 // AddFile adds file.
 func (d *Data) AddFile(field string, file tg.Inputtable) {
-	d.Files = append(d.Files, File{field, file})
+	if !isNil(file) {
+		d.Files = append(d.Files, File{field, file})
+	}
 }
 
 // File contains the file data with field.
@@ -159,4 +162,8 @@ func writeMultipart(d Data) (string, io.Reader) {
 		}
 	}()
 	return mp.FormDataContentType(), r
+}
+
+func isNil(a any) bool {
+	return (*[2]uintptr)(unsafe.Pointer(&a))[1] == 0
 }
