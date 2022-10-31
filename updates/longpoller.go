@@ -5,19 +5,24 @@ import (
 	"sync"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // NewLongPoller creates a LongPoller instance.
-func NewLongPoller(filter Filter, timeout, limit, offset int) *LongPoller {
+//
+// timeout must be >1.
+// limit must be in the range of 1-100.
+func NewLongPoller(timeout, limit, offset int) *LongPoller {
+	if timeout < 1 {
+		timeout = 30
+	}
+	if limit < 0 || limit > 100 {
+		limit = 0
+	}
 	lp := LongPoller{
-		timeout: 30,
+		timeout: timeout,
 		limit:   limit,
 		offset:  offset,
-		Filter:  filter,
-	}
-	if timeout > 0 {
-		lp.timeout = timeout
 	}
 	return &lp
 }
@@ -32,7 +37,7 @@ type LongPoller struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	Filter Filter
+	Filter FilterFunc
 }
 
 // Close stops the long poller and waits for all active handlers to complete.
@@ -70,7 +75,7 @@ func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
 		if len(upds) > 0 {
 			lp.offset = upds[len(upds)-1].ID
 		}
-		for i := range filter(upds, lp.Filter) {
+		for i := range Filter(upds, lp.Filter) {
 			go lp.handle(h, &upds[i])
 		}
 	}

@@ -10,16 +10,16 @@ import (
 	"strconv"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // NewWebhook creates new server for telegram webhooks.
 // Ports currently supported for webhooks: 443, 80, 88, 8443.
-func NewWebhook(port int, filter Filter, cfg WebhookConfig) *Webhooker {
+func NewWebhook(port int, cfg WebhookConfig) *Webhooker {
 	if cfg.CertFile != "" && cfg.KeyFile == "" || cfg.URL == "" {
 		return nil
 	}
-	wh := &Webhooker{cfg: cfg, Filter: filter}
+	wh := &Webhooker{cfg: cfg}
 	wh.serv = &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
 		Handler: http.HandlerFunc(wh.handle),
@@ -33,7 +33,7 @@ type Webhooker struct {
 	cfg     WebhookConfig
 	handler WHHandler
 
-	Filter Filter
+	Filter FilterFunc
 }
 
 // WebhookConfig contains webhook parameters.
@@ -173,12 +173,7 @@ type WebhookData struct {
 // Use this method to specify a URL and receive incoming updates via an outgoing webhook.
 func SetWebhook(a *api.API, s WebhookData) error {
 	d := api.NewData().Set("url", s.URL)
-	if s.Certificate != nil {
-		d.Files = []api.File{{
-			Field:      "certificate",
-			Inputtable: s.Certificate,
-		}}
-	}
+	d.AddFile("certificate", s.Certificate)
 	d.Set("ip_address", s.IPAddress)
 	d.SetInt("max_connections", s.MaxConnections)
 	d.SetJSON("allowed_updates", s.AllowedUpdates)

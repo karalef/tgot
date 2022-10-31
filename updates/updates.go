@@ -2,7 +2,7 @@ package updates
 
 import (
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // Poller represents any blocking updates poller.
@@ -29,17 +29,18 @@ var _ WebhookPoller = &Webhooker{}
 // If the method is not empty, the request to the api will be written in response to the webhook.
 type WHHandler func(*tg.Update) (method string, data api.Data)
 
-// Filter represents filter function type.
-type Filter func(*tg.Update) bool
+// FilterFunc represents filter function type.
+type FilterFunc func(*tg.Update) bool
 
-func filter(slice []tg.Update, keep Filter) []tg.Update {
-	if len(slice) == 0 || keep == nil {
-		return slice
+// Filter returns only those items to which keep returned true.
+func Filter(list []tg.Update, keep FilterFunc) []tg.Update {
+	if len(list) == 0 || keep == nil {
+		return list
 	}
-	filtered := slice[:0]
-	for i := range slice {
-		if keep(&slice[i]) {
-			filtered = append(filtered, slice[i])
+	filtered := list[:0]
+	for i := range list {
+		if keep(&list[i]) {
+			filtered = append(filtered, list[i])
 		}
 	}
 	return filtered
