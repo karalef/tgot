@@ -2,7 +2,7 @@ package tgot
 
 import (
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 func (b *Bot) makeChatContext(chat *tg.Chat, name string) ChatContext {
@@ -12,6 +12,11 @@ func (b *Bot) makeChatContext(chat *tg.Chat, name string) ChatContext {
 // ChatContext type.
 type ChatContext struct {
 	Chat
+}
+
+func (c ChatContext) Child(name string) ChatContext {
+	c.Context = c.Context.Child(name)
+	return c
 }
 
 // Send sends the Sendable and returns only an error.

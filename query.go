@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 type answerable interface {
@@ -18,6 +18,11 @@ type QueryContext[T answerable] struct {
 	queryID string
 
 	once sync.Once
+}
+
+func (c QueryContext[T]) Child(name string) QueryContext[T] {
+	c.Context = c.Context.Child(name)
+	return c
 }
 
 func (c *QueryContext[T]) Answer(answer T) (err error) {
