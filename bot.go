@@ -2,47 +2,45 @@ package tgot
 
 import (
 	"errors"
-	"net/http"
 	"sync/atomic"
 
 	"github.com/karalef/tgot/api"
+	"github.com/karalef/tgot/api/tg"
 	"github.com/karalef/tgot/logger"
-	"github.com/karalef/tgot/tg"
 	"github.com/karalef/tgot/updates"
 )
 
 // Config contains bot configuration.
 type Config struct {
-	APIURL   string         // telegram default if empty
-	FileURL  string         // telegram default if empty
-	Client   *http.Client   // http.DefaultClient if empty
 	Logger   *logger.Logger // logger.Default if empty
 	Handler  Handler
 	Commands Commands
 }
 
 // New creates new bot.
-func New(token string, poller updates.Poller, config Config) (*Bot, error) {
+func New(api *api.API, poller updates.Poller, config Config) (*Bot, error) {
+	if api == nil {
+		return nil, errors.New("nil api")
+	}
 	if poller == nil {
 		return nil, errors.New("nil poller")
-	}
-	a, me, err := api.New(token, config.APIURL, config.FileURL, config.Client)
-	if err != nil {
-		return nil, err
 	}
 	if config.Logger == nil {
 		config.Logger = logger.Default("BOT")
 	}
-	b := Bot{
-		api:     a,
+	me, err := api.GetMe()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Bot{
+		api:     api,
 		log:     config.Logger,
 		poller:  poller,
 		handler: config.Handler,
 		cmds:    config.Commands,
 		me:      *me,
-	}
-
-	return &b, nil
+	}, nil
 }
 
 // Bot type.
