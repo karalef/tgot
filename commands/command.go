@@ -4,20 +4,18 @@ import (
 	"strings"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // Command respresents simple command.
 type Command struct {
 	Cmd  string
-	Func Runner
+	Func func(tgot.MessageContext, *tg.Message, []string) error
 
 	Description string
 	FullDesc    string
 	Args        []Arg
 }
-
-type Runner func(tgot.MessageContext, *tg.Message, []string) error
 
 // Arg type.
 type Arg struct {

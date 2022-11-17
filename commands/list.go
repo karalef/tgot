@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 var _ tgot.Commands = &List{}
@@ -40,21 +40,4 @@ func (list List) GetCmd(cmd string) *Command {
 		}
 	}
 	return nil
-}
-
-func (list *List) Handle(cmd string, run Runner) *Command {
-	if cmd == "" {
-		return nil
-	}
-	if cmd[0] == '/' {
-		cmd = cmd[1:]
-	}
-	c := list.GetCmd(cmd)
-	if c != nil {
-		*c = Command{Cmd: cmd, Func: run}
-	} else {
-		c = &Command{Cmd: cmd, Func: run}
-		*list = append(*list, c)
-	}
-	return c
 }
