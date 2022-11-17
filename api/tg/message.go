@@ -7,6 +7,7 @@ import (
 // Message represents a message.
 type Message struct {
 	ID                     int                `json:"message_id"`
+	MessageThreadID        int                `json:"message_thread_id"`
 	From                   *User              `json:"from"`
 	SenderChat             *Chat              `json:"sender_chat"`
 	Date                   int64              `json:"date"`
@@ -17,6 +18,7 @@ type Message struct {
 	ForwardSignature       string             `json:"forward_signature"`
 	ForwardSenderName      string             `json:"forward_sender_name"`
 	ForwardDate            int                `json:"forward_date"`
+	IsTopicMessage         bool               `json:"is_topic_message"`
 	IsAutomaticForward     bool               `json:"is_automatic_forward"`
 	ReplyTo                *Message           `json:"reply_to_message"`
 	ViaBot                 *User              `json:"via_bot"`
@@ -59,6 +61,9 @@ type Message struct {
 	ConnectedWebsite       string             `json:"connected_website"`
 	// PassportData *PassportData `json:"passport_data"`
 	ProximityAlert     *ProximityAlert       `json:"proximity_alert_triggered"`
+	ForumTopicCreated  *ForumTopicCreated    `json:"forum_topic_created"`
+	ForumTopicClosed   *ForumTopicClosed     `json:"forum_topic_closed"`
+	ForumTopicReopened *ForumTopicReopened   `json:"forum_topic_reopened"`
 	VideoChatScheduled *VideoChatScheduled   `json:"video_chat_scheduled"`
 	VideoChatStarted   *VideoChatStarted     `json:"video_chat_started"`
 	VideoChatEnded     *VideoChatEnded       `json:"video_chat_ended"`
@@ -145,6 +150,21 @@ type VideoChatEnded struct {
 type VideoChatInvited struct {
 	Users []User `json:"users"`
 }
+
+// ForumTopicCreated represents a service message about a new forum topic created in the chat.
+type ForumTopicCreated struct {
+	Name              string `json:"name"`
+	IconColor         int    `json:"icon_color"`
+	IconCustomEmojiID string `json:"icon_custom_emoji_id"`
+}
+
+// ForumTopicClosed represents a service message about a forum topic closed in the chat.
+// Currently holds no information.
+type ForumTopicClosed struct{}
+
+// ForumTopicReopened represents a service message about a forum topic reopened in the chat.
+// Currently holds no information.
+type ForumTopicReopened struct{}
 
 // ParseMode type.
 type ParseMode string

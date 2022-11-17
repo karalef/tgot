@@ -35,7 +35,7 @@ func (c ChatContext) SendText(text string, pm ...tg.ParseMode) error {
 	return c.Send(msg)
 }
 
-// Chat represents chat api.
+// Chat provides chat api.
 type Chat struct {
 	Context
 	chatID   int64
@@ -115,11 +115,6 @@ func (c *Chat) Forward(from *Chat, fwd Forward) (*tg.Message, error) {
 	return chatMethod[*tg.Message](c, "forwardMessage", d)
 }
 
-// ForwardTo forwards the message to the specified chat instead of current.
-func (c *Chat) ForwardTo(to *Chat, fwd Forward) (*tg.Message, error) {
-	return to.Forward(c, fwd)
-}
-
 // Copy contains parameters for copying the message.
 type Copy struct {
 	MessageID int
@@ -137,16 +132,6 @@ func (c *Chat) Copy(from *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*
 		opts[0].embed(&d)
 	}
 	return chatMethod[*tg.MessageID](c, "copyMessage", d)
-}
-
-// CopyTo copies the message to the specified chat instead of current.
-func (c *Chat) CopyTo(to *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
-	return to.Copy(c, cp)
-}
-
-// SendText sends just a text.
-func (c *Chat) SendText(text string) (*tg.Message, error) {
-	return c.Send(NewMessage(text))
 }
 
 // Send sends any Sendable object.
@@ -265,6 +250,7 @@ func (c *Chat) Promote(userID int64, rights tg.ChatAdministratorRights) error {
 	d.SetBool("can_post_messages", rights.CanPostMessages)
 	d.SetBool("can_edit_messages", rights.CanEditMessages)
 	d.SetBool("can_pin_messages", rights.CanPinMessages)
+	d.SetBool("can_manage_topics", rights.CanManageTopics)
 	return c.method("promoteChatMember", d)
 }
 
@@ -397,6 +383,19 @@ func (c *Chat) SetStickerSet(stickerSet string) error {
 // DeleteStickerSet deletes a group sticker set from a supergroup.
 func (c *Chat) DeleteStickerSet() error {
 	return c.method("deleteChatStickerSet")
+}
+
+// OpenForumTopic makes forum topic interface.
+func (c *Chat) OpenForumTopic(threadID int) Topic {
+	return Topic{c, threadID}
+}
+
+// CreateForumTopic creates a topic in a forum supergroup chat.
+func (c *Chat) CreateForumTopic(name string, iconColor int, iconEmojiID string) (*tg.ForumTopic, error) {
+	d := api.NewData().Set("name", name)
+	d.SetInt("icon_color", iconColor)
+	d.Set("icon_custom_emoji_id", iconEmojiID)
+	return chatMethod[*tg.ForumTopic](c, "createForumTopic", d)
 }
 
 // SetMenuButton changes the bot's menu button in a private chat.

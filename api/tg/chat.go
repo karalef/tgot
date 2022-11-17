@@ -8,9 +8,12 @@ type Chat struct {
 	Username  string   `json:"username"`
 	FirstName string   `json:"first_name"`
 	LastName  string   `json:"last_name"`
+	IsForum   bool     `json:"is_forum"`
 
 	// Returned only in getChat.
 	Photo                      *ChatPhoto       `json:"photo"`
+	ActiveUsernames            []string         `json:"active_usernames"`
+	EmojiStatusCustomEmoji     string           `json:"emoji_status_custom_emoji_id"`
 	Bio                        string           `json:"bio"`
 	HasPrivateForwards         bool             `json:"has_private_forwards"`
 	HasRestrictedVoiceAndVideo bool             `json:"has_restricted_voice_and_video_messages"`
@@ -23,7 +26,7 @@ type Chat struct {
 	SlowModeDelay              int              `json:"slow_mode_delay"`
 	AutoDeleteTime             int              `json:"message_auto_delete_time"`
 	HasProtectedContent        bool             `json:"has_protected_content"`
-	StickerSetNme              string           `json:"sticker_set_name"`
+	StickerSetName             string           `json:"sticker_set_name"`
 	CanSetStickerSet           bool             `json:"can_set_sticker_set"`
 	LinkedChatID               int64            `json:"linked_chat_id"`
 	Location                   *ChatLocation    `json:"location"`
@@ -105,6 +108,7 @@ type ChatPermissions struct {
 	CanChangeInfo   bool `json:"can_change_info,omitempty"`
 	CanInviteUsers  bool `json:"can_invite_users,omitempty"`
 	CanPinMessages  bool `json:"can_pin_messages,omitempty"`
+	CanManageTopics bool `json:"can_manage_topics,omitempty"`
 }
 
 // ChatAdministratorRights represents the rights of an administrator in a chat.
@@ -120,12 +124,21 @@ type ChatAdministratorRights struct {
 	CanPostMessages     bool `json:"can_post_messages,omitempty"`
 	CanEditMessages     bool `json:"can_edit_messages,omitempty"`
 	CanPinMessages      bool `json:"can_pin_messages,omitempty"`
+	CanManageTopics     bool `json:"can_manage_topics,omitempty"`
 }
 
 // ChatLocation represents a location to which a chat is connected.
 type ChatLocation struct {
 	Location Location `json:"location"`
 	Address  string   `json:"address"`
+}
+
+// ForumTopic represents a forum topic.
+type ForumTopic struct {
+	MessageThreadID   int    `json:"message_thread_id"`
+	Name              string `json:"name"`
+	IconColor         int    `json:"icon_color"`
+	IconCustomEmojiID string `json:"icon_custom_emoji_id"`
 }
 
 // ChatInviteLink represents an invite link for a chat.
