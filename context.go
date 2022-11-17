@@ -1,13 +1,14 @@
 package tgot
 
 import (
+	"bytes"
 	"io"
 	"runtime"
+	"strconv"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/internal"
+	"github.com/karalef/tgot/api/tg"
 	"github.com/karalef/tgot/logger"
-	"github.com/karalef/tgot/tg"
 )
 
 // MakeContext creates new context.
@@ -23,6 +24,9 @@ type Context struct {
 	bot  *Bot
 	name string
 }
+
+// Base returns Context from a higher-level context.
+func (c Context) Base() Context { return c }
 
 // Child creates sub context.
 func (c Context) Child(name string) Context {
@@ -103,16 +107,12 @@ func (c Context) DownloadFile(fid string) ([]byte, error) {
 	return c.Download(f)
 }
 
-func (c Context) method(method string, d ...api.Data) error {
-	_, err := method1[internal.Empty](c, method, d...)
+func (c Context) method(meth string, d ...api.Data) error {
+	_, err := method[api.Empty](c, meth, d...)
 	return err
 }
 
 func method[T any](c Context, method string, d ...api.Data) (T, error) {
-	return method1[T](c, method, d...)
-}
-
-func method1[T any](c Context, method string, d ...api.Data) (T, error) {
 	result, err := api.Request[T](c.bot.api, method, d...)
 	if err == nil {
 		return result, nil
@@ -124,8 +124,38 @@ func method1[T any](c Context, method string, d ...api.Data) (T, error) {
 	}
 
 	c.bot.cancel(err)
-	c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, internal.BackTrace(2))
+	c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, traceback(2))
 	runtime.Goexit()
 
 	return result, err
+}
+
+func traceback(skip int) string {
+	pc := make([]uintptr, 0, 16)
+	for {
+		n := runtime.Callers(2+skip+len(pc), pc[len(pc):cap(pc)])
+		pc = pc[:len(pc)+n]
+		if len(pc) < cap(pc) {
+			break
+		}
+
+		newpc := make([]uintptr, len(pc), len(pc)*2)
+		copy(newpc, pc)
+		pc = newpc
+	}
+
+	buf := bytes.NewBuffer(make([]byte, 0, 512))
+	frames := runtime.CallersFrames(pc)
+
+	for {
+		f, more := frames.Next()
+		buf.WriteString(f.Function + "\n\t" + f.File)
+		buf.WriteString(":" + strconv.Itoa(f.Line))
+		if !more {
+			break
+		}
+		buf.WriteByte('\n')
+	}
+
+	return buf.String()
 }
