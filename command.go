@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // Prefix is the character with which commands must begin.

@@ -2,7 +2,7 @@ package tgot
 
 import (
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // GetStickerSet returns a sticker set.

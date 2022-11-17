@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // Sendable interface for Chat.Send.

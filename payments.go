@@ -2,7 +2,7 @@ package tgot
 
 import (
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // Invoice contains information about the invoice to be sent.

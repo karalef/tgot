@@ -2,7 +2,7 @@ package tgot
 
 import (
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
 )
 
 // Game contains information about the game to be sent.
