@@ -14,48 +14,53 @@ import (
 )
 
 // NewData creates new Data object.
-func NewData() Data {
-	return Data{Params: url.Values{}}
+func NewData() *Data {
+	return &Data{
+		Params: make(map[string]string),
+		Files:  make(map[string]tg.Inputtable),
+	}
 }
 
 // Data contains query parameters and files data.
 type Data struct {
-	Params url.Values
-	Files  []File
+	Params map[string]string
+
+	// key must be params key or multipart field.
+	Files map[string]tg.Inputtable
 }
 
 // Data encodes the values into “URL encoded” form or multipart/form-data.
-func (d Data) Data() (string, io.Reader) {
-	for i := range d.Files {
-		n, r := d.Files[i].FileData()
+func (d *Data) Data() (string, io.Reader) {
+	if d == nil || len(d.Params) == 0 && len(d.Files) == 0 {
+		return "", nil
+	}
+	for _, f := range d.Files {
+		_, r := f.FileData()
 		if r != nil {
-			return writeMultipart(d)
+			return d.writeMultipart()
 		}
-		d.Set(d.Files[0].Field, n)
-		d.Files = d.Files[1:]
 	}
-	return "application/x-www-form-urlencoded", strings.NewReader(d.Params.Encode())
-}
-
-func (d Data) forEach(f func(k, v string) error) error {
+	vals := make(url.Values, len(d.Params)+len(d.Files))
 	for k, v := range d.Params {
-		if err := f(k, v[0]); err != nil {
-			return err
-		}
+		vals.Set(k, v)
 	}
-	return nil
+	for k, f := range d.Files {
+		urlid, _ := f.FileData()
+		vals.Set(k, urlid)
+	}
+	return "application/x-www-form-urlencoded", strings.NewReader(vals.Encode())
 }
 
 // Set sets the key to value.
-func (d Data) Set(k, v string, force ...bool) Data {
-	if v != "" {
-		d.Params.Set(k, v)
+func (d *Data) Set(k, v string, force ...bool) *Data {
+	if v != "" || len(force) > 0 && force[0] {
+		d.Params[k] = v
 	}
 	return d
 }
 
 // SetInt sets the key to int value.
-func (d Data) SetInt(key string, v int, force ...bool) Data {
+func (d *Data) SetInt(key string, v int, force ...bool) *Data {
 	if v != 0 || len(force) > 0 && force[0] {
 		d.Set(key, strconv.Itoa(v))
 	}
@@ -63,7 +68,7 @@ func (d Data) SetInt(key string, v int, force ...bool) Data {
 }
 
 // SetInt64 sets the key to int64 value.
-func (d Data) SetInt64(key string, v int64, force ...bool) Data {
+func (d *Data) SetInt64(key string, v int64, force ...bool) *Data {
 	if v != 0 || len(force) > 0 && force[0] {
 		d.Set(key, strconv.FormatInt(v, 10))
 	}
@@ -71,7 +76,7 @@ func (d Data) SetInt64(key string, v int64, force ...bool) Data {
 }
 
 // SetFloat sets the key to float value.
-func (d Data) SetFloat(key string, v float32, force ...bool) Data {
+func (d *Data) SetFloat(key string, v float32, force ...bool) *Data {
 	if v != 0 || len(force) > 0 && force[0] {
 		d.Set(key, strconv.FormatFloat(float64(v), 'f', 6, 32))
 	}
@@ -79,7 +84,7 @@ func (d Data) SetFloat(key string, v float32, force ...bool) Data {
 }
 
 // SetBool sets the key to bool value.
-func (d Data) SetBool(key string, v bool) Data {
+func (d *Data) SetBool(key string, v bool) *Data {
 	if v {
 		d.Set(key, strconv.FormatBool(v))
 	}
@@ -87,7 +92,7 @@ func (d Data) SetBool(key string, v bool) Data {
 }
 
 // SetJSON sets the key to JSON value.
-func (d Data) SetJSON(key string, v interface{}) Data {
+func (d *Data) SetJSON(key string, v interface{}) *Data {
 	if v != nil && !reflect.ValueOf(v).IsZero() {
 		b, _ := json.Marshal(v)
 		d.Set(key, string(b))
@@ -97,30 +102,18 @@ func (d Data) SetJSON(key string, v interface{}) Data {
 
 // SetFile sets file with thumbnail.
 func (d *Data) SetFile(field string, file, thumb tg.Inputtable) {
-	if thumb != nil {
-		d.Files = make([]File, 2)
-		d.Files[1] = File{"thumb", thumb}
-	} else {
-		d.Files = make([]File, 1)
-	}
-	d.Files[0] = File{field, file}
+	d.AddFile(field, file)
+	d.AddFile("thumb", thumb)
 }
 
 // AddFile adds file.
 func (d *Data) AddFile(field string, file tg.Inputtable) {
 	if !isNil(file) {
-		d.Files = append(d.Files, File{field, file})
+		d.Files[field] = file
 	}
 }
 
-// File contains the file data with field.
-type File struct {
-	// contains query key or multipart field.
-	Field string
-	tg.Inputtable
-}
-
-func writeMultipart(d Data) (string, io.Reader) {
+func (d *Data) writeMultipart() (string, io.Reader) {
 	r, w := io.Pipe()
 	mp := multipart.NewWriter(w)
 	go func() {
@@ -128,16 +121,17 @@ func writeMultipart(d Data) (string, io.Reader) {
 			w.CloseWithError(mp.Close())
 		}()
 
-		err := d.forEach(mp.WriteField)
-		if err != nil {
-			w.CloseWithError(err)
-			return
+		for field, v := range d.Params {
+			if err := mp.WriteField(field, v); err != nil {
+				w.CloseWithError(err)
+				return
+			}
 		}
 
-		for _, file := range d.Files {
-			if _, ok := file.Inputtable.(*tg.InputFile); !ok {
+		for field, file := range d.Files {
+			if _, ok := file.(*tg.InputFile); !ok {
 				urlid, _ := file.FileData()
-				err := mp.WriteField(file.Field, urlid)
+				err := mp.WriteField(field, urlid)
 				if err != nil {
 					w.CloseWithError(err)
 					return
@@ -146,7 +140,7 @@ func writeMultipart(d Data) (string, io.Reader) {
 			}
 
 			name, reader := file.FileData()
-			part, err := mp.CreateFormFile(file.Field, name)
+			part, err := mp.CreateFormFile(field, name)
 			if err != nil {
 				w.CloseWithError(err)
 				return

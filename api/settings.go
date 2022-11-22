@@ -9,7 +9,7 @@ type CommandsData struct {
 	Lang     string
 }
 
-func (cd *CommandsData) data() Data {
+func (cd *CommandsData) data() *Data {
 	d := NewData()
 	if cd == nil {
 		return d
@@ -68,5 +68,5 @@ func (a *API) SetDefaultChatMenuButton(menu tg.MenuButton) error {
 //
 // This method is a wrapper for getChatMenuButton without specifying the chat id.
 func (a *API) GetDefaultChatMenuButton() (*tg.MenuButton, error) {
-	return Request[*tg.MenuButton](a, "getChatMenuButton")
+	return Request[*tg.MenuButton](a, "getChatMenuButton", nil)
 }

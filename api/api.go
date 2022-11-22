@@ -49,22 +49,18 @@ type API struct {
 
 // Request performs a request to the Bot API with background context,
 // but doesn't parse the result.
-func (a *API) Request(method string, d ...Data) error {
-	_, err := Request[Empty](a, method, d...)
+func (a *API) Request(method string, d *Data) error {
+	_, err := Request[Empty](a, method, d)
 	return err
 }
 
 // Request performs a request to the Bot API with background context.
-func Request[T any](a *API, method string, d ...Data) (T, error) {
-	return RequestContext[T](context.Background(), a, method, d...)
+func Request[T any](a *API, method string, d *Data) (T, error) {
+	return RequestContext[T](context.Background(), a, method, d)
 }
 
 // RequestContext performs a request to the Bot API.
-func RequestContext[T any](ctx context.Context, a *API, method string, d ...Data) (T, error) {
-	var data Data
-	if len(d) > 0 {
-		data = d[0]
-	}
+func RequestContext[T any](ctx context.Context, a *API, method string, data *Data) (T, error) {
 	ctype, reader := data.Data()
 
 	var nilResult T
@@ -73,7 +69,9 @@ func RequestContext[T any](ctx context.Context, a *API, method string, d ...Data
 	if err != nil {
 		return nilResult, &HTTPError{makeError(method, data, err)}
 	}
-	req.Header.Set("Content-Type", ctype)
+	if data != nil {
+		req.Header.Set("Content-Type", ctype)
+	}
 	resp, err := a.client.Do(req)
 	if err != nil {
 		switch e := errors.Unwrap(err); e {
@@ -110,21 +108,21 @@ func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
 
 // GetMe returns basic information about the bot in form of a User object.
 func (a *API) GetMe() (*tg.User, error) {
-	return Request[*tg.User](a, "getMe")
+	return Request[*tg.User](a, "getMe", nil)
 }
 
 // LogOut method.
 //
 // Use this method to log out from the cloud Bot API server before launching the bot locally.
 func (a *API) LogOut() error {
-	return a.Request("logOut")
+	return a.Request("logOut", nil)
 }
 
 // Close method.
 //
 // Use this method to close the bot instance before moving it from one local server to another.
 func (a *API) Close() error {
-	return a.Request("close")
+	return a.Request("close", nil)
 }
 
 // DecodeJSON decodes reader into object or

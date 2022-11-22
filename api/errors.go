@@ -7,17 +7,29 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-func makeError[T error](method string, d Data, err T) baseError[T] {
-	return baseError[T]{
+func makeError[T error](method string, d *Data, err T) baseError[T] {
+	e := baseError[T]{
 		Method: method,
-		Data:   d,
 		Err:    err,
 	}
+	if d != nil {
+		e.Params = make(map[string]string, len(d.Params))
+		for k, v := range d.Params {
+			e.Params[k] = v
+		}
+		e.Files = make(map[string]string, len(d.Files))
+		for field, f := range d.Files {
+			s, _ := f.FileData()
+			e.Files[field] = s
+		}
+	}
+	return e
 }
 
 type baseError[T error] struct {
 	Method string
-	Data   Data
+	Params map[string]string
+	Files  map[string]string
 	Err    T
 }
 
@@ -30,18 +42,13 @@ func (e baseError[T]) Unwrap() error {
 }
 
 func (e baseError[T]) formatData() string {
-	if len(e.Data.Files) == 0 {
-		return e.Data.Params.Encode()
-	}
 	var sb strings.Builder
-	sb.WriteString(e.Data.Params.Encode())
-	for _, f := range e.Data.Files {
+	for k, v := range e.Params {
+		sb.WriteString(k + "=" + v + " ")
+	}
+	for field, f := range e.Files {
 		sb.WriteByte('\n')
-		name, r := f.FileData()
-		sb.WriteString("(file) " + f.Field + ": " + name)
-		if r != nil {
-			sb.WriteString(" (upload data)")
-		}
+		sb.WriteString("[file] " + field + ": " + f)
 	}
 	return sb.String()
 }
@@ -54,7 +61,7 @@ type Error struct {
 // Is implements errors.Is interface.
 func (e Error) Is(err error) bool {
 	if tge, ok := err.(tg.APIError); ok {
-		return e.Err.Code != tge.Code
+		return e.Err.Code == tge.Code
 	}
 	return false
 }
