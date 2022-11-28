@@ -132,10 +132,11 @@ func (c MessageContext) EditCaption(cap CaptionData, replyMarkup ...tg.InlineKey
 // EditMedia edits animation, audio, document, photo, or video messages.
 func (c MessageContext) EditMedia(m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
-	err := prepareInputMedia(d, false, m)
+	err := prepareInputMedia(d, m)
 	if err != nil {
 		return nil, err
 	}
+	d.SetJSON("media", m)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}

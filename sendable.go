@@ -10,7 +10,13 @@ import (
 
 // Sendable interface for Chat.Send.
 type Sendable interface {
-	data() (string, api.Data)
+	sendData(*api.Data) string
+}
+
+func embed[T interface{ embed(*api.Data) }](d *api.Data, e []T) {
+	if len(e) > 0 {
+		e[0].embed(d)
+	}
 }
 
 // CaptionData represents caption with entities and parse mode.
@@ -26,29 +32,20 @@ func (c CaptionData) embed(d *api.Data) {
 	d.SetJSON("caption_entities", c.Entities)
 }
 
-// BaseSendOptions contains common send* parameters for all send methods.
-type BaseSendOptions struct {
+// SendOptions cointains common send* parameters.
+type SendOptions[T tg.ReplyMarkup] struct {
 	DisableNotification      bool
 	ProtectContent           bool
 	ReplyTo                  int
 	AllowSendingWithoutReply bool
+	ReplyMarkup              T
 }
 
-func (o BaseSendOptions) embed(d *api.Data) {
+func (o SendOptions[T]) embed(d *api.Data) {
 	d.SetBool("disable_notification", o.DisableNotification)
 	d.SetBool("protect_content", o.ProtectContent)
 	d.SetInt("reply_to_message_id", o.ReplyTo)
 	d.SetBool("allow_sending_without_reply", o.AllowSendingWithoutReply)
-}
-
-// SendOptions cointains common send* parameters.
-type SendOptions[T tg.ReplyMarkup] struct {
-	BaseSendOptions
-	ReplyMarkup T
-}
-
-func (o SendOptions[T]) embed(d *api.Data) {
-	o.BaseSendOptions.embed(d)
 	d.SetJSON("reply_markup", o.ReplyMarkup)
 }
 
@@ -65,13 +62,12 @@ type Message struct {
 	DisableWebPagePreview bool
 }
 
-func (m Message) data() (string, api.Data) {
-	d := api.NewData()
+func (m Message) sendData(d *api.Data) string {
 	d.Set("text", m.Text)
 	d.Set("parse_mode", string(m.ParseMode))
 	d.SetJSON("entities", m.Entities)
 	d.SetBool("disable_web_page_preview", m.DisableWebPagePreview)
-	return "sendMessage", d
+	return "sendMessage"
 }
 
 // NewPhoto makes a new photo.
@@ -85,11 +81,10 @@ type Photo struct {
 	CaptionData
 }
 
-func (ph Photo) data() (string, api.Data) {
-	d := api.NewData()
+func (ph Photo) sendData(d *api.Data) string {
 	d.SetFile("photo", ph.Photo, nil)
-	ph.CaptionData.embed(&d)
-	return "sendPhoto", d
+	ph.CaptionData.embed(d)
+	return "sendPhoto"
 }
 
 var _ Sendable = Audio{}
@@ -104,14 +99,13 @@ type Audio struct {
 	Title     string
 }
 
-func (a Audio) data() (string, api.Data) {
-	d := api.NewData()
+func (a Audio) sendData(d *api.Data) string {
 	d.SetFile("audio", a.Audio, a.Thumbnail)
-	a.CaptionData.embed(&d)
+	a.CaptionData.embed(d)
 	d.SetInt("duration", a.Duration)
 	d.Set("performer", a.Performer)
 	d.Set("title", a.Title)
-	return "sendAudio", d
+	return "sendAudio"
 }
 
 var _ Sendable = Document{}
@@ -124,12 +118,11 @@ type Document struct {
 	DisableTypeDetection bool
 }
 
-func (d Document) data() (string, api.Data) {
-	data := api.NewData()
+func (d Document) sendData(data *api.Data) string {
 	data.SetFile("document", d.Document, d.Thumbnail)
-	d.CaptionData.embed(&data)
+	d.CaptionData.embed(data)
 	data.SetBool("disable_content_type_detection", d.DisableTypeDetection)
-	return "sendDocument", data
+	return "sendDocument"
 }
 
 var _ Sendable = Video{}
@@ -145,15 +138,14 @@ type Video struct {
 	SupportsStreaming bool
 }
 
-func (v Video) data() (string, api.Data) {
-	d := api.NewData()
+func (v Video) sendData(d *api.Data) string {
 	d.SetFile("video", v.Video, v.Thumbnail)
-	v.CaptionData.embed(&d)
+	v.CaptionData.embed(d)
 	d.SetInt("duration", v.Duration)
 	d.SetInt("width", v.Width)
 	d.SetInt("height", v.Height)
 	d.SetBool("supports_streaming", v.SupportsStreaming)
-	return "sendVideo", d
+	return "sendVideo"
 }
 
 var _ Sendable = Animation{}
@@ -168,14 +160,13 @@ type Animation struct {
 	Height   int
 }
 
-func (a Animation) data() (string, api.Data) {
-	d := api.NewData()
+func (a Animation) sendData(d *api.Data) string {
 	d.SetFile("animation", a.Animation, a.Thumbnail)
-	a.CaptionData.embed(&d)
+	a.CaptionData.embed(d)
 	d.SetInt("duration", a.Duration)
 	d.SetInt("width", a.Width)
 	d.SetInt("height", a.Height)
-	return "sendAnimation", d
+	return "sendAnimation"
 }
 
 var _ Sendable = Voice{}
@@ -187,12 +178,11 @@ type Voice struct {
 	Duration int
 }
 
-func (v Voice) data() (string, api.Data) {
-	d := api.NewData()
+func (v Voice) sendData(d *api.Data) string {
 	d.SetFile("voice", v.Voice, nil)
-	v.CaptionData.embed(&d)
+	v.CaptionData.embed(d)
 	d.SetInt("duration", v.Duration)
-	return "sendVoice", d
+	return "sendVoice"
 }
 
 var _ Sendable = VideoNote{}
@@ -205,23 +195,26 @@ type VideoNote struct {
 	Length    int
 }
 
-func (v VideoNote) data() (string, api.Data) {
-	d := api.NewData()
+func (v VideoNote) sendData(d *api.Data) string {
 	d.SetFile("video_note", v.VideoNote, v.Thumbnail)
 	d.SetInt("duration", v.Duration)
 	d.SetInt("length", v.Length)
-	return "sendVideoNote", d
+	return "sendVideoNote"
 }
 
 // MediaGroup contains information about the media group to be sent.
 type MediaGroup []tg.MediaInputter
 
-func (g MediaGroup) data() (api.Data, error) {
+func (g MediaGroup) data() (*api.Data, error) {
 	d := api.NewData()
-	return d, prepareInputMedia(&d, true, g...)
+	err := prepareInputMedia(d, g...)
+	if err == nil {
+		d.SetJSON("media", g)
+	}
+	return d, err
 }
 
-func prepareInputMedia(d *api.Data, mediaGroup bool, media ...tg.MediaInputter) error {
+func prepareInputMedia(d *api.Data, media ...tg.MediaInputter) error {
 	if len(media) == 0 {
 		return nil
 	}
@@ -257,12 +250,6 @@ func prepareInputMedia(d *api.Data, mediaGroup bool, media ...tg.MediaInputter) 
 			d.AddFile(field, f.AsMedia(field))
 		}
 	}
-
-	if !mediaGroup {
-		d.SetJSON("media", media[0])
-	} else {
-		d.SetJSON("media", media)
-	}
 	return nil
 }
 
@@ -271,8 +258,7 @@ var _ Sendable = Location{}
 // Location contains information about the location to be sent.
 type Location tg.Location
 
-func (l Location) data() (string, api.Data) {
-	d := api.NewData()
+func (l Location) sendData(d *api.Data) string {
 	d.SetFloat("latitude", l.Lat)
 	d.SetFloat("longitude", l.Long)
 	if l.HorizontalAccuracy != nil {
@@ -281,7 +267,7 @@ func (l Location) data() (string, api.Data) {
 	d.SetInt("live_period", l.LivePeriod)
 	d.SetInt("heading", l.Heading)
 	d.SetInt("proximity_alert_radius", l.AlertRadius)
-	return "sendLocation", d
+	return "sendLocation"
 }
 
 var _ Sendable = Venue{}
@@ -298,8 +284,7 @@ type Venue struct {
 	GooglePlaceType string
 }
 
-func (v Venue) data() (string, api.Data) {
-	d := api.NewData()
+func (v Venue) sendData(d *api.Data) string {
 	d.SetFloat("latitude", v.Lat)
 	d.SetFloat("longitude", v.Long)
 	d.Set("title", v.Title)
@@ -308,7 +293,7 @@ func (v Venue) data() (string, api.Data) {
 	d.Set("foursquare_type", v.FoursquareType)
 	d.Set("google_place_id", v.GooglePlaceID)
 	d.Set("google_place_type", v.GooglePlaceType)
-	return "sendVenue", d
+	return "sendVenue"
 }
 
 var _ Sendable = Contact{}
@@ -321,13 +306,12 @@ type Contact struct {
 	Vcard       string
 }
 
-func (c Contact) data() (string, api.Data) {
-	d := api.NewData()
+func (c Contact) sendData(d *api.Data) string {
 	d.Set("phone_number", c.PhoneNumber)
 	d.Set("first_name", c.FirstName)
 	d.Set("last_name", c.LastName)
 	d.Set("vcard", c.Vcard)
-	return "sendContact", d
+	return "sendContact"
 }
 
 var _ Sendable = Poll{}
@@ -348,8 +332,7 @@ type Poll struct {
 	IsClosed             bool
 }
 
-func (poll Poll) data() (string, api.Data) {
-	d := api.NewData()
+func (poll Poll) sendData(d *api.Data) string {
 	d.Set("question", poll.Question)
 	d.SetJSON("options", poll.Options)
 	d.SetBool("is_anonymous", poll.IsAnonymous)
@@ -362,7 +345,7 @@ func (poll Poll) data() (string, api.Data) {
 	d.SetInt("open_period", poll.OpenPeriod)
 	d.SetInt64("close_date", poll.CloseDate)
 	d.SetBool("is_closed", poll.IsClosed)
-	return "sendPoll", d
+	return "sendPoll"
 }
 
 var _ Sendable = Dice("")
@@ -370,8 +353,9 @@ var _ Sendable = Dice("")
 // Dice contains information about the dice to be sent.
 type Dice tg.DiceEmoji
 
-func (d Dice) data() (string, api.Data) {
-	return "sendDice", api.NewData().Set("emoji", string(d))
+func (d Dice) sendData(data *api.Data) string {
+	data.Set("emoji", string(d))
+	return "sendDice"
 }
 
 // Sticker contains information about the sticker to be sent.
@@ -379,8 +363,7 @@ type Sticker struct {
 	Sticker tg.Inputtable
 }
 
-func (s Sticker) data() (string, api.Data) {
-	d := api.NewData()
+func (s Sticker) sendData(d *api.Data) string {
 	d.SetFile("sticker", s.Sticker, nil)
-	return "sendSticker", d
+	return "sendSticker"
 }

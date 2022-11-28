@@ -151,23 +151,18 @@ func (c ChatContext) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.
 		return nil, nil
 	}
 
-	method, d := s.data()
-	if len(opts) > 0 {
-		opts[0].embed(&d)
-	}
-
-	return chatMethod[*tg.Message](c, method, d)
+	d := api.NewData()
+	embed(d, opts)
+	return chatMethod[*tg.Message](c, s.sendData(d), d)
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
-func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...BaseSendOptions) ([]tg.Message, error) {
+func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...SendOptions[*tg.NoMarkup]) ([]tg.Message, error) {
 	d, err := mg.data()
 	if err != nil {
 		return nil, err
 	}
-	if len(opts) > 0 {
-		opts[0].embed(&d)
-	}
+	embed(d, opts)
 	return chatMethod[[]tg.Message](c, "sendMediaGroup", d)
 }
 
@@ -181,18 +176,14 @@ func (c ChatContext) SendChatAction(act tg.ChatAction) error {
 // SendInvoice sends an invoice.
 func (c ChatContext) SendInvoice(i Invoice, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
 	d := i.data()
-	if len(opts) > 0 {
-		opts[0].embed(d)
-	}
+	embed(d, opts)
 	return chatMethod[*tg.Message](c, "sendInvoice", d)
 }
 
 // SendGame sends a game.
 func (c ChatContext) SendGame(g Game, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
 	d := g.data()
-	if len(opts) > 0 {
-		opts[0].embed(d)
-	}
+	embed(d, opts)
 	return chatMethod[*tg.Message](c, "sendGame", d)
 }
 
@@ -238,11 +229,11 @@ func (c ChatContext) Unban(userID int64, onlyIfBanned bool) error {
 }
 
 // Restrict restricts a user in a supergroup.
-func (c ChatContext) Restrict(userID int64, perms tg.ChatPermissions, until *int64) error {
+func (c ChatContext) Restrict(userID int64, perms tg.ChatPermissions, until ...int64) error {
 	d := api.NewData().SetInt64("user_id", userID)
 	d.SetJSON("permissions", perms)
-	if until != nil {
-		d.SetInt64("until_date", *until, true)
+	if len(until) > 0 {
+		d.SetInt64("until_date", until[0], true)
 	}
 	return c.method("restrictChatMember", d)
 }

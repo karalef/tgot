@@ -82,22 +82,18 @@ func (t Topic) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Messag
 		return nil, nil
 	}
 
-	method, d := s.data()
-	if len(opts) > 0 {
-		opts[0].embed(d)
-	}
-	return topicMethod[*tg.Message](t, method, d)
+	d := api.NewData()
+	embed(d, opts)
+	return topicMethod[*tg.Message](t, s.sendData(d), d)
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
-func (t Topic) SendMediaGroup(mg MediaGroup, opts ...BaseSendOptions) ([]tg.Message, error) {
+func (t Topic) SendMediaGroup(mg MediaGroup, opts ...SendOptions[*tg.NoMarkup]) ([]tg.Message, error) {
 	d, err := mg.data()
 	if err != nil {
 		return nil, err
 	}
-	if len(opts) > 0 {
-		opts[0].embed(&d)
-	}
+	embed(d, opts)
 	return topicMethod[[]tg.Message](t, "sendMediaGroup", d)
 }
 
