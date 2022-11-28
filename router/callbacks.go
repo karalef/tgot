@@ -10,7 +10,7 @@ import (
 // NewCallbacks makes new inited callback router.
 func NewCallbacks() *Callbacks {
 	return &Callbacks{
-		NewRouter[tgot.CallbackContext, tgot.MessageSignature, *tg.CallbackQuery](),
+		NewRouter[tgot.CallbackContext, tgot.MsgSignature, *tg.CallbackQuery](),
 	}
 }
 
@@ -27,12 +27,12 @@ type CallbackHandler interface {
 	// Called when the handler times out.
 	// The current handler will be automatically unreged so do not
 	// call Unreg from this function as this will cause a deadlock.
-	Close(tgot.Context, tgot.MessageSignature) error
+	Close(tgot.Context, tgot.MsgSignature) error
 }
 
 // Callbacks routes callback queries.
 type Callbacks struct {
-	r *Router[tgot.CallbackContext, tgot.MessageSignature, *tg.CallbackQuery]
+	r *Router[tgot.CallbackContext, tgot.MsgSignature, *tg.CallbackQuery]
 }
 
 // Route handles callback query.
@@ -43,18 +43,18 @@ func (c *Callbacks) Route(qc tgot.QueryContext[tgot.CallbackAnswer], q *tg.Callb
 }
 
 // Reg registers callback handler for message.
-func (c *Callbacks) Reg(sig tgot.MessageSignature, h CallbackHandler, async ...bool) {
+func (c *Callbacks) Reg(sig tgot.MsgSignature, h CallbackHandler, async ...bool) {
 	if h != nil {
 		c.r.Reg(sig, &callbackWrapper{h}, async...)
 	}
 }
 
 // Unreg deletes handler associated with the key.
-func (c *Callbacks) Unreg(sig tgot.MessageSignature) {
+func (c *Callbacks) Unreg(sig tgot.MsgSignature) {
 	c.r.Unreg(sig)
 }
 
-var _ Handler[tgot.CallbackContext, tgot.MessageSignature, *tg.CallbackQuery] = &callbackWrapper{}
+var _ Handler[tgot.CallbackContext, tgot.MsgSignature, *tg.CallbackQuery] = &callbackWrapper{}
 
 type callbackWrapper struct {
 	CallbackHandler

@@ -10,7 +10,7 @@ import (
 // Command respresents simple command.
 type Command struct {
 	Cmd  string
-	Func func(tgot.MessageContext, *tg.Message, []string) error
+	Func func(tgot.ChatContext, *tg.Message, []string) error
 
 	Description string
 	FullDesc    string
@@ -31,7 +31,7 @@ func (c Command) Name() string { return c.Cmd }
 func (c Command) Desc() string { return c.Description }
 
 // Run implements tgot.Command and runs command function.
-func (c Command) Run(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+func (c Command) Run(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 	return c.Func(ctx, msg, args)
 }
 
@@ -104,12 +104,13 @@ func MakeHelp(list *List) *Command {
 			},
 		},
 	}
-	h.Func = func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+	h.Func = func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+		sendOpts := tgot.SendOptions[tg.ReplyMarkup]{ReplyTo: msg.ID}
 		if len(args) > 0 {
 			if cmd := list.GetCmd(args[0]); cmd != nil {
-				return ctx.Reply(cmd.Help())
+				return ctx.SendE(cmd.Help(), sendOpts)
 			}
-			return ctx.ReplyText("command not found")
+			return ctx.SendE(tgot.NewMessage("command not found"), sendOpts)
 		}
 		var sb strings.Builder
 		sb.WriteString("Commands list\n")
@@ -119,7 +120,7 @@ func MakeHelp(list *List) *Command {
 			sb.WriteByte(tgot.Prefix)
 			sb.WriteString(c.Cmd + " - " + c.Description)
 		}
-		return ctx.ReplyText(sb.String())
+		return ctx.SendE(tgot.NewMessage(sb.String()), sendOpts)
 	}
 	return &h
 }

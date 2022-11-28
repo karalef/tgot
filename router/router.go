@@ -16,7 +16,7 @@ func NewRouter[Ctx ctxType[Ctx], Key comparable, Data any]() *Router[Ctx, Key, D
 }
 
 type baseContext interface {
-	Base() tgot.Context
+	Ctx() tgot.Context
 	Logger() *logger.Logger
 }
 
@@ -79,7 +79,7 @@ func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
 // Route routes update.
 func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	r.mut.Lock()
-	r.gc(ctx.Base())
+	r.gc(ctx.Ctx())
 	h, ok := r.handlers[key]
 	if ok && !h.async {
 		h.lock()
