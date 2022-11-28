@@ -27,6 +27,18 @@ func NewWebhook(port int, cfg WebhookConfig) *Webhooker {
 	return wh
 }
 
+// WebhookPoller represents a webhook server that can send api requests in response to webhook requests.
+type WebhookPoller interface {
+	Poller
+	RunWH(api *api.API, handler WHHandler, allowed []string) error
+}
+
+var _ WebhookPoller = &Webhooker{}
+
+// WHHandler represents webhook handler function type.
+// If the method is not empty, the request to the api will be written in response to the webhook.
+type WHHandler func(*tg.Update) (method string, data *api.Data)
+
 // Webhooker receives incoming updates via an outgoing webhook.
 type Webhooker struct {
 	serv    *http.Server
@@ -64,9 +76,9 @@ func (wh *Webhooker) Close() {
 
 // Run starts webhook server.
 func (wh *Webhooker) Run(a *api.API, h Handler, allowed []string) error {
-	whhandler := func(upd *tg.Update) (string, api.Data) {
+	whhandler := func(upd *tg.Update) (string, *api.Data) {
 		h(upd)
-		return "", api.Data{}
+		return "", nil
 	}
 	return wh.RunWH(a, whhandler, allowed)
 }
@@ -190,5 +202,5 @@ func DeleteWebhook(a *api.API, dropPending bool) error {
 
 // GetWebhookInfo returns current webhook status.
 func GetWebhookInfo(a *api.API) (*tg.WebhookInfo, error) {
-	return api.Request[*tg.WebhookInfo](a, "getWebhookInfo")
+	return api.Request[*tg.WebhookInfo](a, "getWebhookInfo", nil)
 }
