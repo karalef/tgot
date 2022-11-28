@@ -22,7 +22,7 @@ func (c Context) GetCustomEmojiStickers(ids ...string) ([]tg.Sticker, error) {
 func (c Context) UploadStickerFile(userID int64, pngSticker *tg.InputFile) (*tg.File, error) {
 	d := api.NewData()
 	d.SetInt64("user_id", userID)
-	d.SetFile("png_sticker", pngSticker, nil)
+	d.AddFile("png_sticker", pngSticker)
 	return method[*tg.File](c, "uploadStickerFile", d)
 }
 
@@ -38,7 +38,7 @@ type NewSticker struct {
 	MaskPosition *tg.MaskPosition
 }
 
-func (n NewSticker) data() api.Data {
+func (n NewSticker) data() *api.Data {
 	d := api.NewData()
 	d.SetInt64("user_id", n.UserID)
 	d.Set("name", n.SetName)

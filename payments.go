@@ -11,7 +11,7 @@ type Invoice struct {
 	StartParameter string
 }
 
-func (i Invoice) data() api.Data {
+func (i Invoice) data() *api.Data {
 	d := api.NewData()
 	d.Set("title", i.Title)
 	d.Set("description", i.Description)
@@ -38,20 +38,15 @@ func (i Invoice) data() api.Data {
 }
 
 // CreateInvoiceLink contains parameters for creating an invoice link.
-type CreateInvoiceLink struct {
-	tg.InputInvoiceMessageContent
-}
-
-func (c CreateInvoiceLink) data() api.Data {
-	// since the parameters are exactly the same, except for
-	// StartParameter (since it is empty, it will not be included),
-	// it is possible to use the already existing serialization function.
-	return Invoice{c.InputInvoiceMessageContent, ""}.data()
-}
+type CreateInvoiceLink = tg.InputInvoiceMessageContent
 
 // CreateInvoiceLink creates a link for an invoice.
 func (c Context) CreateInvoiceLink(l CreateInvoiceLink) (string, error) {
-	return method[string](c, "createInvoiceLink", l.data())
+	// since the parameters are exactly the same, except for
+	// StartParameter (since it is empty, it will not be included),
+	// it is possible to use the already existing serialization function.
+	d := Invoice{l, ""}.data()
+	return method[string](c, "createInvoiceLink", d)
 }
 
 // ShippingContext type.
@@ -64,7 +59,7 @@ type ShippingAnswer struct {
 	ErrorMessage    string
 }
 
-func (a ShippingAnswer) answerData(queryID string) (string, api.Data) {
+func (a ShippingAnswer) answerData(queryID string) (string, *api.Data) {
 	d := api.NewData()
 	d.Set("shipping_query_id", queryID)
 	d.SetBool("ok", a.OK)
@@ -82,7 +77,7 @@ type PreCheckoutAnswer struct {
 	ErrorMessage string
 }
 
-func (a PreCheckoutAnswer) answerData(queryID string) (string, api.Data) {
+func (a PreCheckoutAnswer) answerData(queryID string) (string, *api.Data) {
 	d := api.NewData()
 	d.Set("pre_checkout_query_id", queryID)
 	d.SetBool("ok", a.OK)

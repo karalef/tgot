@@ -94,12 +94,12 @@ func (b *Bot) handle(upd *tg.Update) {
 	case upd.Message != nil:
 		b.onMessage(upd.Message)
 	case upd.EditedMessage != nil:
-		ctx := b.makeMessageContext(upd.EditedMessage, "EditedMessage")
+		ctx := b.makeChatContext(upd.EditedMessage.Chat, "EditedMessage")
 		h.OnEditedMessage(ctx, upd.EditedMessage)
 	case upd.ChannelPost != nil:
 		b.onMessage(upd.ChannelPost)
 	case upd.EditedChannelPost != nil:
-		ctx := b.makeMessageContext(upd.EditedChannelPost, "EditedPost")
+		ctx := b.makeChatContext(upd.EditedChannelPost.Chat, "EditedPost")
 		h.OnEditedChannelPost(ctx, upd.EditedChannelPost)
 	case upd.CallbackQuery != nil:
 		h.OnCallbackQuery(CallbackContext{
@@ -112,7 +112,10 @@ func (b *Bot) handle(upd *tg.Update) {
 			queryID: upd.InlineQuery.ID,
 		}, upd.InlineQuery)
 	case upd.InlineChosen != nil:
-		h.OnInlineChosen(b.MakeContext("InlineChosen"), upd.InlineChosen)
+		h.OnInlineChosen(MessageContext{
+			Context: b.MakeContext("InlineChosen"),
+			sig:     InlineSignature(upd.InlineChosen),
+		}, upd.InlineChosen)
 	case upd.ShippingQuery != nil:
 		h.OnShippingQuery(ShippingContext{
 			Context: b.MakeContext("ShippingQuery"),
@@ -144,10 +147,10 @@ func (b *Bot) onCommand(msg *tg.Message, cmd string, args []string) bool {
 	if command == nil {
 		return false
 	}
-	c := b.makeMessageContext(msg, "Commands::"+command.Name())
+	c := b.makeChatContext(msg.Chat, "Commands::"+command.Name())
 	err := command.Run(c, msg, args)
 	if err != nil {
-		c.bot.log.Error("command %s ended with an error: %s", command.Name(), err.Error())
+		b.log.Error("command %s ended with an error: %s", command.Name(), err.Error())
 	}
 	return true
 }
@@ -166,21 +169,21 @@ func (b *Bot) onMessage(msg *tg.Message) {
 		h, n = b.handler.OnChannelPost, "Post"
 	}
 	if h != nil {
-		h(b.makeMessageContext(msg, n), msg)
+		h(b.makeChatContext(msg.Chat, n), msg)
 	}
 }
 
 // Handler conatains all handler functions and handling parameters.
 type Handler struct {
 	// It only handles messages that are NOT commands.
-	OnMessage       func(MessageContext, *tg.Message)
-	OnEditedMessage func(MessageContext, *tg.Message)
+	OnMessage       func(ChatContext, *tg.Message)
+	OnEditedMessage func(ChatContext, *tg.Message)
 	// It only handles messages that are NOT commands.
-	OnChannelPost       func(MessageContext, *tg.Message)
-	OnEditedChannelPost func(MessageContext, *tg.Message)
+	OnChannelPost       func(ChatContext, *tg.Message)
+	OnEditedChannelPost func(ChatContext, *tg.Message)
 	OnCallbackQuery     func(CallbackContext, *tg.CallbackQuery)
 	OnInlineQuery       func(InlineContext, *tg.InlineQuery)
-	OnInlineChosen      func(Context, *tg.InlineChosen)
+	OnInlineChosen      func(MessageContext, *tg.InlineChosen)
 	OnShippingQuery     func(ShippingContext, *tg.ShippingQuery)
 	OnPreCheckoutQuery  func(PreCheckoutContext, *tg.PreCheckoutQuery)
 	OnPoll              func(Context, *tg.Poll)

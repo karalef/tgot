@@ -5,84 +5,63 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-func (b *Bot) makeMessageContext(msg *tg.Message, name string) MessageContext {
-	return MessageContext{
-		ChatContext: b.makeChatContext(msg.Chat, name),
-		msgID:       msg.ID,
-	}
-}
-
-// MessageContext type.
-type MessageContext struct {
-	ChatContext
-	msgID int
-}
-
-func (c MessageContext) Child(name string) MessageContext {
-	c.Context = c.Context.Child(name)
-	return c
-}
-
-// Reply replies to a message with the Sendable and returns only an error.
-func (c MessageContext) Reply(s Sendable) error {
-	_, err := c.Chat.Send(s, SendOptions[tg.ReplyMarkup]{
-		BaseSendOptions: BaseSendOptions{ReplyTo: c.msgID},
-	})
-	return err
-}
-
-// ReplyText replies to a message with just a text and returns only an error.
-func (c MessageContext) ReplyText(text string) error {
-	return c.Reply(NewMessage(text))
-}
-
-// MsgSignature creates a chat message signature.
-func MsgSignature(msg *tg.Message) MessageSignature {
-	return MessageSignature{
-		ChatID: msg.Chat.ID,
-		MsgID:  msg.ID,
-	}
+// MessageSignature creates a chat message signature.
+func MessageSignature(msg *tg.Message) MsgSignature {
+	return MsgSignature{chatID: ChatID(msg.Chat.ID)}
 }
 
 // InlineSignature creates an inline message signature.
-func InlineSignature(i *tg.InlineChosen) MessageSignature {
-	return MessageSignature{Inline: i.InlineMessageID}
+func InlineSignature(i *tg.InlineChosen) MsgSignature {
+	return MsgSignature{inline: i.InlineMessageID}
 }
 
 // CallbackSignature creates a MessageSignature of any callback message type.
-func CallbackSignature(q *tg.CallbackQuery) MessageSignature {
+func CallbackSignature(q *tg.CallbackQuery) MsgSignature {
 	if q.Message != nil {
-		return MsgSignature(q.Message)
+		return MessageSignature(q.Message)
 	}
-	return MessageSignature{Inline: q.InlineMessageID}
+	return MsgSignature{inline: q.InlineMessageID}
 }
 
-func (c Context) sig(sig MessageSignature, meth string, d api.Data) (*tg.Message, error) {
-	sig.signature(&d)
-	if sig.isInline() {
-		return nil, c.method(meth, d)
-	}
-	return method[*tg.Message](c, meth, d)
+// MsgSignature contains inline message id or chat id with message id.
+type MsgSignature struct {
+	chatID Chat
+	msgID  int
+	inline string
 }
 
-// MessageSignature contains inline message id or chat id with message id.
-type MessageSignature struct {
-	ChatID int64
-	MsgID  int
-	Inline string
+func (s MsgSignature) isInline() bool {
+	return s.inline != ""
 }
 
-func (s MessageSignature) isInline() bool {
-	return s.Inline != ""
-}
-
-func (s MessageSignature) signature(d *api.Data) {
-	if s.Inline != "" {
-		d.Set("inline_message_id", s.Inline)
+func (s MsgSignature) signature(d *api.Data) {
+	if s.isInline() {
+		d.Set("inline_message_id", s.inline)
 		return
 	}
-	d.SetInt64("chat_id", s.ChatID)
-	d.SetInt("message_id", s.MsgID)
+	s.chatID.setChatID(d)
+	d.SetInt("message_id", s.msgID)
+}
+
+// OpenMessage makes message interface.
+func (c Context) OpenMessage(sig MsgSignature) MessageContext {
+	return MessageContext{c, sig}
+}
+
+// MessageContext provides api for any message.
+//
+// For inline messages the result message will always be nil.
+type MessageContext struct {
+	Context
+	sig MsgSignature
+}
+
+func (c MessageContext) msgMethod(meth string, d *api.Data) (*tg.Message, error) {
+	c.sig.signature(d)
+	if c.sig.isInline() {
+		return nil, c.method(meth, d)
+	}
+	return method[*tg.Message](c.Context, meth, d)
 }
 
 // LiveLocation contains parameters for editing the live location.
@@ -95,7 +74,7 @@ type LiveLocation struct {
 }
 
 // EditLiveLocation edits live location messages.
-func (c Context) EditLiveLocation(sig MessageSignature, l LiveLocation, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditLiveLocation(l LiveLocation, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
 	d.SetFloat("latitude", l.Lat)
 	d.SetFloat("longitude", l.Long)
@@ -107,16 +86,16 @@ func (c Context) EditLiveLocation(sig MessageSignature, l LiveLocation, replyMar
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
-	return c.sig(sig, "editMessageLiveLocation", d)
+	return c.msgMethod("editMessageLiveLocation", d)
 }
 
 // StopLiveLocation stops updating a live location message before live_period expires.
-func (c Context) StopLiveLocation(sig MessageSignature, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) StopLiveLocation(replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
-	return c.sig(sig, "stopMessageLiveLocation", d)
+	return c.msgMethod("stopMessageLiveLocation", d)
 }
 
 // EditText contains parameters for editing message text.
@@ -128,7 +107,7 @@ type EditText struct {
 }
 
 // EditText edits text and game messages.
-func (c Context) EditText(sig MessageSignature, t EditText, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditText(t EditText, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
 	d.Set("text", t.Text)
 	d.Set("parse_mode", string(t.ParseMode))
@@ -137,34 +116,34 @@ func (c Context) EditText(sig MessageSignature, t EditText, replyMarkup ...tg.In
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
-	return c.sig(sig, "editMessageText", d)
+	return c.msgMethod("editMessageText", d)
 }
 
 // EditCaption edits captions of messages.
-func (c Context) EditCaption(sig MessageSignature, cap CaptionData, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditCaption(cap CaptionData, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
-	cap.embed(&d)
+	cap.embed(d)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
-	return c.sig(sig, "editMessageCaption", d)
+	return c.msgMethod("editMessageCaption", d)
 }
 
 // EditMedia edits animation, audio, document, photo, or video messages.
-func (c Context) EditMedia(sig MessageSignature, m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditMedia(m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
-	err := prepareInputMedia(&d, false, m)
+	err := prepareInputMedia(d, false, m)
 	if err != nil {
 		return nil, err
 	}
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
-	return c.sig(sig, "editMessageMedia", d)
+	return c.msgMethod("editMessageMedia", d)
 }
 
 // EditReplyMarkup edits only the reply markup of messages.
-func (c Context) EditReplyMarkup(sig MessageSignature, replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditReplyMarkup(replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData().SetJSON("reply_markup", replyMarkup)
-	return c.sig(sig, "editMessageReplyMarkup", d)
+	return c.msgMethod("editMessageReplyMarkup", d)
 }

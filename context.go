@@ -14,7 +14,7 @@ import (
 // MakeContext creates new context.
 //
 // The context must be used in a separate goroutine because in case of fatal
-// errors the context will be cancelled and the goroutine will be terminated.
+// errors the bot will be closed and the goroutine will be terminated.
 func (b *Bot) MakeContext(name string) Context {
 	return Context{bot: b, name: name}
 }
@@ -25,8 +25,8 @@ type Context struct {
 	name string
 }
 
-// Base returns Context from a higher-level context.
-func (c Context) Base() Context { return c }
+// Ctx returns Context.
+func (c Context) Ctx() Context { return c }
 
 // Child creates sub context.
 func (c Context) Child(name string) Context {
@@ -37,22 +37,6 @@ func (c Context) Child(name string) Context {
 // Logger returns context logger.
 func (c Context) Logger() *logger.Logger {
 	return c.bot.log.Child(c.name)
-}
-
-// OpenChat makes chat interface.
-func (c Context) OpenChat(chatID int64) Chat {
-	return Chat{
-		Context: c,
-		chatID:  chatID,
-	}
-}
-
-// OpenChannel makes channel interface.
-func (c Context) OpenChannel(username string) Chat {
-	return Chat{
-		Context:  c,
-		username: username,
-	}
 }
 
 // GetMe returns basic information about the bot.
@@ -107,13 +91,17 @@ func (c Context) DownloadFile(fid string) ([]byte, error) {
 	return c.Download(f)
 }
 
-func (c Context) method(meth string, d ...api.Data) error {
+func (c Context) method(meth string, d ...*api.Data) error {
 	_, err := method[api.Empty](c, meth, d...)
 	return err
 }
 
-func method[T any](c Context, method string, d ...api.Data) (T, error) {
-	result, err := api.Request[T](c.bot.api, method, d...)
+func method[T any](c Context, method string, d ...*api.Data) (T, error) {
+	var data *api.Data
+	if len(d) > 0 {
+		data = d[0]
+	}
+	result, err := api.Request[T](c.bot.api, method, data)
 	if err == nil {
 		return result, nil
 	}

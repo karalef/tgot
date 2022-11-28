@@ -11,72 +11,86 @@ func (c Context) GetForumTopicIconStickers() ([]tg.Sticker, error) {
 	return method[[]tg.Sticker](c, "getForumTopicIconStickers")
 }
 
+// OpenForumTopic makes forum topic interface.
+func (c ChatContext) OpenForumTopic(threadID int) Topic {
+	return Topic{c.Context, c.id, threadID}
+}
+
+// CreateForumTopic creates a topic in a forum supergroup chat.
+func (c ChatContext) CreateForumTopic(name string, iconColor int, iconEmojiID string) (*tg.ForumTopic, error) {
+	d := api.NewData().Set("name", name)
+	d.SetInt("icon_color", iconColor)
+	d.Set("icon_custom_emoji_id", iconEmojiID)
+	return chatMethod[*tg.ForumTopic](c, "createForumTopic", d)
+}
+
+// CloseForumTopic closes an open topic in a forum supergroup chat.
+func (c ChatContext) CloseForumTopic(threadID int) error {
+	return c.OpenForumTopic(threadID).method("closeForumTopic")
+}
+
+// ReopenForumTopic reopens a closed topic in a forum supergroup chat.
+func (c ChatContext) ReopenForumTopic(threadID int) error {
+	return c.OpenForumTopic(threadID).method("reopenForumTopic")
+}
+
+// DeleteForumTopic deletes a forum topic along with all its messages in a forum supergroup chat.
+func (c ChatContext) DeleteForumTopic(threadID int) error {
+	return c.OpenForumTopic(threadID).method("deleteForumTopic")
+}
+
 // Topic provides forum topics api.
 type Topic struct {
-	chat     *Chat
+	ctx      Context
+	chatID   Chat
 	threadID int
 }
 
-func (t *Topic) method(method string, d ...api.Data) error {
+func (t Topic) method(method string, d ...*api.Data) error {
 	_, err := topicMethod[bool](t, method, d...)
 	return err
 }
 
-func topicMethod[T any](t *Topic, meth string, d ...api.Data) (T, error) {
-	var data api.Data
+func topicMethod[T any](t Topic, meth string, d ...*api.Data) (T, error) {
+	var data *api.Data
 	if len(d) > 0 {
 		data = d[0]
 	} else {
 		data = api.NewData()
 	}
-	t.chat.setChatID(&data)
 	data.SetInt("message_thread_id", t.threadID)
-	return method[T](t.chat.Context, meth, data)
+	t.chatID.setChatID(data)
+	return method[T](t.ctx, meth, data)
 }
 
 // Edit edits name and icon of a topic in a forum supergroup chat.
-func (t *Topic) Edit(name, iconEmojiID string) error {
+func (t Topic) Edit(name, iconEmojiID string) error {
 	d := api.NewData()
 	d.Set("name", name)
 	d.Set("icon_custom_emoji_id", iconEmojiID)
 	return t.method("editForumTopic", d)
 }
 
-// Close closes an open topic in a forum supergroup chat.
-func (t *Topic) Close() error {
-	return t.method("closeForumTopic")
-}
-
-// Reopen reopens a closed topic in a forum supergroup chat.
-func (t *Topic) Reopen() error {
-	return t.method("reopenForumTopic")
-}
-
-// Delete deletes a forum topic along with all its messages in a forum supergroup chat.
-func (t *Topic) Delete() error {
-	return t.method("deleteForumTopic")
-}
-
 // UnpinAllMessages clears the list of pinned messages in a forum topic.
-func (t *Topic) UnpinAllMessages() error {
+func (t Topic) UnpinAllMessages() error {
 	return t.method("unpinAllForumTopicMessages")
 }
 
 // Send sends any Sendable object.
-func (t *Topic) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Message, error) {
+func (t Topic) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Message, error) {
 	if s == nil {
 		return nil, nil
 	}
 
 	method, d := s.data()
 	if len(opts) > 0 {
-		opts[0].embed(&d)
+		opts[0].embed(d)
 	}
 	return topicMethod[*tg.Message](t, method, d)
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
-func (t *Topic) SendMediaGroup(mg MediaGroup, opts ...BaseSendOptions) ([]tg.Message, error) {
+func (t Topic) SendMediaGroup(mg MediaGroup, opts ...BaseSendOptions) ([]tg.Message, error) {
 	d, err := mg.data()
 	if err != nil {
 		return nil, err
@@ -88,28 +102,28 @@ func (t *Topic) SendMediaGroup(mg MediaGroup, opts ...BaseSendOptions) ([]tg.Mes
 }
 
 // SendInvoice sends an invoice.
-func (t *Topic) SendInvoice(i Invoice, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
+func (t Topic) SendInvoice(i Invoice, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
 	d := i.data()
 	if len(opts) > 0 {
-		opts[0].embed(&d)
+		opts[0].embed(d)
 	}
 	return topicMethod[*tg.Message](t, "sendInvoice", d)
 }
 
 // SendGame sends a game.
-func (t *Topic) SendGame(g Game, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
+func (t Topic) SendGame(g Game, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
 	d := g.data()
 	if len(opts) > 0 {
-		opts[0].embed(&d)
+		opts[0].embed(d)
 	}
 	return topicMethod[*tg.Message](t, "sendGame", d)
 }
 
 // Forward forwards messages of any kind.
 // Service messages can't be forwarded.
-func (t *Topic) Forward(from *Chat, fwd Forward) (*tg.Message, error) {
+func (t Topic) Forward(from Chat, fwd Forward) (*tg.Message, error) {
 	d := api.NewData()
-	from.setChatID(&d, "from_chat_id")
+	from.setChatID(d, "from_chat_id")
 	d.SetInt("message_id", fwd.MessageID)
 	d.SetBool("disable_notification", fwd.DisableNotification)
 	d.SetBool("protect_content", fwd.ProtectContent)
@@ -118,13 +132,13 @@ func (t *Topic) Forward(from *Chat, fwd Forward) (*tg.Message, error) {
 
 // Copy copies messages of any kind.
 // Service messages and invoice messages can't be copied.
-func (t *Topic) Copy(from *Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
+func (t Topic) Copy(from Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
 	d := api.NewData()
-	from.setChatID(&d, "from_chat_id")
+	from.setChatID(d, "from_chat_id")
 	d.SetInt("message_id", cp.MessageID)
-	cp.CaptionData.embed(&d)
+	cp.CaptionData.embed(d)
 	if len(opts) > 0 {
-		opts[0].embed(&d)
+		opts[0].embed(d)
 	}
 	return topicMethod[*tg.MessageID](t, "copyMessage", d)
 }

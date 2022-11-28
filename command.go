@@ -13,7 +13,7 @@ const Prefix = '/'
 // Command type.
 type Command interface {
 	Name() string
-	Run(MessageContext, *tg.Message, []string) error
+	Run(ChatContext, *tg.Message, []string) error
 }
 
 // Commands represents commands controller.
