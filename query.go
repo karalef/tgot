@@ -8,8 +8,7 @@ import (
 )
 
 type answerable interface {
-	InlineAnswer | CallbackAnswer | ShippingAnswer | PreCheckoutAnswer
-	answerData(queryID string) (method string, data *api.Data)
+	answerData(data *api.Data, queryID string) (method string)
 }
 
 func makeQueryContext[T answerable](ctx Context, queryID string) QueryContext[T] {
@@ -35,7 +34,8 @@ func (c QueryContext[T]) Child(name string) QueryContext[T] {
 
 func (c QueryContext[T]) Answer(answer T) (err error) {
 	c.once.Do(func() {
-		err = c.method(answer.answerData(c.queryID))
+		data := api.NewData()
+		err = c.method(answer.answerData(data, c.queryID), data)
 	})
 	return
 }
@@ -53,8 +53,7 @@ type InlineAnswer struct {
 	SwitchPMParameter string
 }
 
-func (a InlineAnswer) answerData(queryID string) (string, *api.Data) {
-	d := api.NewData()
+func (a InlineAnswer) answerData(d *api.Data, queryID string) string {
 	d.Set("inline_query_id", queryID)
 	d.SetJSON("results", a.Results)
 	if a.CacheTime != nil {
@@ -64,7 +63,7 @@ func (a InlineAnswer) answerData(queryID string) (string, *api.Data) {
 	d.Set("next_offset", a.NextOffset)
 	d.Set("switch_pm_text", a.SwitchPMText)
 	d.Set("switch_pm_parameter", a.SwitchPMParameter)
-	return "answerInlineQuery", d
+	return "answerInlineQuery"
 }
 
 // CallbackContext type.
@@ -78,12 +77,11 @@ type CallbackAnswer struct {
 	CacheTime int
 }
 
-func (a CallbackAnswer) answerData(queryID string) (string, *api.Data) {
-	d := api.NewData()
+func (a CallbackAnswer) answerData(d *api.Data, queryID string) string {
 	d.Set("callback_query_id", queryID)
 	d.Set("text", a.Text)
 	d.SetBool("show_alert", a.ShowAlert)
 	d.Set("url", a.URL)
 	d.SetInt("cache_time", a.CacheTime)
-	return "answerCallbackQuery", d
+	return "answerCallbackQuery"
 }

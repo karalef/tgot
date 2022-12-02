@@ -59,13 +59,12 @@ type ShippingAnswer struct {
 	ErrorMessage    string
 }
 
-func (a ShippingAnswer) answerData(queryID string) (string, *api.Data) {
-	d := api.NewData()
+func (a ShippingAnswer) answerData(d *api.Data, queryID string) string {
 	d.Set("shipping_query_id", queryID)
 	d.SetBool("ok", a.OK)
 	d.SetJSON("shipping_options", a.ShippingOptions)
 	d.Set("error_message", a.ErrorMessage)
-	return "answerShippingQuery", d
+	return "answerShippingQuery"
 }
 
 // PreCheckoutContext type.
@@ -77,10 +76,9 @@ type PreCheckoutAnswer struct {
 	ErrorMessage string
 }
 
-func (a PreCheckoutAnswer) answerData(queryID string) (string, *api.Data) {
-	d := api.NewData()
+func (a PreCheckoutAnswer) answerData(d *api.Data, queryID string) string {
 	d.Set("pre_checkout_query_id", queryID)
 	d.SetBool("ok", a.OK)
 	d.Set("error_message", a.ErrorMessage)
-	return "answerPreCheckoutQuery", d
+	return "answerPreCheckoutQuery"
 }
