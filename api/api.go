@@ -13,9 +13,9 @@ import (
 // New creates a new API instance and returns the getMe result if successful.
 // If apiURL or fileURL are empty, the Telegram defaults are used.
 // If client is nil, the http.DefaultClient is used.
-func New(token string, apiURL, fileURL string, client *http.Client) (*API, *tg.User, error) {
+func New(token string, apiURL, fileURL string, client *http.Client) (*API, error) {
 	if token == "" {
-		return nil, nil, errors.New("no token provided")
+		return nil, errors.New("no token provided")
 	}
 	if apiURL == "" {
 		apiURL = tg.DefaultAPIURL
@@ -26,17 +26,12 @@ func New(token string, apiURL, fileURL string, client *http.Client) (*API, *tg.U
 	if client == nil {
 		client = http.DefaultClient
 	}
-	a := API{
+	return &API{
 		token:   token,
 		apiURL:  apiURL,
 		fileURL: fileURL,
 		client:  client,
-	}
-	me, err := a.GetMe()
-	if err != nil {
-		return nil, nil, err
-	}
-	return &a, me, nil
+	}, nil
 }
 
 // API provides access to the Telegram Bot API.
