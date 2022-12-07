@@ -102,30 +102,20 @@ func (b *Bot) handle(upd *tg.Update) {
 		ctx := b.makeChatContext(upd.EditedChannelPost.Chat, "EditedPost")
 		h.OnEditedChannelPost(ctx, upd.EditedChannelPost)
 	case upd.CallbackQuery != nil:
-		h.OnCallbackQuery(CallbackContext{
-			Context: b.MakeContext("Callback"),
-			queryID: upd.CallbackQuery.ID,
-		}, upd.CallbackQuery)
+		ctx := makeQueryContext[CallbackAnswer](b.MakeContext("Callback"), upd.CallbackQuery.ID)
+		h.OnCallbackQuery(ctx, upd.CallbackQuery)
 	case upd.InlineQuery != nil:
-		h.OnInlineQuery(InlineContext{
-			Context: b.MakeContext("Inline"),
-			queryID: upd.InlineQuery.ID,
-		}, upd.InlineQuery)
+		ctx := makeQueryContext[InlineAnswer](b.MakeContext("Inline"), upd.InlineQuery.ID)
+		h.OnInlineQuery(ctx, upd.InlineQuery)
 	case upd.InlineChosen != nil:
-		h.OnInlineChosen(MessageContext{
-			Context: b.MakeContext("InlineChosen"),
-			sig:     InlineSignature(upd.InlineChosen),
-		}, upd.InlineChosen)
+		ctx := b.MakeContext("InlineChosen").OpenMessage(InlineSignature(upd.InlineChosen))
+		h.OnInlineChosen(ctx, upd.InlineChosen)
 	case upd.ShippingQuery != nil:
-		h.OnShippingQuery(ShippingContext{
-			Context: b.MakeContext("ShippingQuery"),
-			queryID: upd.ShippingQuery.ID,
-		}, upd.ShippingQuery)
+		ctx := makeQueryContext[ShippingAnswer](b.MakeContext("ShippingQuery"), upd.ShippingQuery.ID)
+		h.OnShippingQuery(ctx, upd.ShippingQuery)
 	case upd.PreCheckoutQuery != nil:
-		h.OnPreCheckoutQuery(PreCheckoutContext{
-			Context: b.MakeContext("PreCheckoutQuery"),
-			queryID: upd.PreCheckoutQuery.ID,
-		}, upd.PreCheckoutQuery)
+		ctx := makeQueryContext[PreCheckoutAnswer](b.MakeContext("PreCheckoutQuery"), upd.PreCheckoutQuery.ID)
+		h.OnPreCheckoutQuery(ctx, upd.PreCheckoutQuery)
 	case upd.Poll != nil:
 		h.OnPoll(b.MakeContext("Poll"), upd.Poll)
 	case upd.PollAnswer != nil:
