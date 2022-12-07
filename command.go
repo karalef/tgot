@@ -56,5 +56,6 @@ func ParseCommandMsg(msg *tg.Message) (cmd string, mention string, args []string
 		mention = cmd[i+1:]
 		cmd = cmd[:i]
 	}
+	cmd = cmd[1:]
 	return
 }

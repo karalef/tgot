@@ -63,7 +63,7 @@ func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
 	d.SetJSON("allowed", allowed)
 
 	for {
-		d.SetInt("offset", lp.offset)
+		d.SetInt("offset", lp.offset+1)
 		upds, err := api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
 		switch err {
 		case nil:
