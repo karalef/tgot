@@ -43,9 +43,9 @@ func (c *Callbacks) Route(qc tgot.QueryContext[tgot.CallbackAnswer], q *tg.Callb
 }
 
 // Reg registers callback handler for message.
-func (c *Callbacks) Reg(sig tgot.MsgSignature, h CallbackHandler, async ...bool) {
+func (c *Callbacks) Reg(sig tgot.MsgSignature, h CallbackHandler) {
 	if h != nil {
-		c.r.Reg(sig, &callbackWrapper{h}, async...)
+		c.r.Reg(sig, &callbackWrapper{h})
 	}
 }
 

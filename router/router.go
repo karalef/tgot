@@ -42,9 +42,7 @@ type Handler[Ctx ctxType[Ctx], Key comparable, Data any] interface {
 }
 
 type handler[Ctx ctxType[Ctx], Key comparable, Data any] struct {
-	mut     sync.Mutex
-	async   bool
-	invalid bool
+	mut sync.Mutex
 	Handler[Ctx, Key, Data]
 }
 
@@ -68,6 +66,9 @@ func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
 		if t.Before(h.Timeout()) {
 			continue
 		}
+		if !h.mut.TryLock() {
+			continue
+		}
 		delete(r.handlers, key)
 		err := h.Close(ctx.Child(h.Name()), key)
 		if err != nil {
@@ -81,33 +82,30 @@ func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	r.mut.Lock()
 	r.gc(ctx.Ctx())
 	h, ok := r.handlers[key]
-	if ok && !h.async {
-		h.lock()
-		defer h.unlock()
-	}
-	if !ok || h.invalid {
+	if !ok {
 		r.mut.Unlock()
 		return
 	}
+	h.lock()
+	defer h.unlock()
 	r.mut.Unlock()
 
-	var err error
-	h.invalid, err = h.Handle(ctx.Child(h.Name()), data)
+	unreg, err := h.Handle(ctx.Child(h.Name()), data)
 	if err != nil {
 		ctx.Logger().Error("handler '%s' ended with an error: %s", h.Name(), err.Error())
 	}
-	if h.invalid {
+	if unreg {
 		r.Unreg(key)
 	}
 }
 
 // Reg registers handler for key.
-func (r *Router[Ctx, Key, Data]) Reg(key Key, h Handler[Ctx, Key, Data], async ...bool) {
-	if h != nil || h.Timeout().Before(time.Now()) {
+func (r *Router[Ctx, Key, Data]) Reg(key Key, h Handler[Ctx, Key, Data]) {
+	if h == nil || h.Timeout().Before(time.Now()) {
 		return
 	}
 	r.mut.Lock()
-	r.handlers[key] = &handler[Ctx, Key, Data]{Handler: h, async: len(async) > 0 && async[0]}
+	r.handlers[key] = &handler[Ctx, Key, Data]{Handler: h}
 	r.mut.Unlock()
 }
 
