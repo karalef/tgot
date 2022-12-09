@@ -7,7 +7,7 @@ import (
 
 // MessageSignature creates a chat message signature.
 func MessageSignature(msg *tg.Message) MsgSignature {
-	return MsgSignature{chatID: ChatID(msg.Chat.ID)}
+	return MsgSignature{chatID: ChatID(msg.Chat.ID), msgID: msg.ID}
 }
 
 // InlineSignature creates an inline message signature.
