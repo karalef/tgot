@@ -86,10 +86,10 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 		}
 	}
 	if r.APIError != nil {
-		return nilResult, &Error{makeError(method, data, *r.APIError)}
+		err = &Error{makeError(method, data, *r.APIError)}
 	}
 
-	return r.Result, nil
+	return r.Result, err
 }
 
 // DownloadFile downloads a file from the server.

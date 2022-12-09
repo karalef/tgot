@@ -99,7 +99,7 @@ func (wh *Webhooker) RunWH(api *api.API, h WHHandler, allowed []string) error {
 		cert = tg.FileBytes(filepath.Base(wh.cfg.CertFile), certfile)
 	}
 
-	err := SetWebhook(api, WebhookData{
+	ok, err := SetWebhook(api, WebhookData{
 		URL:            wh.cfg.URL,
 		Certificate:    cert,
 		IPAddress:      wh.cfg.IPAddress,
@@ -108,7 +108,7 @@ func (wh *Webhooker) RunWH(api *api.API, h WHHandler, allowed []string) error {
 		DropPending:    wh.cfg.DropPending,
 		SecretToken:    wh.cfg.SecretToken,
 	})
-	if err != nil {
+	if !ok {
 		return err
 	}
 
@@ -183,7 +183,7 @@ type WebhookData struct {
 
 // SetWebhook specifies a webhook URL.
 // Use this method to specify a URL and receive incoming updates via an outgoing webhook.
-func SetWebhook(a *api.API, s WebhookData) error {
+func SetWebhook(a *api.API, s WebhookData) (bool, error) {
 	d := api.NewData().Set("url", s.URL)
 	d.AddFile("certificate", s.Certificate)
 	d.Set("ip_address", s.IPAddress)
@@ -191,13 +191,13 @@ func SetWebhook(a *api.API, s WebhookData) error {
 	d.SetJSON("allowed_updates", s.AllowedUpdates)
 	d.SetBool("drop_pending_updates", s.DropPending)
 	d.Set("secret_token", s.SecretToken)
-	return a.Request("setWebhook", d)
+	return api.Request[bool](a, "setWebhook", d)
 }
 
 // DeleteWebhook removes webhook integration if you decide to switch back to getUpdates.
-func DeleteWebhook(a *api.API, dropPending bool) error {
+func DeleteWebhook(a *api.API, dropPending bool) (bool, error) {
 	d := api.NewData().SetBool("drop_pending_updates", dropPending)
-	return a.Request("deleteWebhook", d)
+	return api.Request[bool](a, "deleteWebhook", d)
 }
 
 // GetWebhookInfo returns current webhook status.
