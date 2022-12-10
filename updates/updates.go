@@ -7,12 +7,10 @@ import (
 
 // Poller represents any blocking updates poller.
 type Poller interface {
+	// should block the goroutine
 	Run(api *api.API, handler Handler, allowed []string) error
 	Close()
 }
-
-var _ Poller = &LongPoller{}
-var _ Poller = &Webhooker{}
 
 // Handler represents handler function type.
 type Handler func(*tg.Update)

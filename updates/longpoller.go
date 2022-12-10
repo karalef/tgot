@@ -10,7 +10,7 @@ import (
 
 // NewLongPoller creates a LongPoller instance.
 //
-// timeout must be >1.
+// timeout must be >0.
 // limit must be in the range of 1-100.
 func NewLongPoller(timeout, limit, offset int) *LongPoller {
 	if timeout < 1 {
@@ -27,7 +27,7 @@ func NewLongPoller(timeout, limit, offset int) *LongPoller {
 	return &lp
 }
 
-// LongPoller polls the server for updates via the getUpdates method.
+// LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
 // It must be created via NewLongPoller otherwise only for testing purposes.
 type LongPoller struct {
 	offset  int
@@ -39,6 +39,8 @@ type LongPoller struct {
 
 	Filter FilterFunc
 }
+
+var _ Poller = &LongPoller{}
 
 // Close stops the long poller and waits for all active handlers to complete.
 // It panics if the poller is not running.
@@ -85,4 +87,22 @@ func (lp *LongPoller) handle(h Handler, upd *tg.Update) {
 	lp.wg.Add(1)
 	defer lp.wg.Done()
 	h(upd)
+}
+
+// GetUpdatesParams contains parameters for getUpdates method.
+type GetUpdatesParams struct {
+	Offset  int
+	Limit   int
+	Timeout int
+	Allowed []string
+}
+
+// GetUpdates receives incoming updates using long polling.
+func GetUpdates(ctx context.Context, a *api.API, p GetUpdatesParams) ([]tg.Update, error) {
+	d := api.NewData()
+	d.SetInt("limit", p.Limit)
+	d.SetInt("timeout", p.Timeout)
+	d.SetJSON("allowed", p.Allowed)
+	d.SetInt("offset", p.Offset+1)
+	return api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
 }

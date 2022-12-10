@@ -1,31 +1,17 @@
 package updates
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
 
-// NewWebhook creates new server for telegram webhooks.
-// Ports currently supported for webhooks: 443, 80, 88, 8443.
-func NewWebhook(port int, cfg WebhookConfig) *Webhooker {
-	if cfg.CertFile != "" && cfg.KeyFile == "" || cfg.URL == "" {
-		return nil
-	}
-	wh := &Webhooker{cfg: cfg}
-	wh.serv = &http.Server{
-		Addr:    ":" + strconv.Itoa(port),
-		Handler: http.HandlerFunc(wh.handle),
-	}
-	return wh
-}
+// WHHandler represents webhook handler function type.
+// If the method is not empty, the request to the api will be written in response to the webhook.
+type WHHandler func(*tg.Update) (method string, data *api.Data)
 
 // WebhookPoller represents a webhook server that can send api requests in response to webhook requests.
 type WebhookPoller interface {
@@ -33,119 +19,43 @@ type WebhookPoller interface {
 	RunWH(api *api.API, handler WHHandler, allowed []string) error
 }
 
-var _ WebhookPoller = &Webhooker{}
-
-// WHHandler represents webhook handler function type.
-// If the method is not empty, the request to the api will be written in response to the webhook.
-type WHHandler func(*tg.Update) (method string, data *api.Data)
-
-// Webhooker receives incoming updates via an outgoing webhook.
-type Webhooker struct {
-	serv    *http.Server
-	cfg     WebhookConfig
-	handler WHHandler
-
-	Filter FilterFunc
-}
-
-// WebhookConfig contains webhook parameters.
-type WebhookConfig struct {
-	// HTTPS URL to send updates to.
-	URL string
-
-	CertFile string
-	KeyFile  string
-
-	// The fixed IP address which will be used to send webhook requests instead of the IP address resolved through DNS.
-	IPAddress string
-	// The maximum allowed number of simultaneous HTTPS connections to the webhook for update delivery, 1-100.
-	// Defaults to 40.
-	MaxConnections int
-	// Pass True to drop all pending updates.
-	DropPending bool
-	// A secret token to be sent in a header “X-Telegram-Bot-Api-Secret-Token” in every webhook request, 1-256 characters.
-	// Only characters A-Z, a-z, 0-9, _ and - are allowed.
-	// The header is useful to ensure that the request comes from a webhook set by you.
-	SecretToken string
-}
-
-// Close shuts down the server without interrupting any active connections.
-func (wh *Webhooker) Close() {
-	wh.serv.Shutdown(context.Background())
-}
-
-// Run starts webhook server.
-func (wh *Webhooker) Run(a *api.API, h Handler, allowed []string) error {
-	whhandler := func(upd *tg.Update) (string, *api.Data) {
+// WrapHandler wraps Handler with WHHandler.
+func WrapHandler(h Handler) WHHandler {
+	return func(upd *tg.Update) (string, *api.Data) {
 		h(upd)
 		return "", nil
 	}
-	return wh.RunWH(a, whhandler, allowed)
 }
 
-// RunWH starts webhook server.
-func (wh *Webhooker) RunWH(api *api.API, h WHHandler, allowed []string) error {
-	if h == nil {
-		panic("Webhooker: nil handler")
-	}
-
-	tls := wh.cfg.CertFile != ""
-	var cert *tg.InputFile
-	if tls {
-		certfile, err := os.ReadFile(wh.cfg.CertFile)
-		if err != nil {
-			return err
-		}
-		cert = tg.FileBytes(filepath.Base(wh.cfg.CertFile), certfile)
-	}
-
-	ok, err := SetWebhook(api, WebhookData{
-		URL:            wh.cfg.URL,
-		Certificate:    cert,
-		IPAddress:      wh.cfg.IPAddress,
-		MaxConnections: wh.cfg.MaxConnections,
-		AllowedUpdates: allowed,
-		DropPending:    wh.cfg.DropPending,
-		SecretToken:    wh.cfg.SecretToken,
-	})
-	if !ok {
-		return err
-	}
-
-	wh.handler = h
-	if !tls {
-		err = wh.serv.ListenAndServe()
-	} else {
-		err = wh.serv.ListenAndServeTLS(wh.cfg.CertFile, wh.cfg.KeyFile)
-	}
-	if err == http.ErrServerClosed {
-		err = nil
-	}
-	return err
+// WebhookHandler is a handler for telegram webhook requests.
+type WebhookHandler struct {
+	SecretToken string
+	Handler     WHHandler
+	Filter      FilterFunc
 }
 
-func writeErr(w http.ResponseWriter, err string) {
-	w.WriteHeader(http.StatusBadRequest)
+func writeErr(w http.ResponseWriter, code int, err string) {
+	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte("{\"error\":\"" + err + "\"}"))
 }
 
-func (wh *Webhooker) handle(w http.ResponseWriter, r *http.Request) {
+func (wh *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeErr(w, "wrong http method (POST is required)")
+		writeErr(w, http.StatusBadRequest, "wrong http method (POST is required)")
 		return
 	}
 
-	if wh.cfg.SecretToken != "" &&
-		wh.cfg.SecretToken != r.Header.Get("X-Telegram-Bot-Api-Secret-Token") {
-		writeErr(w, "wrong secret token")
+	if wh.SecretToken != "" &&
+		wh.SecretToken != r.Header.Get("X-Telegram-Bot-Api-Secret-Token") {
+		writeErr(w, http.StatusUnauthorized, "wrong secret token")
 		return
 	}
 
 	var upd tg.Update
 	err := json.NewDecoder(r.Body).Decode(&upd)
 	if err != nil {
-		writeErr(w, err.Error())
+		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -155,14 +65,12 @@ func (wh *Webhooker) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meth, data := wh.handler(&upd)
+	meth, data := wh.Handler(&upd)
 	if meth == "" {
 		return
 	}
-	if data.Params == nil {
-		f := data.Files
+	if data == nil {
 		data = api.NewData()
-		data.Files = f
 	}
 	data.Set("method", meth)
 	ctype, reader := data.Data()
