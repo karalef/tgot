@@ -5,15 +5,6 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-// Game contains information about the game to be sent.
-type Game struct {
-	ShortName string
-}
-
-func (g Game) data() *api.Data {
-	return api.NewData().Set("game_short_name", g.ShortName)
-}
-
 // SetGameScore contains parameters for setting the game score.
 type SetGameScore struct {
 	Score       int

@@ -105,12 +105,11 @@ func MakeHelp(list *List) *Command {
 		},
 	}
 	h.Func = func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
-		sendOpts := tgot.SendOptions[tg.ReplyMarkup]{ReplyTo: msg.ID}
 		if len(args) > 0 {
 			if cmd := list.GetCmd(args[0]); cmd != nil {
-				return ctx.SendE(cmd.Help(), sendOpts)
+				return ctx.ReplyE(msg.ID, cmd.Help())
 			}
-			return ctx.SendE(tgot.NewMessage("command not found"), sendOpts)
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("command not found"))
 		}
 		var sb strings.Builder
 		sb.WriteString("Commands list\n")
@@ -120,7 +119,7 @@ func MakeHelp(list *List) *Command {
 			sb.WriteByte(tgot.Prefix)
 			sb.WriteString(c.Cmd + " - " + c.Description)
 		}
-		return ctx.SendE(tgot.NewMessage(sb.String()), sendOpts)
+		return ctx.ReplyE(msg.ID, tgot.NewMessage(sb.String()))
 	}
 	return &h
 }

@@ -33,20 +33,18 @@ func (c CaptionData) embed(d *api.Data) {
 }
 
 // SendOptions cointains common send* parameters.
-type SendOptions[T tg.ReplyMarkup] struct {
+type SendOptions struct {
 	DisableNotification      bool
 	ProtectContent           bool
 	ReplyTo                  int
 	AllowSendingWithoutReply bool
-	ReplyMarkup              T
 }
 
-func (o SendOptions[T]) embed(d *api.Data) {
+func (o SendOptions) embed(d *api.Data) {
 	d.SetBool("disable_notification", o.DisableNotification)
 	d.SetBool("protect_content", o.ProtectContent)
 	d.SetInt("reply_to_message_id", o.ReplyTo)
 	d.SetBool("allow_sending_without_reply", o.AllowSendingWithoutReply)
-	d.SetJSON("reply_markup", o.ReplyMarkup)
 }
 
 // NewMessage makes a new message.
@@ -60,6 +58,7 @@ type Message struct {
 	ParseMode             tg.ParseMode
 	Entities              []tg.MessageEntity
 	DisableWebPagePreview bool
+	ReplyMarkup           tg.ReplyMarkup
 }
 
 func (m Message) sendData(d *api.Data) string {
@@ -67,6 +66,7 @@ func (m Message) sendData(d *api.Data) string {
 	d.Set("parse_mode", string(m.ParseMode))
 	d.SetJSON("entities", m.Entities)
 	d.SetBool("disable_web_page_preview", m.DisableWebPagePreview)
+	d.SetJSON("reply_markup", m.ReplyMarkup)
 	return "sendMessage"
 }
 
@@ -79,11 +79,13 @@ var _ Sendable = Photo{}
 type Photo struct {
 	Photo tg.Inputtable
 	CaptionData
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (ph Photo) sendData(d *api.Data) string {
 	d.SetFile("photo", ph.Photo, nil)
 	ph.CaptionData.embed(d)
+	d.SetJSON("reply_markup", ph.ReplyMarkup)
 	return "sendPhoto"
 }
 
@@ -94,9 +96,10 @@ type Audio struct {
 	Audio     tg.Inputtable
 	Thumbnail tg.Inputtable
 	CaptionData
-	Duration  int
-	Performer string
-	Title     string
+	Duration    int
+	Performer   string
+	Title       string
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (a Audio) sendData(d *api.Data) string {
@@ -105,6 +108,7 @@ func (a Audio) sendData(d *api.Data) string {
 	d.SetInt("duration", a.Duration)
 	d.Set("performer", a.Performer)
 	d.Set("title", a.Title)
+	d.SetJSON("reply_markup", a.ReplyMarkup)
 	return "sendAudio"
 }
 
@@ -116,12 +120,14 @@ type Document struct {
 	Thumbnail tg.Inputtable
 	CaptionData
 	DisableTypeDetection bool
+	ReplyMarkup          tg.ReplyMarkup
 }
 
 func (d Document) sendData(data *api.Data) string {
 	data.SetFile("document", d.Document, d.Thumbnail)
 	d.CaptionData.embed(data)
 	data.SetBool("disable_content_type_detection", d.DisableTypeDetection)
+	data.SetJSON("reply_markup", d.ReplyMarkup)
 	return "sendDocument"
 }
 
@@ -136,6 +142,7 @@ type Video struct {
 	Width             int
 	Height            int
 	SupportsStreaming bool
+	ReplyMarkup       tg.ReplyMarkup
 }
 
 func (v Video) sendData(d *api.Data) string {
@@ -145,6 +152,7 @@ func (v Video) sendData(d *api.Data) string {
 	d.SetInt("width", v.Width)
 	d.SetInt("height", v.Height)
 	d.SetBool("supports_streaming", v.SupportsStreaming)
+	d.SetJSON("reply_markup", v.ReplyMarkup)
 	return "sendVideo"
 }
 
@@ -155,9 +163,10 @@ type Animation struct {
 	Animation tg.Inputtable
 	Thumbnail tg.Inputtable
 	CaptionData
-	Duration int
-	Width    int
-	Height   int
+	Duration    int
+	Width       int
+	Height      int
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (a Animation) sendData(d *api.Data) string {
@@ -166,6 +175,7 @@ func (a Animation) sendData(d *api.Data) string {
 	d.SetInt("duration", a.Duration)
 	d.SetInt("width", a.Width)
 	d.SetInt("height", a.Height)
+	d.SetJSON("reply_markup", a.ReplyMarkup)
 	return "sendAnimation"
 }
 
@@ -175,13 +185,15 @@ var _ Sendable = Voice{}
 type Voice struct {
 	Voice tg.Inputtable
 	CaptionData
-	Duration int
+	Duration    int
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (v Voice) sendData(d *api.Data) string {
 	d.SetFile("voice", v.Voice, nil)
 	v.CaptionData.embed(d)
 	d.SetInt("duration", v.Duration)
+	d.SetJSON("reply_markup", v.ReplyMarkup)
 	return "sendVoice"
 }
 
@@ -189,28 +201,34 @@ var _ Sendable = VideoNote{}
 
 // VideoNote contains information about the video note to be sent.
 type VideoNote struct {
-	VideoNote tg.Inputtable
-	Thumbnail tg.Inputtable
-	Duration  int
-	Length    int
+	VideoNote   tg.Inputtable
+	Thumbnail   tg.Inputtable
+	Duration    int
+	Length      int
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (v VideoNote) sendData(d *api.Data) string {
 	d.SetFile("video_note", v.VideoNote, v.Thumbnail)
 	d.SetInt("duration", v.Duration)
 	d.SetInt("length", v.Length)
+	d.SetJSON("reply_markup", v.ReplyMarkup)
 	return "sendVideoNote"
 }
 
 // MediaGroup contains information about the media group to be sent.
-type MediaGroup []tg.MediaInputter
+type MediaGroup struct {
+	Media       []tg.MediaInputter
+	ReplyMarkup *tg.InlineKeyboardMarkup
+}
 
 func (g MediaGroup) data() (*api.Data, error) {
 	d := api.NewData()
-	err := prepareInputMedia(d, g...)
+	err := prepareInputMedia(d, g.Media...)
 	if err == nil {
-		d.SetJSON("media", g)
+		d.SetJSON("media", g.Media)
 	}
+	d.SetJSON("reply_markup", g.ReplyMarkup)
 	return d, err
 }
 
@@ -256,7 +274,10 @@ func prepareInputMedia(d *api.Data, media ...tg.MediaInputter) error {
 var _ Sendable = Location{}
 
 // Location contains information about the location to be sent.
-type Location tg.Location
+type Location struct {
+	tg.Location
+	ReplyMarkup tg.ReplyMarkup
+}
 
 func (l Location) sendData(d *api.Data) string {
 	d.SetFloat("latitude", l.Lat)
@@ -267,6 +288,7 @@ func (l Location) sendData(d *api.Data) string {
 	d.SetInt("live_period", l.LivePeriod)
 	d.SetInt("heading", l.Heading)
 	d.SetInt("proximity_alert_radius", l.AlertRadius)
+	d.SetJSON("reply_markup", l.ReplyMarkup)
 	return "sendLocation"
 }
 
@@ -282,6 +304,7 @@ type Venue struct {
 	FoursquareType  string
 	GooglePlaceID   string
 	GooglePlaceType string
+	ReplyMarkup     tg.ReplyMarkup
 }
 
 func (v Venue) sendData(d *api.Data) string {
@@ -293,6 +316,7 @@ func (v Venue) sendData(d *api.Data) string {
 	d.Set("foursquare_type", v.FoursquareType)
 	d.Set("google_place_id", v.GooglePlaceID)
 	d.Set("google_place_type", v.GooglePlaceType)
+	d.SetJSON("reply_markup", v.ReplyMarkup)
 	return "sendVenue"
 }
 
@@ -304,6 +328,7 @@ type Contact struct {
 	FirstName   string
 	LastName    string
 	Vcard       string
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (c Contact) sendData(d *api.Data) string {
@@ -311,6 +336,7 @@ func (c Contact) sendData(d *api.Data) string {
 	d.Set("first_name", c.FirstName)
 	d.Set("last_name", c.LastName)
 	d.Set("vcard", c.Vcard)
+	d.SetJSON("reply_markup", c.ReplyMarkup)
 	return "sendContact"
 }
 
@@ -330,6 +356,7 @@ type Poll struct {
 	OpenPeriod           int
 	CloseDate            int64
 	IsClosed             bool
+	ReplyMarkup          tg.ReplyMarkup
 }
 
 func (poll Poll) sendData(d *api.Data) string {
@@ -345,25 +372,102 @@ func (poll Poll) sendData(d *api.Data) string {
 	d.SetInt("open_period", poll.OpenPeriod)
 	d.SetInt64("close_date", poll.CloseDate)
 	d.SetBool("is_closed", poll.IsClosed)
+	d.SetJSON("reply_markup", poll.ReplyMarkup)
 	return "sendPoll"
 }
 
-var _ Sendable = Dice("")
+var _ Sendable = Dice{}
 
 // Dice contains information about the dice to be sent.
-type Dice tg.DiceEmoji
+type Dice struct {
+	Emoji       tg.DiceEmoji
+	ReplyMarkup tg.ReplyMarkup
+}
 
 func (d Dice) sendData(data *api.Data) string {
-	data.Set("emoji", string(d))
+	data.Set("emoji", string(d.Emoji))
+	data.SetJSON("reply_markup", d.ReplyMarkup)
 	return "sendDice"
 }
 
+var _ Sendable = Sticker{}
+
 // Sticker contains information about the sticker to be sent.
 type Sticker struct {
-	Sticker tg.Inputtable
+	Sticker     tg.Inputtable
+	ReplyMarkup tg.ReplyMarkup
 }
 
 func (s Sticker) sendData(d *api.Data) string {
 	d.SetFile("sticker", s.Sticker, nil)
+	d.SetJSON("reply_markup", s.ReplyMarkup)
 	return "sendSticker"
+}
+
+var _ Sendable = Game{}
+
+// Game contains information about the game to be sent.
+type Game struct {
+	ShortName   string
+	ReplyMarkup *tg.InlineKeyboardMarkup
+}
+
+func (g Game) sendData(d *api.Data) string {
+	d.Set("game_short_name", g.ShortName)
+	d.SetJSON("reply_markup", g.ReplyMarkup)
+	return "sendGame"
+}
+
+var _ Sendable = Invoice{}
+
+// Invoice contains information about the invoice to be sent.
+type Invoice struct {
+	Title                     string
+	Description               string
+	Payload                   string
+	ProviderToken             string
+	Currency                  string
+	Prices                    []tg.LabeledPrice
+	MaxTipAmount              int
+	SuggestedTipAmounts       []int
+	ProviderData              string
+	PhotoURL                  string
+	PhotoSize                 int
+	PhotoWidth                int
+	PhotoHeight               int
+	NeedName                  bool
+	NeedPhoneNumber           bool
+	NeedEmail                 bool
+	NeedShippingAddress       bool
+	SendPhoneNumberToProvider bool
+	SendEmailToProvider       bool
+	IsFlexible                bool
+	StartParameter            string
+	ReplyMarkup               *tg.InlineKeyboardMarkup
+}
+
+func (i Invoice) sendData(d *api.Data) string {
+	d.Set("title", i.Title)
+	d.Set("description", i.Description)
+	d.Set("payload", i.Payload)
+	d.Set("provider_token", i.ProviderToken)
+	d.Set("currency", i.Currency)
+	d.SetJSON("prices", i.Prices)
+	d.SetInt("max_tip_amount", i.MaxTipAmount)
+	d.SetJSON("suggested_tip_amounts", i.SuggestedTipAmounts)
+	d.Set("start_parameter", i.StartParameter)
+	d.Set("provider_data", i.ProviderData)
+	d.Set("photo_url", i.PhotoURL)
+	d.SetInt("photo_size", i.PhotoSize)
+	d.SetInt("photo_width", i.PhotoWidth)
+	d.SetInt("photo_height", i.PhotoHeight)
+	d.SetBool("need_name", i.NeedName)
+	d.SetBool("need_phone_number", i.NeedPhoneNumber)
+	d.SetBool("need_email", i.NeedEmail)
+	d.SetBool("need_shipping_address", i.NeedShippingAddress)
+	d.SetBool("send_phone_number_to_provider", i.SendPhoneNumberToProvider)
+	d.SetBool("send_email_to_provider", i.SendEmailToProvider)
+	d.SetBool("is_flexible", i.IsFlexible)
+	d.SetJSON("reply_markup", i.ReplyMarkup)
+	return "sendInvoice"
 }

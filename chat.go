@@ -51,7 +51,7 @@ func (c ChatContext) Child(name string) ChatContext {
 }
 
 // SendE sends the Sendable and returns only an error.
-func (c ChatContext) SendE(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) error {
+func (c ChatContext) SendE(s Sendable, opts ...SendOptions) error {
 	_, err := c.Send(s)
 	return err
 }
@@ -63,6 +63,17 @@ func (c ChatContext) SendText(text string, pm ...tg.ParseMode) error {
 		msg.ParseMode = pm[0]
 	}
 	return c.SendE(msg)
+}
+
+// Reply replies to the specified message.
+func (c ChatContext) Reply(to int, s Sendable) (*tg.Message, error) {
+	return c.Send(s, SendOptions{ReplyTo: to})
+}
+
+// ReplyE replies to the specified message and returns only an error.
+func (c ChatContext) ReplyE(to int, s Sendable) error {
+	_, err := c.Reply(to, s)
+	return err
 }
 
 func (c ChatContext) method(method string, d ...*api.Data) error {
@@ -115,14 +126,18 @@ type Forward struct {
 	ProtectContent      bool
 }
 
+func (fwd Forward) data(d *api.Data) {
+	d.SetInt("message_id", fwd.MessageID)
+	d.SetBool("disable_notification", fwd.DisableNotification)
+	d.SetBool("protect_content", fwd.ProtectContent)
+}
+
 // Forward forwards messages of any kind.
 // Service messages can't be forwarded.
 func (c ChatContext) Forward(from Chat, fwd Forward) (*tg.Message, error) {
 	d := api.NewData()
 	from.setChatID(d, "from_chat_id")
-	d.SetInt("message_id", fwd.MessageID)
-	d.SetBool("disable_notification", fwd.DisableNotification)
-	d.SetBool("protect_content", fwd.ProtectContent)
+	fwd.data(d)
 	return chatMethod[*tg.Message](c, "forwardMessage", d)
 }
 
@@ -130,15 +145,21 @@ func (c ChatContext) Forward(from Chat, fwd Forward) (*tg.Message, error) {
 type Copy struct {
 	MessageID int
 	CaptionData
+	ReplyMarkup tg.ReplyMarkup
+}
+
+func (cp Copy) data(d *api.Data) {
+	d.SetInt("message_id", cp.MessageID)
+	cp.CaptionData.embed(d)
+	d.SetJSON("reply_markup", cp.ReplyMarkup)
 }
 
 // Copy copies messages of any kind.
 // Service messages and invoice messages can't be copied.
-func (c ChatContext) Copy(from Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
+func (c ChatContext) Copy(from Chat, cp Copy, opts ...SendOptions) (*tg.MessageID, error) {
 	d := api.NewData()
 	from.setChatID(d, "from_chat_id")
-	d.SetInt("message_id", cp.MessageID)
-	cp.CaptionData.embed(d)
+	cp.data(d)
 	if len(opts) > 0 {
 		opts[0].embed(d)
 	}
@@ -146,7 +167,7 @@ func (c ChatContext) Copy(from Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup
 }
 
 // Send sends any Sendable object.
-func (c ChatContext) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Message, error) {
+func (c ChatContext) Send(s Sendable, opts ...SendOptions) (*tg.Message, error) {
 	if s == nil {
 		return nil, nil
 	}
@@ -157,7 +178,7 @@ func (c ChatContext) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
-func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...SendOptions[*tg.NoMarkup]) ([]tg.Message, error) {
+func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Message, error) {
 	d, err := mg.data()
 	if err != nil {
 		return nil, err
@@ -171,20 +192,6 @@ func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...SendOptions[*tg.NoMar
 func (c ChatContext) SendChatAction(act tg.ChatAction) error {
 	d := api.NewData().Set("action", string(act))
 	return c.method("sendChatAction", d)
-}
-
-// SendInvoice sends an invoice.
-func (c ChatContext) SendInvoice(i Invoice, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
-	d := i.data()
-	embed(d, opts)
-	return chatMethod[*tg.Message](c, "sendInvoice", d)
-}
-
-// SendGame sends a game.
-func (c ChatContext) SendGame(g Game, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
-	d := g.data()
-	embed(d, opts)
-	return chatMethod[*tg.Message](c, "sendGame", d)
 }
 
 // StopPoll stops a poll which was sent by the bot.

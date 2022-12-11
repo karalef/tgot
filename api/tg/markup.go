@@ -7,10 +7,6 @@ type ReplyMarkup interface {
 	replyMarkup()
 }
 
-// NoMarkup represents empty markup.
-type NoMarkup struct{}
-
-func (*NoMarkup) replyMarkup()             {}
 func (*ReplyKeyboardMarkup) replyMarkup()  {}
 func (*InlineKeyboardMarkup) replyMarkup() {}
 func (*ReplyKeyboardRemove) replyMarkup()  {}

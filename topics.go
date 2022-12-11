@@ -77,7 +77,7 @@ func (t Topic) UnpinAllMessages() error {
 }
 
 // Send sends any Sendable object.
-func (t Topic) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Message, error) {
+func (t Topic) Send(s Sendable, opts ...SendOptions) (*tg.Message, error) {
 	if s == nil {
 		return nil, nil
 	}
@@ -88,7 +88,7 @@ func (t Topic) Send(s Sendable, opts ...SendOptions[tg.ReplyMarkup]) (*tg.Messag
 }
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
-func (t Topic) SendMediaGroup(mg MediaGroup, opts ...SendOptions[*tg.NoMarkup]) ([]tg.Message, error) {
+func (t Topic) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Message, error) {
 	d, err := mg.data()
 	if err != nil {
 		return nil, err
@@ -97,42 +97,21 @@ func (t Topic) SendMediaGroup(mg MediaGroup, opts ...SendOptions[*tg.NoMarkup]) 
 	return topicMethod[[]tg.Message](t, "sendMediaGroup", d)
 }
 
-// SendInvoice sends an invoice.
-func (t Topic) SendInvoice(i Invoice, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
-	d := i.data()
-	if len(opts) > 0 {
-		opts[0].embed(d)
-	}
-	return topicMethod[*tg.Message](t, "sendInvoice", d)
-}
-
-// SendGame sends a game.
-func (t Topic) SendGame(g Game, opts ...SendOptions[*tg.InlineKeyboardMarkup]) (*tg.Message, error) {
-	d := g.data()
-	if len(opts) > 0 {
-		opts[0].embed(d)
-	}
-	return topicMethod[*tg.Message](t, "sendGame", d)
-}
-
 // Forward forwards messages of any kind.
 // Service messages can't be forwarded.
 func (t Topic) Forward(from Chat, fwd Forward) (*tg.Message, error) {
 	d := api.NewData()
 	from.setChatID(d, "from_chat_id")
-	d.SetInt("message_id", fwd.MessageID)
-	d.SetBool("disable_notification", fwd.DisableNotification)
-	d.SetBool("protect_content", fwd.ProtectContent)
+	fwd.data(d)
 	return topicMethod[*tg.Message](t, "forwardMessage", d)
 }
 
 // Copy copies messages of any kind.
 // Service messages and invoice messages can't be copied.
-func (t Topic) Copy(from Chat, cp Copy, opts ...SendOptions[tg.ReplyMarkup]) (*tg.MessageID, error) {
+func (t Topic) Copy(from Chat, cp Copy, opts ...SendOptions) (*tg.MessageID, error) {
 	d := api.NewData()
 	from.setChatID(d, "from_chat_id")
-	d.SetInt("message_id", cp.MessageID)
-	cp.CaptionData.embed(d)
+	cp.data(d)
 	if len(opts) > 0 {
 		opts[0].embed(d)
 	}

@@ -5,47 +5,34 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-// Invoice contains information about the invoice to be sent.
-type Invoice struct {
-	tg.InputInvoiceMessageContent
-	StartParameter string
-}
-
-func (i Invoice) data() *api.Data {
-	d := api.NewData()
-	d.Set("title", i.Title)
-	d.Set("description", i.Description)
-	d.Set("payload", i.Payload)
-	d.Set("provider_token", i.ProviderToken)
-	d.Set("currency", i.Currency)
-	d.SetJSON("prices", i.Prices)
-	d.SetInt("max_tip_amount", i.MaxTipAmount)
-	d.SetJSON("suggested_tip_amounts", i.SuggestedTipAmounts)
-	d.Set("start_parameter", i.StartParameter)
-	d.Set("provider_data", i.ProviderData)
-	d.Set("photo_url", i.PhotoURL)
-	d.SetInt("photo_size", i.PhotoSize)
-	d.SetInt("photo_width", i.PhotoWidth)
-	d.SetInt("photo_height", i.PhotoHeight)
-	d.SetBool("need_name", i.NeedName)
-	d.SetBool("need_phone_number", i.NeedPhoneNumber)
-	d.SetBool("need_email", i.NeedEmail)
-	d.SetBool("need_shipping_address", i.NeedShippingAddress)
-	d.SetBool("send_phone_number_to_provider", i.SendPhoneNumberToProvider)
-	d.SetBool("send_email_to_provider", i.SendEmailToProvider)
-	d.SetBool("is_flexible", i.IsFlexible)
-	return d
-}
-
 // CreateInvoiceLink contains parameters for creating an invoice link.
 type CreateInvoiceLink = tg.InputInvoiceMessageContent
 
 // CreateInvoiceLink creates a link for an invoice.
 func (c Context) CreateInvoiceLink(l CreateInvoiceLink) (string, error) {
-	// since the parameters are exactly the same, except for
-	// StartParameter (since it is empty, it will not be included),
-	// it is possible to use the already existing serialization function.
-	d := Invoice{l, ""}.data()
+	d := api.NewData()
+	Invoice{
+		Title:                     l.Title,
+		Description:               l.Description,
+		Payload:                   l.Payload,
+		ProviderToken:             l.ProviderToken,
+		Currency:                  l.Currency,
+		Prices:                    l.Prices,
+		MaxTipAmount:              l.MaxTipAmount,
+		SuggestedTipAmounts:       l.SuggestedTipAmounts,
+		ProviderData:              l.ProviderData,
+		PhotoURL:                  l.PhotoURL,
+		PhotoSize:                 l.PhotoSize,
+		PhotoWidth:                l.PhotoWidth,
+		PhotoHeight:               l.PhotoHeight,
+		NeedName:                  l.NeedName,
+		NeedPhoneNumber:           l.NeedPhoneNumber,
+		NeedEmail:                 l.NeedEmail,
+		NeedShippingAddress:       l.NeedShippingAddress,
+		SendPhoneNumberToProvider: l.SendPhoneNumberToProvider,
+		SendEmailToProvider:       l.SendEmailToProvider,
+		IsFlexible:                l.IsFlexible,
+	}.sendData(d)
 	return method[string](c, "createInvoiceLink", d)
 }
 
