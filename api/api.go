@@ -13,7 +13,7 @@ import (
 // New creates a new API instance and returns the getMe result if successful.
 // If apiURL or fileURL are empty, the Telegram defaults are used.
 // If client is nil, the http.DefaultClient is used.
-func New(token string, apiURL, fileURL string, client *http.Client) (*API, error) {
+func New(token string, apiURL, fileURL string, client Client) (*API, error) {
 	if token == "" {
 		return nil, errors.New("no token provided")
 	}
@@ -24,7 +24,7 @@ func New(token string, apiURL, fileURL string, client *http.Client) (*API, error
 		fileURL = tg.DefaultFileURL
 	}
 	if client == nil {
-		client = http.DefaultClient
+		client = WrapStdHTTP(http.DefaultClient)
 	}
 	return &API{
 		token:   token,
@@ -39,7 +39,7 @@ type API struct {
 	token   string
 	apiURL  string
 	fileURL string
-	client  *http.Client
+	client  Client
 }
 
 // Request performs a request to the Bot API with background context,
@@ -60,25 +60,19 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 
 	var nilResult T
 	u := a.apiURL + a.token + "/" + method
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, reader)
-	if err != nil {
+	body, err := a.client.Post(ctx, u, ctype, reader)
+	switch {
+	case err == nil:
+	case errors.Is(err, context.Canceled):
+		return nilResult, context.Canceled
+	case errors.Is(err, context.DeadlineExceeded):
+		return nilResult, context.DeadlineExceeded
+	default:
 		return nilResult, &HTTPError{makeError(method, data, err)}
 	}
-	if data != nil {
-		req.Header.Set("Content-Type", ctype)
-	}
-	resp, err := a.client.Do(req)
-	if err != nil {
-		switch e := errors.Unwrap(err); e {
-		case context.Canceled, context.DeadlineExceeded:
-			return nilResult, e
-		default:
-			return nilResult, &HTTPError{makeError(method, data, err)}
-		}
-	}
-	defer resp.Body.Close()
+	defer body.Close()
 
-	r, raw, err := DecodeJSON[tg.APIResponse[T]](resp.Body)
+	r, raw, err := DecodeJSON[tg.APIResponse[T]](body)
 	if err != nil {
 		return nilResult, &JSONError{
 			baseError: makeError(method, data, err),
@@ -94,11 +88,7 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 
 // DownloadFile downloads a file from the server.
 func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
-	resp, err := a.client.Get(a.fileURL + a.token + "/" + path)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Body, nil
+	return a.client.Get(a.fileURL + a.token + "/" + path)
 }
 
 // GetMe returns basic information about the bot in form of a User object.
