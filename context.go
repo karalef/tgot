@@ -106,14 +106,16 @@ func method[T any](c Context, method string, d ...*api.Data) (T, error) {
 		return result, nil
 	}
 	if e, ok := err.(*api.Error); ok {
-		if c := e.Err.Code; c != 401 && c != 404 && c != 500 {
-			return result, err
+		switch e.Err.Code {
+		case 404: // Not Found
+			panic("telegram method is not found but is present in the current implementation (" + method + ")")
+		case 401: // Not Authorized
+			c.bot.cancel(err)
+			runtime.Goexit()
+		case 400, 500: // Bad Request, Internal Server Error
+			c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, traceback(2))
 		}
 	}
-
-	c.bot.cancel(err)
-	c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, traceback(2))
-	runtime.Goexit()
 
 	return result, err
 }

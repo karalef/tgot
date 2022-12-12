@@ -7,97 +7,96 @@ import (
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 	"github.com/karalef/tgot/logger"
-	"github.com/karalef/tgot/updates"
 )
 
-// Config contains bot configuration.
-type Config struct {
-	Logger   *logger.Logger // logger.Default if empty
-	Handler  Handler
-	Commands Commands
+// NewWithToken creates new bit with specified token and default http client.
+func NewWithToken(token string, handler Handler, log ...*logger.Logger) (*Bot, error) {
+	a, err := api.New(token, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+	return New(a, handler, log...)
 }
 
 // New creates new bot.
-func New(api *api.API, poller updates.Poller, config Config) (*Bot, error) {
+func New(api *api.API, handler Handler, log ...*logger.Logger) (*Bot, error) {
 	if api == nil {
 		return nil, errors.New("nil api")
-	}
-	if poller == nil {
-		return nil, errors.New("nil poller")
-	}
-	if config.Logger == nil {
-		config.Logger = logger.Default("BOT")
 	}
 	me, err := api.GetMe()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Bot{
+	b := &Bot{
 		api:     api,
-		log:     config.Logger,
-		poller:  poller,
-		handler: config.Handler,
-		cmds:    config.Commands,
+		handler: handler,
 		me:      *me,
-	}, nil
+	}
+	if len(log) > 0 {
+		b.log = log[0]
+	} else {
+		b.log = logger.Default("Bot")
+	}
+
+	return b, nil
 }
 
 // Bot type.
 type Bot struct {
-	api *api.API
-
-	log    *logger.Logger
-	poller updates.Poller
-
-	err atomic.Pointer[error]
-
+	err     atomic.Pointer[error]
+	api     *api.API
+	log     *logger.Logger
 	handler Handler
-	cmds    Commands
 
 	me tg.User
 }
 
+// API returns api object.
+func (b *Bot) API() *api.API {
+	return b.api
+}
+
+// Me returns current bot as tg.User.
+func (b *Bot) Me() tg.User {
+	return b.me
+}
+
 func (b *Bot) cancel(err error) {
-	if b.err.CompareAndSwap(nil, &err) {
-		go b.Stop()
-	}
+	b.err.CompareAndSwap(nil, &err)
 }
 
-// Stop stops polling for updates.
-func (b *Bot) Stop() {
-	b.poller.Close()
-}
-
-// Run starts bot.
-func (b *Bot) Run() error {
-	if b.cmds != nil {
-		if err := b.cmds.Init(b.api); err != nil {
-			return err
-		}
-	}
-
-	allowed := b.handler.allowed(b)
-	err := b.poller.Run(b.api, b.handle, allowed)
+// Err returns bot error.
+func (b *Bot) Err() error {
 	if e := b.err.Load(); e != nil {
 		return *e
 	}
-	return err
+	return nil
 }
 
-func (b *Bot) handle(upd *tg.Update) {
-	h := &b.handler
+// Allowed returns allowed updates list.
+func (b *Bot) Allowed() []string {
+	return b.handler.allowed()
+}
 
-	// since [Handler.allowed] returns a list of the specified handlers
-	// it makes no sense to check for nil except for OnMessage and OnChannelPost.
+// Handle routes the update to the matching handler.
+// It panics if the update contains an object not specified in bot.Allowed.
+func (b *Bot) Handle(upd *tg.Update) error {
+	if err := b.Err(); err != nil {
+		return err
+	}
+
+	h := &b.handler
 	switch {
 	case upd.Message != nil:
-		b.onMessage(upd.Message)
+		ctx := b.makeChatContext(upd.Message.Chat, "Message")
+		h.OnMessage(ctx, upd.Message)
 	case upd.EditedMessage != nil:
 		ctx := b.makeChatContext(upd.EditedMessage.Chat, "EditedMessage")
 		h.OnEditedMessage(ctx, upd.EditedMessage)
 	case upd.ChannelPost != nil:
-		b.onMessage(upd.ChannelPost)
+		ctx := b.makeChatContext(upd.ChannelPost.Chat, "Post")
+		h.OnChannelPost(ctx, upd.ChannelPost)
 	case upd.EditedChannelPost != nil:
 		ctx := b.makeChatContext(upd.EditedChannelPost.Chat, "EditedPost")
 		h.OnEditedChannelPost(ctx, upd.EditedChannelPost)
@@ -130,45 +129,14 @@ func (b *Bot) handle(upd *tg.Update) {
 		ctx := b.makeChatContext(upd.ChatJoinRequest.Chat, "JoinRequest")
 		h.OnChatJoinRequest(ctx, upd.ChatJoinRequest)
 	}
+
+	return b.Err()
 }
 
-func (b *Bot) onCommand(msg *tg.Message, cmd string, args []string) bool {
-	command := b.cmds.Get(cmd, msg)
-	if command == nil {
-		return false
-	}
-	c := b.makeChatContext(msg.Chat, "Commands::"+command.Name())
-	err := command.Run(c, msg, args)
-	if err != nil {
-		b.log.Error("command %s ended with an error: %s", command.Name(), err.Error())
-	}
-	return true
-}
-
-func (b *Bot) onMessage(msg *tg.Message) {
-	if b.cmds != nil {
-		cmd, mention, args := ParseCommandMsg(msg)
-		if cmd != "" && (mention == "" || mention == b.me.Username) &&
-			b.onCommand(msg, cmd, args) {
-			return
-		}
-	}
-
-	h, n := b.handler.OnMessage, "Message"
-	if msg.Chat.IsChannel() {
-		h, n = b.handler.OnChannelPost, "Post"
-	}
-	if h != nil {
-		h(b.makeChatContext(msg.Chat, n), msg)
-	}
-}
-
-// Handler conatains all handler functions and handling parameters.
+// Handler conatains all available updates handler functions.
 type Handler struct {
-	// It only handles messages that are NOT commands.
-	OnMessage       func(ChatContext, *tg.Message)
-	OnEditedMessage func(ChatContext, *tg.Message)
-	// It only handles messages that are NOT commands.
+	OnMessage           func(ChatContext, *tg.Message)
+	OnEditedMessage     func(ChatContext, *tg.Message)
 	OnChannelPost       func(ChatContext, *tg.Message)
 	OnEditedChannelPost func(ChatContext, *tg.Message)
 	OnCallbackQuery     func(CallbackContext, *tg.CallbackQuery)
@@ -183,16 +151,16 @@ type Handler struct {
 	OnChatJoinRequest   func(ChatContext, *tg.ChatJoinRequest)
 }
 
-func (h *Handler) allowed(b *Bot) []string {
+func (h *Handler) allowed() []string {
 	list := make([]string, 0, 14)
 	add := func(a bool, s string) {
 		if a {
 			list = append(list, s)
 		}
 	}
-	add(h.OnMessage != nil || b.cmds != nil, "message")
+	add(h.OnMessage != nil, "message")
 	add(h.OnEditedMessage != nil, "edited_message")
-	add(h.OnChannelPost != nil || b.cmds != nil, "channel_post")
+	add(h.OnChannelPost != nil, "channel_post")
 	add(h.OnEditedChannelPost != nil, "edited_channel_post")
 	add(h.OnCallbackQuery != nil, "callback_query")
 	add(h.OnInlineQuery != nil, "inline_query")
