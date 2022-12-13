@@ -88,21 +88,3 @@ func (lp *LongPoller) handle(h Handler, upd *tg.Update) {
 	defer lp.wg.Done()
 	h(upd)
 }
-
-// GetUpdatesParams contains parameters for getUpdates method.
-type GetUpdatesParams struct {
-	Offset  int
-	Limit   int
-	Timeout int
-	Allowed []string
-}
-
-// GetUpdates receives incoming updates using long polling.
-func GetUpdates(ctx context.Context, a *api.API, p GetUpdatesParams) ([]tg.Update, error) {
-	d := api.NewData()
-	d.SetInt("limit", p.Limit)
-	d.SetInt("timeout", p.Timeout)
-	d.SetJSON("allowed", p.Allowed)
-	d.SetInt("offset", p.Offset+1)
-	return api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
-}

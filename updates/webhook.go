@@ -77,38 +77,3 @@ func (wh *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", ctype)
 	io.Copy(w, reader)
 }
-
-// WebhookData contains parameters for setWebhook method.
-type WebhookData struct {
-	URL            string
-	Certificate    *tg.InputFile
-	IPAddress      string
-	MaxConnections int
-	AllowedUpdates []string
-	DropPending    bool
-	SecretToken    string
-}
-
-// SetWebhook specifies a webhook URL.
-// Use this method to specify a URL and receive incoming updates via an outgoing webhook.
-func SetWebhook(a *api.API, s WebhookData) (bool, error) {
-	d := api.NewData().Set("url", s.URL)
-	d.AddFile("certificate", s.Certificate)
-	d.Set("ip_address", s.IPAddress)
-	d.SetInt("max_connections", s.MaxConnections)
-	d.SetJSON("allowed_updates", s.AllowedUpdates)
-	d.SetBool("drop_pending_updates", s.DropPending)
-	d.Set("secret_token", s.SecretToken)
-	return api.Request[bool](a, "setWebhook", d)
-}
-
-// DeleteWebhook removes webhook integration if you decide to switch back to getUpdates.
-func DeleteWebhook(a *api.API, dropPending bool) (bool, error) {
-	d := api.NewData().SetBool("drop_pending_updates", dropPending)
-	return api.Request[bool](a, "deleteWebhook", d)
-}
-
-// GetWebhookInfo returns current webhook status.
-func GetWebhookInfo(a *api.API) (*tg.WebhookInfo, error) {
-	return api.Request[*tg.WebhookInfo](a, "getWebhookInfo", nil)
-}
