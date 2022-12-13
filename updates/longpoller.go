@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
@@ -27,20 +28,21 @@ func NewLongPoller(timeout, limit, offset int) *LongPoller {
 	return &lp
 }
 
+// StartLongPolling creates and runs long poller.
+func StartLongPolling(b *tgot.Bot, timeout, limit, offset int) error {
+	return NewLongPoller(timeout, limit, offset).Run(b)
+}
+
 // LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
 // It must be created via NewLongPoller otherwise only for testing purposes.
 type LongPoller struct {
-	offset  int
 	timeout int
 	limit   int
+	offset  int
 
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
-
-	Filter FilterFunc
 }
-
-var _ Poller = &LongPoller{}
 
 // Close stops the long poller and waits for all active handlers to complete.
 // It panics if the poller is not running.
@@ -49,36 +51,43 @@ func (lp *LongPoller) Close() {
 	lp.wg.Wait()
 }
 
-// Run starts long polling.
-func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
-	if h == nil {
-		panic("LongPoller: nil handler")
+// Run starts long polling with background context.
+func (lp *LongPoller) Run(b *tgot.Bot) error {
+	return lp.RunContext(context.Background(), b)
+}
+
+// RunContext starts long polling.
+func (lp *LongPoller) RunContext(ctx context.Context, b *tgot.Bot) error {
+	if b == nil {
+		panic("LongPoller: nil bot")
 	}
 
-	ctx := context.Background()
 	ctx, lp.cancel = context.WithCancel(ctx)
 	defer lp.wg.Wait()
 
 	d := api.NewData()
 	d.SetInt("limit", lp.limit)
 	d.SetInt("timeout", lp.timeout)
-	d.SetJSON("allowed", allowed)
+	d.SetJSON("allowed", b.Allowed())
 
-	for {
-		d.SetInt("offset", lp.offset+1)
+	for a := b.API(); ; {
+		d.SetInt("offset", lp.offset)
 		upds, err := api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
 		switch err {
 		case nil:
 		case context.Canceled, context.DeadlineExceeded:
+			if e := b.Err(); e != nil {
+				return e
+			}
 			return nil
 		default:
 			return err
 		}
 		if len(upds) > 0 {
-			lp.offset = upds[len(upds)-1].ID
+			lp.offset = upds[len(upds)-1].ID + 1
 		}
-		for i := range Filter(upds, lp.Filter) {
-			go lp.handle(h, &upds[i])
+		for i := range upds {
+			go lp.handle(b.Handle, &upds[i])
 		}
 	}
 }
@@ -86,5 +95,7 @@ func (lp *LongPoller) Run(a *api.API, h Handler, allowed []string) error {
 func (lp *LongPoller) handle(h Handler, upd *tg.Update) {
 	lp.wg.Add(1)
 	defer lp.wg.Done()
-	h(upd)
+	if err := h(upd); err != nil {
+		lp.cancel()
+	}
 }

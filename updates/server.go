@@ -3,9 +3,11 @@ package updates
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
+	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
@@ -27,12 +29,15 @@ func NewWebhookServer(addr string, cfg ServerConfig) *Server {
 	}
 }
 
-var _ Poller = &Server{}
-var _ WebhookPoller = &Server{}
+// StartWebhookServer creates and runs webhook server.
+func StartWebhookServer(b *tgot.Bot, addr string, cfg ServerConfig) error {
+	return NewWebhookServer(addr, cfg).Run(b)
+}
 
 // Server is a server that handles telegram webhooks.
-// It represents complete Poller.
-// Mux can be used
+// It uses std HTTP server implementation.
+//
+// Mux can be used for templates other than specified in path.
 type Server struct {
 	// tls config will be automatically loaded if CertFile and KeyFile are specified
 	Serv http.Server
@@ -44,7 +49,6 @@ type Server struct {
 // ServerConfig contains webhook parameters.
 type ServerConfig struct {
 	Path     string // template for mux
-	Filter   FilterFunc
 	CertFile string // will be automatically opened and sent with setWebhook as "certificate"
 	KeyFile  string
 
@@ -69,18 +73,14 @@ func (s *Server) Close() {
 }
 
 // Run starts webhook server.
-func (s *Server) Run(a *api.API, h Handler, allowed []string) error {
-	whhandler := func(upd *tg.Update) (string, *api.Data) {
-		h(upd)
-		return "", nil
-	}
-	return s.RunWH(a, whhandler, allowed)
+func (s *Server) Run(b *tgot.Bot) error {
+	return s.RunWH(b.API(), WrapHandler(b.Handle), b.Allowed())
 }
 
 // RunWH starts webhook server.
-func (s *Server) RunWH(api *api.API, h WHHandler, allowed []string) error {
+func (s *Server) RunWH(a *api.API, h WHHandler, allowed []string) error {
 	if h == nil {
-		panic("Webhooker: nil handler")
+		panic("WebhookServer: nil handler")
 	}
 
 	tls := s.cfg.CertFile != ""
@@ -93,7 +93,7 @@ func (s *Server) RunWH(api *api.API, h WHHandler, allowed []string) error {
 		cert = tg.FileBytes(filepath.Base(s.cfg.CertFile), certfile)
 	}
 
-	ok, err := SetWebhook(api, WebhookData{
+	ok, err := a.SetWebhook(api.WebhookData{
 		URL:            s.cfg.URL,
 		Certificate:    cert,
 		IPAddress:      s.cfg.IPAddress,
@@ -106,10 +106,16 @@ func (s *Server) RunWH(api *api.API, h WHHandler, allowed []string) error {
 		return err
 	}
 
+	if s.cfg.Path == "" {
+		u, err := url.Parse(s.cfg.URL)
+		if err != nil {
+			return err
+		}
+		s.cfg.Path = u.RawPath
+	}
 	s.Mux.Handle(s.cfg.Path, &WebhookHandler{
 		SecretToken: s.cfg.SecretToken,
 		Handler:     h,
-		Filter:      s.cfg.Filter,
 	})
 
 	if !tls {

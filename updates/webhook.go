@@ -11,27 +11,20 @@ import (
 
 // WHHandler represents webhook handler function type.
 // If the method is not empty, the request to the api will be written in response to the webhook.
-type WHHandler func(*tg.Update) (method string, data *api.Data)
-
-// WebhookPoller represents a webhook server that can send api requests in response to webhook requests.
-type WebhookPoller interface {
-	Poller
-	RunWH(api *api.API, handler WHHandler, allowed []string) error
-}
+type WHHandler func(*tg.Update) (method string, data *api.Data, err error)
 
 // WrapHandler wraps Handler with WHHandler.
 func WrapHandler(h Handler) WHHandler {
-	return func(upd *tg.Update) (string, *api.Data) {
-		h(upd)
-		return "", nil
+	return func(upd *tg.Update) (string, *api.Data, error) {
+		return "", nil, h(upd)
 	}
 }
 
 // WebhookHandler is a handler for telegram webhook requests.
+// It implements std http.Handler.
 type WebhookHandler struct {
 	SecretToken string
 	Handler     WHHandler
-	Filter      FilterFunc
 }
 
 func writeErr(w http.ResponseWriter, code int, err string) {
@@ -59,13 +52,13 @@ func (wh *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	if wh.Filter != nil && !wh.Filter(&upd) {
+	meth, data, err := wh.Handler(&upd)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	meth, data := wh.Handler(&upd)
+	w.WriteHeader(http.StatusOK)
 	if meth == "" {
 		return
 	}
