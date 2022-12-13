@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/karalef/tgot"
@@ -24,21 +25,18 @@ type Arg struct {
 	Consts   []string
 }
 
-// Name returns command name.
-func (c Command) Name() string { return c.Cmd }
-
-// Desc returns command description.
-func (c Command) Desc() string { return c.Description }
-
-// Run implements tgot.Command and runs command function.
+// Run runs command function.
 func (c Command) Run(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
-	return c.Func(ctx, msg, args)
+	if c.Func != nil {
+		return c.Func(ctx, msg, args)
+	}
+	return errors.New("not implemented")
 }
 
 // Help generates help message.
 func (c Command) Help() tgot.Message {
 	sb := strings.Builder{}
-	sb.WriteByte(tgot.Prefix)
+	sb.WriteByte(Prefix)
 	sb.WriteString(c.Cmd)
 	for _, a := range c.Args {
 		sb.WriteByte(' ')
@@ -116,7 +114,7 @@ func MakeHelp(list *List) *Command {
 
 		for _, c := range *list {
 			sb.WriteByte('\n')
-			sb.WriteByte(tgot.Prefix)
+			sb.WriteByte(Prefix)
 			sb.WriteString(c.Cmd + " - " + c.Description)
 		}
 		return ctx.ReplyE(msg.ID, tgot.NewMessage(sb.String()))
