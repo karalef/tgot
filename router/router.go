@@ -30,7 +30,7 @@ type Handler[Ctx ctxType[Ctx], Key comparable, Data any] interface {
 	Name() string
 
 	// If unreg is true, handler will be automatically deleted.
-	Handle(Ctx, Data) (unreg bool, err error)
+	Handle(Ctx, Key, Data) (unreg bool, err error)
 
 	// Specifies when the handler will be automatically unreged.
 	Timeout() time.Time
@@ -38,7 +38,7 @@ type Handler[Ctx ctxType[Ctx], Key comparable, Data any] interface {
 	// Called when the handler times out.
 	// The current handler will be automatically unreged so do not
 	// call Unreg from this function as this will cause a deadlock.
-	Close(tgot.Context, Key) error
+	Cancel(tgot.Context, Key) error
 }
 
 type handler[Ctx ctxType[Ctx], Key comparable, Data any] struct {
@@ -70,7 +70,7 @@ func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
 			continue
 		}
 		delete(r.handlers, key)
-		err := h.Close(ctx.Child(h.Name()), key)
+		err := h.Cancel(ctx.Child(h.Name()), key)
 		if err != nil {
 			ctx.Logger().Error("Close '%s' ended with an error: %s", h.Name(), err.Error())
 		}
@@ -90,7 +90,7 @@ func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	defer h.unlock()
 	r.mut.Unlock()
 
-	unreg, err := h.Handle(ctx.Child(h.Name()), data)
+	unreg, err := h.Handle(ctx.Child(h.Name()), key, data)
 	if err != nil {
 		ctx.Logger().Error("handler '%s' ended with an error: %s", h.Name(), err.Error())
 	}

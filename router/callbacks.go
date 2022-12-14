@@ -19,7 +19,7 @@ type CallbackHandler interface {
 	Name() string
 
 	// If unreg is true, handler will be automatically deleted.
-	Handle(tgot.Context, *tg.CallbackQuery) (ans tgot.CallbackAnswer, unreg bool, err error)
+	Handle(tgot.Context, tgot.MsgSignature, *tg.CallbackQuery) (ans tgot.CallbackAnswer, unreg bool, err error)
 
 	// Specifies when the handler will be automatically unreged.
 	Timeout() time.Time
@@ -27,7 +27,7 @@ type CallbackHandler interface {
 	// Called when the handler times out.
 	// The current handler will be automatically unreged so do not
 	// call Unreg from this function as this will cause a deadlock.
-	Close(tgot.Context, tgot.MsgSignature) error
+	Cancel(tgot.Context, tgot.MsgSignature) error
 }
 
 // Callbacks routes callback queries.
@@ -38,7 +38,7 @@ type Callbacks struct {
 // Route handles callback query.
 //
 // It can be used as [Handler.OnCallbackQuery].
-func (c *Callbacks) Route(qc tgot.QueryContext[tgot.CallbackAnswer], q *tg.CallbackQuery) {
+func (c *Callbacks) Route(qc tgot.CallbackContext, q *tg.CallbackQuery) {
 	c.r.Route(qc, tgot.CallbackSignature(q), q)
 }
 
@@ -60,8 +60,8 @@ type callbackWrapper struct {
 	CallbackHandler
 }
 
-func (w *callbackWrapper) Handle(qc tgot.CallbackContext, q *tg.CallbackQuery) (bool, error) {
-	ans, unreg, err := w.CallbackHandler.Handle(qc.Context, q)
+func (w *callbackWrapper) Handle(qc tgot.CallbackContext, sig tgot.MsgSignature, q *tg.CallbackQuery) (bool, error) {
+	ans, unreg, err := w.CallbackHandler.Handle(qc.Context, sig, q)
 	if err != nil {
 		return unreg, err
 	}
