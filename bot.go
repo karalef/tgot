@@ -10,16 +10,16 @@ import (
 )
 
 // NewWithToken creates new bit with specified token and default http client.
-func NewWithToken(token string, handler Handler, log ...*logger.Logger) (*Bot, error) {
+func NewWithToken(token string, log ...*logger.Logger) (*Bot, error) {
 	a, err := api.New(token, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
-	return New(a, handler, log...)
+	return New(a, log...)
 }
 
 // New creates new bot.
-func New(api *api.API, handler Handler, log ...*logger.Logger) (*Bot, error) {
+func New(api *api.API, log ...*logger.Logger) (*Bot, error) {
 	if api == nil {
 		return nil, errors.New("nil api")
 	}
@@ -29,9 +29,8 @@ func New(api *api.API, handler Handler, log ...*logger.Logger) (*Bot, error) {
 	}
 
 	b := &Bot{
-		api:     api,
-		handler: handler,
-		me:      *me,
+		api: api,
+		me:  *me,
 	}
 	if len(log) > 0 {
 		b.log = log[0]
@@ -44,12 +43,12 @@ func New(api *api.API, handler Handler, log ...*logger.Logger) (*Bot, error) {
 
 // Bot type.
 type Bot struct {
-	err     atomic.Pointer[error]
-	api     *api.API
-	log     *logger.Logger
-	handler Handler
+	err atomic.Pointer[error]
+	api *api.API
+	log *logger.Logger
+	me  tg.User
 
-	me tg.User
+	Handler
 }
 
 // API returns api object.
@@ -74,11 +73,6 @@ func (b *Bot) Err() error {
 	return nil
 }
 
-// Allowed returns allowed updates list.
-func (b *Bot) Allowed() []string {
-	return b.handler.allowed()
-}
-
 // Handle routes the update to the matching handler.
 // It panics if the update contains an object not specified in bot.Allowed.
 func (b *Bot) Handle(upd *tg.Update) error {
@@ -86,48 +80,47 @@ func (b *Bot) Handle(upd *tg.Update) error {
 		return err
 	}
 
-	h := &b.handler
 	switch {
 	case upd.Message != nil:
 		ctx := b.makeChatContext(upd.Message.Chat, "Message")
-		h.OnMessage(ctx, upd.Message)
+		b.OnMessage(ctx, upd.Message)
 	case upd.EditedMessage != nil:
 		ctx := b.makeChatContext(upd.EditedMessage.Chat, "EditedMessage")
-		h.OnEditedMessage(ctx, upd.EditedMessage)
+		b.OnEditedMessage(ctx, upd.EditedMessage)
 	case upd.ChannelPost != nil:
 		ctx := b.makeChatContext(upd.ChannelPost.Chat, "Post")
-		h.OnChannelPost(ctx, upd.ChannelPost)
+		b.OnChannelPost(ctx, upd.ChannelPost)
 	case upd.EditedChannelPost != nil:
 		ctx := b.makeChatContext(upd.EditedChannelPost.Chat, "EditedPost")
-		h.OnEditedChannelPost(ctx, upd.EditedChannelPost)
+		b.OnEditedChannelPost(ctx, upd.EditedChannelPost)
 	case upd.CallbackQuery != nil:
 		ctx := makeQueryContext[CallbackAnswer](b.MakeContext("Callback"), upd.CallbackQuery.ID)
-		h.OnCallbackQuery(ctx, upd.CallbackQuery)
+		b.OnCallbackQuery(ctx, upd.CallbackQuery)
 	case upd.InlineQuery != nil:
 		ctx := makeQueryContext[InlineAnswer](b.MakeContext("Inline"), upd.InlineQuery.ID)
-		h.OnInlineQuery(ctx, upd.InlineQuery)
+		b.OnInlineQuery(ctx, upd.InlineQuery)
 	case upd.InlineChosen != nil:
 		ctx := b.MakeContext("InlineChosen").OpenMessage(InlineSignature(upd.InlineChosen))
-		h.OnInlineChosen(ctx, upd.InlineChosen)
+		b.OnInlineChosen(ctx, upd.InlineChosen)
 	case upd.ShippingQuery != nil:
 		ctx := makeQueryContext[ShippingAnswer](b.MakeContext("ShippingQuery"), upd.ShippingQuery.ID)
-		h.OnShippingQuery(ctx, upd.ShippingQuery)
+		b.OnShippingQuery(ctx, upd.ShippingQuery)
 	case upd.PreCheckoutQuery != nil:
 		ctx := makeQueryContext[PreCheckoutAnswer](b.MakeContext("PreCheckoutQuery"), upd.PreCheckoutQuery.ID)
-		h.OnPreCheckoutQuery(ctx, upd.PreCheckoutQuery)
+		b.OnPreCheckoutQuery(ctx, upd.PreCheckoutQuery)
 	case upd.Poll != nil:
-		h.OnPoll(b.MakeContext("Poll"), upd.Poll)
+		b.OnPoll(b.MakeContext("Poll"), upd.Poll)
 	case upd.PollAnswer != nil:
-		h.OnPollAnswer(b.MakeContext("PollAnswer"), upd.PollAnswer)
+		b.OnPollAnswer(b.MakeContext("PollAnswer"), upd.PollAnswer)
 	case upd.MyChatMember != nil:
 		ctx := b.makeChatContext(upd.MyChatMember.Chat, "MyChatMember")
-		h.OnMyChatMember(ctx, upd.MyChatMember)
+		b.OnMyChatMember(ctx, upd.MyChatMember)
 	case upd.ChatMember != nil:
 		ctx := b.makeChatContext(upd.ChatMember.Chat, "ChatMember")
-		h.OnChatMember(ctx, upd.ChatMember)
+		b.OnChatMember(ctx, upd.ChatMember)
 	case upd.ChatJoinRequest != nil:
 		ctx := b.makeChatContext(upd.ChatJoinRequest.Chat, "JoinRequest")
-		h.OnChatJoinRequest(ctx, upd.ChatJoinRequest)
+		b.OnChatJoinRequest(ctx, upd.ChatJoinRequest)
 	}
 
 	return b.Err()
@@ -151,7 +144,10 @@ type Handler struct {
 	OnChatJoinRequest   func(ChatContext, *tg.ChatJoinRequest)
 }
 
-func (h *Handler) allowed() []string {
+// Allowed returns list of allowed updates.
+// If there is any change in the handler, this function must be called to get a new list,
+// otherwise it may cause a panic.
+func (h *Handler) Allowed() []string {
 	list := make([]string, 0, 14)
 	add := func(a bool, s string) {
 		if a {
