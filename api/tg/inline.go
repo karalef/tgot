@@ -22,8 +22,7 @@ type InlineChosen struct {
 	Query           string    `json:"query"`
 }
 
-// InlineQueryResulter is an interface for InlineQueryResult to be compatible
-// with Go methods.
+// InlineQueryResulter is an interface for InlineQueryResult.
 type InlineQueryResulter interface {
 	inlineQueryResult()
 }
@@ -31,17 +30,6 @@ type InlineQueryResulter interface {
 // InlineQueryResultData represents any available inline query result object.
 type InlineQueryResultData interface {
 	inlineQueryResultType() string
-	InlineQueryResultCachedAudio | InlineQueryResultCachedDocument |
-		InlineQueryResultCachedGIF | InlineQueryResultCachedMPEG4GIF |
-		InlineQueryResultCachedPhoto | InlineQueryResultCachedSticker |
-		InlineQueryResultCachedVideo | InlineQueryResultCachedVoice |
-
-		InlineQueryResultArticle | InlineQueryResultAudio |
-		InlineQueryResultContact | InlineQueryResultGame |
-		InlineQueryResultDocument | InlineQueryResultGIF |
-		InlineQueryResultLocation | InlineQueryResultMPEG4GIF |
-		InlineQueryResultPhoto | InlineQueryResultVenue |
-		InlineQueryResultVideo | InlineQueryResultVoice
 }
 
 // InlineQueryResult represents one result of an inline query.

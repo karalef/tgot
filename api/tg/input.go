@@ -64,8 +64,7 @@ func FileBytes(name string, data []byte) *InputFile {
 	return FileReader(name, bytes.NewReader(data))
 }
 
-// MediaInputter is an interface for InputMedia to be compatible
-// with Go methods.
+// MediaInputter is an interface for InputMedia.
 type MediaInputter interface {
 	inputMedia()
 }
@@ -73,8 +72,6 @@ type MediaInputter interface {
 // InputMediaData represents any available input media object.
 type InputMediaData interface {
 	inputMediaType() string
-	InputMediaPhoto | InputMediaVideo | InputMediaAnimation |
-		InputMediaAudio | InputMediaDocument
 }
 
 // InputMedia represents the content of a media message to be sent.
