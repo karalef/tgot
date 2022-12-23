@@ -55,12 +55,12 @@ func (e baseError[T]) formatData() string {
 
 // Error represents a telegram api error and also contains method and data.
 type Error struct {
-	baseError[tg.APIError]
+	baseError[*tg.APIError]
 }
 
 // Is implements errors.Is interface.
 func (e Error) Is(err error) bool {
-	if tge, ok := err.(tg.APIError); ok {
+	if tge, ok := err.(*tg.APIError); ok {
 		return e.Err.Code == tge.Code
 	}
 	return false
@@ -77,6 +77,6 @@ type JSONError struct {
 	Response []byte
 }
 
-func (e *JSONError) Error() string {
+func (e JSONError) Error() string {
 	return e.baseError.Error() + "\nresponse:\n" + string(e.Response)
 }

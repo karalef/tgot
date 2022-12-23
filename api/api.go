@@ -80,7 +80,7 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 		}
 	}
 	if r.APIError != nil {
-		err = &Error{makeError(method, data, *r.APIError)}
+		err = &Error{makeError(method, data, r.APIError)}
 	}
 
 	return r.Result, err

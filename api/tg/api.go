@@ -27,7 +27,7 @@ type APIError struct {
 	} `json:"parameters"`
 }
 
-func (e APIError) Error() string {
+func (e *APIError) Error() string {
 	s := fmt.Sprintf("telegram (%d) %s", e.Code, e.Description)
 	if e.Parameters != nil {
 		if e.Parameters.MigrateTo != nil {
