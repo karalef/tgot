@@ -4,24 +4,26 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+
+	"github.com/karalef/tgot/api"
 )
 
 // DataURL is the url that provides data about currencies.
 const DataURL = "https://core.telegram.org/bots/payments/currencies.json"
 
 // GetCurrenciesData returns information about currencies supported by the telegram api.
-func GetCurrenciesData(client *http.Client) (map[string]Currency, error) {
+func GetCurrenciesData(client api.Client) (map[string]Currency, error) {
 	if client == nil {
-		client = http.DefaultClient
+		client = api.WrapStdHTTP(http.DefaultClient)
 	}
 	resp, err := client.Get(DataURL)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Close()
 
-	defer resp.Body.Close()
 	var r map[string]Currency
-	return r, json.NewDecoder(resp.Body).Decode(&r)
+	return r, json.NewDecoder(resp).Decode(&r)
 }
 
 // Currency represents single currency data.
