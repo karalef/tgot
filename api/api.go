@@ -10,7 +10,7 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-// New creates a new API instance and returns the getMe result if successful.
+// New creates a new API instance.
 // If apiURL or fileURL are empty, the Telegram defaults are used.
 // If client is nil, the http.DefaultClient is used.
 func New(token string, apiURL, fileURL string, client Client) (*API, error) {
@@ -32,6 +32,11 @@ func New(token string, apiURL, fileURL string, client Client) (*API, error) {
 		fileURL: fileURL,
 		client:  client,
 	}, nil
+}
+
+// NewDefault creates a new API instance with default values.
+func NewDefault(token string) (*API, error) {
+	return New(token, "", "", nil)
 }
 
 // API provides access to the Telegram Bot API.
