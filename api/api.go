@@ -96,25 +96,6 @@ func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
 	return a.client.Get(a.fileURL + a.token + "/" + path)
 }
 
-// GetMe returns basic information about the bot in form of a User object.
-func (a *API) GetMe() (*tg.User, error) {
-	return Request[*tg.User](a, "getMe", nil)
-}
-
-// LogOut method.
-//
-// Use this method to log out from the cloud Bot API server before launching the bot locally.
-func (a *API) LogOut() error {
-	return a.Request("logOut", nil)
-}
-
-// Close method.
-//
-// Use this method to close the bot instance before moving it from one local server to another.
-func (a *API) Close() error {
-	return a.Request("close", nil)
-}
-
 // DecodeJSON decodes reader into object or
 // returns raw json data if error occured.
 func DecodeJSON[T any](r io.Reader) (*T, []byte, error) {

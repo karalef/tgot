@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
 
@@ -74,11 +73,11 @@ func (s *Server) Close() {
 
 // Run starts webhook server.
 func (s *Server) Run(b *tgot.Bot) error {
-	return s.RunWH(b.API(), WrapHandler(b.Handle), b.Allowed())
+	return s.RunWH(b, WrapHandler(b.Handle))
 }
 
 // RunWH starts webhook server.
-func (s *Server) RunWH(a *api.API, h WHHandler, allowed []string) error {
+func (s *Server) RunWH(b *tgot.Bot, h WHHandler) error {
 	if h == nil {
 		panic("WebhookServer: nil handler")
 	}
@@ -93,12 +92,12 @@ func (s *Server) RunWH(a *api.API, h WHHandler, allowed []string) error {
 		cert = tg.FileBytes(filepath.Base(s.cfg.CertFile), certfile)
 	}
 
-	ok, err := a.SetWebhook(api.WebhookData{
+	ok, err := b.SetWebhook(tgot.WebhookData{
 		URL:            s.cfg.URL,
 		Certificate:    cert,
 		IPAddress:      s.cfg.IPAddress,
 		MaxConnections: s.cfg.MaxConnections,
-		AllowedUpdates: allowed,
+		AllowedUpdates: b.Allowed(),
 		DropPending:    s.cfg.DropPending,
 		SecretToken:    s.cfg.SecretToken,
 	})

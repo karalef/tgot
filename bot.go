@@ -23,15 +23,14 @@ func New(api *api.API, log ...*logger.Logger) (*Bot, error) {
 	if api == nil {
 		return nil, errors.New("nil api")
 	}
-	me, err := api.GetMe()
+	b := &Bot{
+		api: api,
+	}
+	_, err := b.GetMe()
 	if err != nil {
 		return nil, err
 	}
 
-	b := &Bot{
-		api: api,
-		me:  *me,
-	}
 	if len(log) > 0 {
 		b.log = log[0]
 	} else {
@@ -59,6 +58,30 @@ func (b *Bot) API() *api.API {
 // Me returns current bot as tg.User.
 func (b *Bot) Me() tg.User {
 	return b.me
+}
+
+// GetMe returns basic information about the bot in form of a User object.
+func (b *Bot) GetMe() (*tg.User, error) {
+	me, err := api.Request[*tg.User](b.api, "getMe", nil)
+	if err != nil {
+		return nil, err
+	}
+	b.me = *me
+	return me, nil
+}
+
+// LogOut method.
+//
+// Use this method to log out from the cloud Bot API server before launching the bot locally.
+func (b *Bot) LogOut() error {
+	return b.api.Request("logOut", nil)
+}
+
+// Close method.
+//
+// Use this method to close the bot instance before moving it from one local server to another.
+func (b *Bot) Close() error {
+	return b.api.Request("close", nil)
 }
 
 func (b *Bot) cancel(err error) {

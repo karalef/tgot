@@ -2,7 +2,6 @@ package commands
 
 import (
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
 
@@ -10,7 +9,7 @@ import (
 type List []*Command
 
 // Setup sets the default list of the bot's commands on telegram servers.
-func (list *List) Setup(a *api.API) error {
+func (list *List) Setup(b *tgot.Bot) error {
 	cmds := make([]tg.Command, len(*list))
 	for i := range *list {
 		cmds[i] = tg.Command{
@@ -18,7 +17,7 @@ func (list *List) Setup(a *api.API) error {
 			Description: (*list)[i].Description,
 		}
 	}
-	return a.SetCommands(&api.CommandsData{Commands: cmds})
+	return b.SetCommands(&tgot.CommandsData{Commands: cmds})
 }
 
 // Command runs a command if it exists.
