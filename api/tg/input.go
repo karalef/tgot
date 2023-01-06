@@ -101,7 +101,9 @@ func NewInputMediaPhoto(file Inputtable) *InputMedia[InputMediaPhoto] {
 }
 
 // InputMediaPhoto represents a photo to be sent.
-type InputMediaPhoto struct{}
+type InputMediaPhoto struct {
+	HasSpoiler bool `json:"has_spoiler,omitempty"`
+}
 
 func (InputMediaPhoto) inputMediaType() string {
 	return "photo"
@@ -114,6 +116,7 @@ type InputMediaVideo struct {
 	Height            int        `json:"height,omitempty"`
 	Duration          int        `json:"duration,omitempty"`
 	SupportsStreaming bool       `json:"supports_streaming,omitempty"`
+	HasSpoiler        bool       `json:"has_spoiler,omitempty"`
 }
 
 func (InputMediaVideo) inputMediaType() string {
@@ -123,10 +126,11 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	Thumbnail Inputtable `json:"thumb,omitempty"`
-	Width     int        `json:"width,omitempty"`
-	Height    int        `json:"height,omitempty"`
-	Duration  int        `json:"duration,omitempty"`
+	Thumbnail  Inputtable `json:"thumb,omitempty"`
+	Width      int        `json:"width,omitempty"`
+	Height     int        `json:"height,omitempty"`
+	Duration   int        `json:"duration,omitempty"`
+	HasSpoiler bool       `json:"has_spoiler,omitempty"`
 }
 
 func (InputMediaAnimation) inputMediaType() string {

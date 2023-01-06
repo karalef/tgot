@@ -79,12 +79,14 @@ var _ Sendable = Photo{}
 type Photo struct {
 	Photo tg.Inputtable
 	CaptionData
+	HasSpoiler  bool
 	ReplyMarkup tg.ReplyMarkup
 }
 
 func (ph Photo) sendData(d *api.Data) string {
 	d.SetFile("photo", ph.Photo, nil)
 	ph.CaptionData.embed(d)
+	d.SetBool("has_spoiler", ph.HasSpoiler)
 	d.SetJSON("reply_markup", ph.ReplyMarkup)
 	return "sendPhoto"
 }
@@ -141,6 +143,7 @@ type Video struct {
 	Duration          int
 	Width             int
 	Height            int
+	HasSpoiler        bool
 	SupportsStreaming bool
 	ReplyMarkup       tg.ReplyMarkup
 }
@@ -151,6 +154,7 @@ func (v Video) sendData(d *api.Data) string {
 	d.SetInt("duration", v.Duration)
 	d.SetInt("width", v.Width)
 	d.SetInt("height", v.Height)
+	d.SetBool("has_spoiler", v.HasSpoiler)
 	d.SetBool("supports_streaming", v.SupportsStreaming)
 	d.SetJSON("reply_markup", v.ReplyMarkup)
 	return "sendVideo"
@@ -166,6 +170,7 @@ type Animation struct {
 	Duration    int
 	Width       int
 	Height      int
+	HasSpoiler  bool
 	ReplyMarkup tg.ReplyMarkup
 }
 
@@ -175,6 +180,7 @@ func (a Animation) sendData(d *api.Data) string {
 	d.SetInt("duration", a.Duration)
 	d.SetInt("width", a.Width)
 	d.SetInt("height", a.Height)
+	d.SetBool("has_spoiler", a.HasSpoiler)
 	d.SetJSON("reply_markup", a.ReplyMarkup)
 	return "sendAnimation"
 }

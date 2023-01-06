@@ -21,11 +21,12 @@ var (
 
 // ReplyKeyboardMarkup represents a custom keyboard with reply options.
 type ReplyKeyboardMarkup struct {
-	Keyboard    [][]KeyboardButton `json:"keyboard"`
-	Resize      bool               `json:"resize_keyboard,omitempty"`
-	OneTime     bool               `json:"one_time_keyboard,omitempty"`
-	Placeholder string             `json:"input_field_placeholder,omitempty"`
-	Selective   bool               `json:"selective,omitempty"`
+	Keyboard     [][]KeyboardButton `json:"keyboard"`
+	IsPersistent bool               `json:"is_persistent,omitempty"`
+	Resize       bool               `json:"resize_keyboard,omitempty"`
+	OneTime      bool               `json:"one_time_keyboard,omitempty"`
+	Placeholder  string             `json:"input_field_placeholder,omitempty"`
+	Selective    bool               `json:"selective,omitempty"`
 }
 
 // KeyboardButton represents one button of the reply keyboard.

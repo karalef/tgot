@@ -24,6 +24,14 @@ func (c ChatContext) CreateForumTopic(name string, iconColor int, iconEmojiID st
 	return chatMethod[*tg.ForumTopic](c, "createForumTopic", d)
 }
 
+// EditForumTopic edits name and icon of a topic in a forum supergroup chat.
+func (c ChatContext) EditForumTopic(threadID int, name, iconEmojiID string) error {
+	d := api.NewData()
+	d.Set("name", name)
+	d.Set("icon_custom_emoji_id", iconEmojiID)
+	return c.OpenForumTopic(threadID).method("editForumTopic", d)
+}
+
 // CloseForumTopic closes an open topic in a forum supergroup chat.
 func (c ChatContext) CloseForumTopic(threadID int) error {
 	return c.OpenForumTopic(threadID).method("closeForumTopic")
@@ -37,6 +45,32 @@ func (c ChatContext) ReopenForumTopic(threadID int) error {
 // DeleteForumTopic deletes a forum topic along with all its messages in a forum supergroup chat.
 func (c ChatContext) DeleteForumTopic(threadID int) error {
 	return c.OpenForumTopic(threadID).method("deleteForumTopic")
+}
+
+// EditGeneralForumTopic edits the name of the 'General' topic in a forum supergroup chat.
+func (c ChatContext) EditGeneralForumTopic(name string) error {
+	d := api.NewData().Set("name", name)
+	return c.method("editGeneralForumTopic", d)
+}
+
+// CloseGeneralForumTopic closes an open 'General' topic in a forum supergroup chat.
+func (c ChatContext) CloseGeneralForumTopic() error {
+	return c.method("closeGeneralForumTopic")
+}
+
+// ReopenGeneralForumTopic reopens a closed 'General' topic in a forum supergroup chat.
+func (c ChatContext) ReopenGeneralForumTopic() error {
+	return c.method("reopenGeneralForumTopic")
+}
+
+// HideGeneralForumTopic hides the 'General' topic in a forum supergroup chat.
+func (c ChatContext) HideGeneralForumTopic() error {
+	return c.method("hideGeneralForumTopic")
+}
+
+// UnhideGeneralForumTopic unhides the 'General' topic in a forum supergroup chat.
+func (c ChatContext) UnhideGeneralForumTopic() error {
+	return c.method("unhideGeneralForumTopic")
 }
 
 // Topic provides forum topics api.
@@ -63,14 +97,6 @@ func topicMethod[T any](t Topic, meth string, d ...*api.Data) (T, error) {
 	return method[T](t.ctx, meth, data)
 }
 
-// Edit edits name and icon of a topic in a forum supergroup chat.
-func (t Topic) Edit(name, iconEmojiID string) error {
-	d := api.NewData()
-	d.Set("name", name)
-	d.Set("icon_custom_emoji_id", iconEmojiID)
-	return t.method("editForumTopic", d)
-}
-
 // UnpinAllMessages clears the list of pinned messages in a forum topic.
 func (t Topic) UnpinAllMessages() error {
 	return t.method("unpinAllForumTopicMessages")
@@ -95,6 +121,13 @@ func (t Topic) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Message,
 	}
 	embed(d, opts)
 	return topicMethod[[]tg.Message](t, "sendMediaGroup", d)
+}
+
+// SendChatAction sends chat action to tell the user that something
+// is happening on the bot's side.
+func (t Topic) SendChatAction(act tg.ChatAction) error {
+	d := api.NewData().Set("action", string(act))
+	return t.method("sendChatAction", d)
 }
 
 // Forward forwards messages of any kind.

@@ -25,6 +25,8 @@ type Chat struct {
 	Permissions                *ChatPermissions `json:"permissions"`
 	SlowModeDelay              int              `json:"slow_mode_delay"`
 	AutoDeleteTime             int              `json:"message_auto_delete_time"`
+	HasAgressiveAntiSpam       bool             `json:"has_aggressive_anti_spam_enabled"`
+	HasHiddenMembers           bool             `json:"has_hidden_members"`
 	HasProtectedContent        bool             `json:"has_protected_content"`
 	StickerSetName             string           `json:"sticker_set_name"`
 	CanSetStickerSet           bool             `json:"can_set_sticker_set"`
