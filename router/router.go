@@ -11,7 +11,7 @@ import (
 // NewRouter makes new inited queries router.
 func NewRouter[Ctx ctxType[Ctx], Key comparable, Data any]() *Router[Ctx, Key, Data] {
 	return &Router[Ctx, Key, Data]{
-		handlers: make(map[Key]*handler[Ctx, Key, Data]),
+		handlers: make(map[Key]Handler[Ctx, Key, Data]),
 	}
 }
 
@@ -41,22 +41,9 @@ type Handler[Ctx ctxType[Ctx], Key comparable, Data any] interface {
 	Cancel(tgot.Context, Key) error
 }
 
-type handler[Ctx ctxType[Ctx], Key comparable, Data any] struct {
-	mut sync.Mutex
-	Handler[Ctx, Key, Data]
-}
-
-func (h *handler[Key, Data, Ctx]) lock() {
-	h.mut.Lock()
-}
-
-func (h *handler[Key, Data, Ctx]) unlock() {
-	h.mut.Unlock()
-}
-
 // Router routes queries.
 type Router[Ctx ctxType[Ctx], Key comparable, Data any] struct {
-	handlers map[Key]*handler[Ctx, Key, Data]
+	handlers map[Key]Handler[Ctx, Key, Data]
 	mut      sync.Mutex
 }
 
@@ -66,13 +53,10 @@ func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
 		if t.Before(h.Timeout()) {
 			continue
 		}
-		if !h.mut.TryLock() {
-			continue
-		}
 		delete(r.handlers, key)
 		err := h.Cancel(ctx.Child(h.Name()), key)
 		if err != nil {
-			ctx.Logger().Error("Close '%s' ended with an error: %s", h.Name(), err.Error())
+			ctx.Logger().Error("Cancel '%s' ended with an error: %s", h.Name(), err.Error())
 		}
 	}
 }
@@ -82,13 +66,10 @@ func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	r.mut.Lock()
 	r.gc(ctx.Ctx())
 	h, ok := r.handlers[key]
+	r.mut.Unlock()
 	if !ok {
-		r.mut.Unlock()
 		return
 	}
-	h.lock()
-	defer h.unlock()
-	r.mut.Unlock()
 
 	unreg, err := h.Handle(ctx.Child(h.Name()), key, data)
 	if err != nil {
@@ -105,7 +86,7 @@ func (r *Router[Ctx, Key, Data]) Reg(key Key, h Handler[Ctx, Key, Data]) {
 		return
 	}
 	r.mut.Lock()
-	r.handlers[key] = &handler[Ctx, Key, Data]{Handler: h}
+	r.handlers[key] = h
 	r.mut.Unlock()
 }
 
