@@ -60,6 +60,12 @@ func (a *API) Request(method string, d *Data) error {
 	return err
 }
 
+// RequestContext performs a request to the Bot API but doesn't parse the result.
+func (a *API) RequestContext(ctx context.Context, method string, d *Data) error {
+	_, err := RequestContext[Empty](ctx, a, method, d)
+	return err
+}
+
 // Request performs a request to the Bot API with background context.
 func Request[T any](a *API, method string, d *Data) (T, error) {
 	return RequestContext[T](context.Background(), a, method, d)
@@ -71,14 +77,8 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 
 	var nilResult T
 	u := a.apiURL + a.token + "/" + method
-	body, err := a.client.Post(ctx, u, ctype, reader)
-	switch {
-	case err == nil:
-	case errors.Is(err, context.Canceled):
-		return nilResult, context.Canceled
-	case errors.Is(err, context.DeadlineExceeded):
-		return nilResult, context.DeadlineExceeded
-	default:
+	status, body, err := a.client.Post(ctx, u, ctype, reader)
+	if err != nil {
 		return nilResult, &HTTPError{makeError(method, data, err)}
 	}
 	defer body.Close()
@@ -87,6 +87,7 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 	if err != nil {
 		return nilResult, &JSONError{
 			baseError: makeError(method, data, err),
+			Status:    status,
 			Response:  raw,
 		}
 	}
@@ -97,9 +98,22 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 	return r.Result, err
 }
 
-// DownloadFile downloads a file from the server.
+// DownloadFile downloads a file from the server with background context.
 func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
-	return a.client.Get(a.fileURL + a.token + "/" + path)
+	return a.DownloadFileContext(context.Background(), path)
+}
+
+// DownloadFileContext downloads a file from the server.
+func (a *API) DownloadFileContext(ctx context.Context, path string) (io.ReadCloser, error) {
+	status, body, err := a.client.Get(ctx, a.fileURL+a.token+"/"+path)
+	if status != http.StatusOK || err != nil {
+		return nil, &DownloadError{
+			Status: status,
+			Path:   path,
+			Err:    err,
+		}
+	}
+	return body, nil
 }
 
 // DecodeJSON decodes reader into object or

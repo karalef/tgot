@@ -1,6 +1,7 @@
 package payments
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -12,11 +13,13 @@ import (
 const DataURL = "https://core.telegram.org/bots/payments/currencies.json"
 
 // GetCurrenciesData returns information about currencies supported by the telegram api.
+//
+// It does not wrap the error with [api.HTTPError] or [api.JSONError].
 func GetCurrenciesData(client api.Client) (map[string]Currency, error) {
 	if client == nil {
 		client = api.WrapStdHTTP(http.DefaultClient)
 	}
-	resp, err := client.Get(DataURL)
+	_, resp, err := client.Get(context.TODO(), DataURL)
 	if err != nil {
 		return nil, err
 	}

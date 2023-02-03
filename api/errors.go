@@ -2,6 +2,8 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/karalef/tgot/api/tg"
@@ -59,7 +61,7 @@ type Error struct {
 }
 
 // Is implements errors.Is interface.
-func (e Error) Is(err error) bool {
+func (e *Error) Is(err error) bool {
 	if tge, ok := err.(*tg.APIError); ok {
 		return e.Err.Code == tge.Code
 	}
@@ -71,12 +73,35 @@ type HTTPError struct {
 	baseError[error]
 }
 
+// DownloadError represents download error.
+type DownloadError struct {
+	Status int
+	Path   string
+	Err    error
+}
+
+func (e *DownloadError) Unwrap() error {
+	return e.Err
+}
+
+func (e *DownloadError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("download %s (%s): %s", e.Path, httpStatus(e.Status), e.Err.Error())
+	}
+	return fmt.Sprintf("download %s (%s)", e.Path, httpStatus(e.Status))
+}
+
 // JSONError represents JSON error.
 type JSONError struct {
 	baseError[error]
+	Status   int
 	Response []byte
 }
 
-func (e JSONError) Error() string {
-	return e.baseError.Error() + "\nresponse:\n" + string(e.Response)
+func (e *JSONError) Error() string {
+	return fmt.Sprintf("%s\n%s %s %s", e.Err.Error(), httpStatus(e.Status), e.Method, e.formatData())
+}
+
+func httpStatus(code int) string {
+	return strconv.Itoa(code) + " " + http.StatusText(code)
 }
