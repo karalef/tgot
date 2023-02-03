@@ -10,6 +10,12 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
+// DefaultAPIURL is a default url for telegram api.
+const DefaultAPIURL = "https://api.telegram.org/bot"
+
+// DefaultFileURL is a default url for downloading files.
+const DefaultFileURL = "https://api.telegram.org/file/bot"
+
 // New creates a new API instance.
 // If apiURL or fileURL are empty, the Telegram defaults are used.
 // If client is nil, the http.DefaultClient is used.
@@ -18,10 +24,10 @@ func New(token string, apiURL, fileURL string, client Client) (*API, error) {
 		return nil, errors.New("no token provided")
 	}
 	if apiURL == "" {
-		apiURL = tg.DefaultAPIURL
+		apiURL = DefaultAPIURL
 	}
 	if fileURL == "" {
-		fileURL = tg.DefaultFileURL
+		fileURL = DefaultFileURL
 	}
 	if client == nil {
 		client = WrapStdHTTP(http.DefaultClient)

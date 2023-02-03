@@ -97,16 +97,6 @@ type Sticker struct {
 	CustomEmojiID string        `json:"custom_emoji_id"`
 }
 
-// StickerType is a Sticker type.
-type StickerType string
-
-// all available sticker types.
-const (
-	StickerRegular     StickerType = "regular"
-	StickerMask        StickerType = "mask"
-	StickerCustomEmoji StickerType = "custom_emoji"
-)
-
 // File object represents a file ready to be downloaded.
 type File struct {
 	FileData
