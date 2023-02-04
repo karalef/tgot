@@ -5,47 +5,20 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	sha256pkg "crypto/sha256"
-	sha512pkg "crypto/sha512"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"hash"
-	"sync"
 
 	"github.com/karalef/tgot/api/tg"
 )
-
-var (
-	sha256pool = sync.Pool{
-		New: func() any { return sha256pkg.New() },
-	}
-	sha512pool = sync.Pool{
-		New: func() any { return sha512pkg.New() },
-	}
-)
-
-func hashSum(pool *sync.Pool, b []byte) []byte {
-	h := pool.Get().(hash.Hash)
-	defer pool.Put(h)
-	h.Reset()
-	h.Write(b)
-	return h.Sum(nil)
-}
-
-func sha256(b []byte) []byte {
-	return hashSum(&sha256pool, b)
-}
-
-func sha512(b []byte) []byte {
-	return hashSum(&sha512pool, b)
-}
 
 func decrypt(secret, hash, encrypted []byte) ([]byte, error) {
 	if len(secret) == 0 {
 		return nil, errors.New("empty secret")
 	}
-	if len(hash) == 0 || len(hash) != sha256pkg.Size {
+	if len(hash) != sha256.Size {
 		return nil, errors.New("hash size does not match sha256")
 	}
 	if len(encrypted) == 0 || len(encrypted)%16 != 0 {
@@ -53,7 +26,7 @@ func decrypt(secret, hash, encrypted []byte) ([]byte, error) {
 	}
 
 	// find key and iv
-	h := sha512(append(secret, hash...))
+	h := sha512.Sum512(append(secret, hash...))
 	key, iv := h[0:32], h[32:48]
 
 	// decrypt data
@@ -65,7 +38,7 @@ func decrypt(secret, hash, encrypted []byte) ([]byte, error) {
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(paddedData, encrypted)
 
 	// verify data
-	if string(sha256(paddedData)) != string(hash) {
+	if dataHash := sha256.Sum256(paddedData); string(dataHash[:]) != string(hash) {
 		return nil, errors.New("hash does not match")
 	}
 	padding := paddedData[0]
@@ -90,7 +63,9 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 	if len(secret) == 0 {
 		return nil, errors.New("empty secret")
 	}
-	secret, err = rsa.DecryptOAEP(sha256pool.Get().(hash.Hash), rand.Reader, priv, secret, nil)
+
+	// TODO: maybe SHA-1?
+	secret, err = rsa.DecryptOAEP(sha256.New(), rand.Reader, priv, secret, nil)
 	if err != nil {
 		return nil, err
 	}
