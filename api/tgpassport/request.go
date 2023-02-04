@@ -94,7 +94,6 @@ func (p *RequestParams) Query() (url.Values, error) {
 		return nil, err
 	}
 	return url.Values{
-		"domain":     {"telegrampassport"},
 		"bot_id":     {strconv.Itoa(p.BotID)},
 		"scope":      {string(scope)},
 		"public_key": {p.PublicKey},
@@ -108,14 +107,5 @@ func (p *RequestParams) URI() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return "tg://resolve?" + q.Encode(), nil
-}
-
-// AndroidURI generates request URI for Android devices.
-func (p *RequestParams) AndroidURI() (string, error) {
-	q, err := p.Query()
-	if err != nil {
-		return "", err
-	}
-	return "tg:resolve?" + q.Encode(), nil
+	return "tg://passport?" + q.Encode(), nil
 }
