@@ -97,57 +97,75 @@ func (b *Bot) Err() error {
 }
 
 // Handle routes the update to the matching handler.
-// It panics if the update contains an object not specified in bot.Allowed.
 func (b *Bot) Handle(upd *tg.Update) error {
 	if err := b.Err(); err != nil {
 		return err
 	}
 
 	switch {
-	case upd.Message != nil:
+	default:
+		return ErrNotSpecified
+
+	case upd.Message != nil && b.OnMessage != nil:
 		ctx := b.makeChatContext(upd.Message.Chat, "Message")
 		b.OnMessage(ctx, upd.Message)
-	case upd.EditedMessage != nil:
+
+	case upd.EditedMessage != nil && b.OnEditedMessage != nil:
 		ctx := b.makeChatContext(upd.EditedMessage.Chat, "EditedMessage")
 		b.OnEditedMessage(ctx, upd.EditedMessage)
-	case upd.ChannelPost != nil:
+
+	case upd.ChannelPost != nil && b.OnChannelPost != nil:
 		ctx := b.makeChatContext(upd.ChannelPost.Chat, "Post")
 		b.OnChannelPost(ctx, upd.ChannelPost)
-	case upd.EditedChannelPost != nil:
+
+	case upd.EditedChannelPost != nil && b.OnEditedChannelPost != nil:
 		ctx := b.makeChatContext(upd.EditedChannelPost.Chat, "EditedPost")
 		b.OnEditedChannelPost(ctx, upd.EditedChannelPost)
-	case upd.CallbackQuery != nil:
+
+	case upd.CallbackQuery != nil && b.OnCallbackQuery != nil:
 		ctx := makeQueryContext[CallbackAnswer](b.MakeContext("Callback"), upd.CallbackQuery.ID)
 		b.OnCallbackQuery(ctx, upd.CallbackQuery)
-	case upd.InlineQuery != nil:
+
+	case upd.InlineQuery != nil && b.OnInlineQuery != nil:
 		ctx := makeQueryContext[InlineAnswer](b.MakeContext("Inline"), upd.InlineQuery.ID)
 		b.OnInlineQuery(ctx, upd.InlineQuery)
-	case upd.InlineChosen != nil:
+
+	case upd.InlineChosen != nil && b.OnInlineChosen != nil:
 		ctx := b.MakeContext("InlineChosen").OpenMessage(InlineSignature(upd.InlineChosen))
 		b.OnInlineChosen(ctx, upd.InlineChosen)
-	case upd.ShippingQuery != nil:
+
+	case upd.ShippingQuery != nil && b.OnShippingQuery != nil:
 		ctx := makeQueryContext[ShippingAnswer](b.MakeContext("ShippingQuery"), upd.ShippingQuery.ID)
 		b.OnShippingQuery(ctx, upd.ShippingQuery)
-	case upd.PreCheckoutQuery != nil:
+
+	case upd.PreCheckoutQuery != nil && b.OnPreCheckoutQuery != nil:
 		ctx := makeQueryContext[PreCheckoutAnswer](b.MakeContext("PreCheckoutQuery"), upd.PreCheckoutQuery.ID)
 		b.OnPreCheckoutQuery(ctx, upd.PreCheckoutQuery)
-	case upd.Poll != nil:
+
+	case upd.Poll != nil && b.OnPoll != nil:
 		b.OnPoll(b.MakeContext("Poll"), upd.Poll)
-	case upd.PollAnswer != nil:
+
+	case upd.PollAnswer != nil && b.OnPollAnswer != nil:
 		b.OnPollAnswer(b.MakeContext("PollAnswer"), upd.PollAnswer)
-	case upd.MyChatMember != nil:
+
+	case upd.MyChatMember != nil && b.OnMyChatMember != nil:
 		ctx := b.makeChatContext(upd.MyChatMember.Chat, "MyChatMember")
 		b.OnMyChatMember(ctx, upd.MyChatMember)
-	case upd.ChatMember != nil:
+
+	case upd.ChatMember != nil && b.OnChatMember != nil:
 		ctx := b.makeChatContext(upd.ChatMember.Chat, "ChatMember")
 		b.OnChatMember(ctx, upd.ChatMember)
-	case upd.ChatJoinRequest != nil:
+
+	case upd.ChatJoinRequest != nil && b.OnChatJoinRequest != nil:
 		ctx := b.makeChatContext(upd.ChatJoinRequest.Chat, "JoinRequest")
 		b.OnChatJoinRequest(ctx, upd.ChatJoinRequest)
 	}
 
 	return b.Err()
 }
+
+// ErrNotSpecified is returned by Handle if the update contains an object not specified in Handler.
+var ErrNotSpecified = errors.New("handler is not specified")
 
 // Handler conatains all available updates handler functions.
 type Handler struct {
