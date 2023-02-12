@@ -31,11 +31,34 @@ type ReplyKeyboardMarkup struct {
 
 // KeyboardButton represents one button of the reply keyboard.
 type KeyboardButton struct {
-	Text            string          `json:"text"`
-	RequestContact  bool            `json:"request_contact,omitempty"`
-	RequestLocation bool            `json:"request_location,omitempty"`
-	RequestPoll     *ButtonPollType `json:"request_poll,omitempty"`
-	WebApp          *WebAppInfo     `json:"web_app,omitmepty"`
+	Text            string                     `json:"text"`
+	RequestUser     *KeyboardButtonRequestUser `json:"request_user,omitempty"`
+	RequestChat     *KeyboardButtonRequestChat `json:"request_chat,omitempty"`
+	RequestContact  bool                       `json:"request_contact,omitempty"`
+	RequestLocation bool                       `json:"request_location,omitempty"`
+	RequestPoll     *ButtonPollType            `json:"request_poll,omitempty"`
+	WebApp          *WebAppInfo                `json:"web_app,omitmepty"`
+}
+
+// KeyboardButtonRequestUser defines the criteria used to request a suitable user.
+// The identifier of the selected user will be shared with the bot when the corresponding button is pressed.
+type KeyboardButtonRequestUser struct {
+	RequestID     int   `json:"request_id"`
+	UserIsBot     *bool `json:"user_is_bot,omitempty"`
+	UserIsPremium *bool `json:"user_is_premium,omitempty"`
+}
+
+// KeyboardButtonRequestChat defines the criteria used to request a suitable chat.
+// The identifier of the selected chat will be shared with the bot when the corresponding button is pressed.
+type KeyboardButtonRequestChat struct {
+	RequestID       int                      `json:"request_id"`
+	ChatIsChannel   bool                     `json:"chat_is_channel"`
+	ChatIsForum     *bool                    `json:"chat_is_forum,omitempty"`
+	ChatHasUsername *bool                    `json:"chat_has_username,omitempty"`
+	ChatIsCreated   bool                     `json:"chat_is_created,omitempty"`
+	UserAdminRights *ChatAdministratorRights `json:"user_admin_rights,omitempty"`
+	BotAdminRights  *ChatAdministratorRights `json:"bot_admin_rights,omitempty"`
+	BotIsMember     bool                     `json:"bot_is_member,omitempty"`
 }
 
 // ButtonPollType represents type of a poll, which is allowed

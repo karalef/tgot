@@ -4,7 +4,7 @@ package tg
 type FileData struct {
 	FileID   string `json:"file_id"`
 	UniqueID string `json:"file_unique_id"`
-	FileSize int    `json:"file_size"`
+	FileSize int64  `json:"file_size"`
 }
 
 // PhotoSize represents one size of a photo or a

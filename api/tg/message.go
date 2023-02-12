@@ -59,6 +59,8 @@ type Message struct {
 	PinnedMessage             *Message                   `json:"pinned_message"`
 	Invoice                   *Invoice                   `json:"invoice"`
 	SuccessfulPayment         *SuccessfulPayment         `json:"successful_payment"`
+	UserShared                *UserShared                `json:"user_shared"`
+	ChatShared                *ChatShared                `json:"chat_shared"`
 	ConnectedWebsite          string                     `json:"connected_website"`
 	PassportData              *PassportData              `json:"passport_data"`
 	ProximityAlert            *ProximityAlert            `json:"proximity_alert_triggered"`
@@ -183,6 +185,18 @@ type GeneralForumTopicHidden struct{}
 // GeneralForumTopicUnhidden represents a service message about General forum topic unhidden in the chat.
 // Currently holds no information.
 type GeneralForumTopicUnhidden struct{}
+
+// UserShared contains information about the user whose identifier was shared with the bot using a KeyboardButtonRequestUser button.
+type UserShared struct {
+	RequestID int   `json:"request_id"`
+	UserID    int64 `json:"user_id"`
+}
+
+// ChatShared contains information about the chat whose identifier was shared with the bot using a KeyboardButtonRequestChat button.
+type ChatShared struct {
+	RequestID int   `json:"request_id"`
+	ChatID    int64 `json:"chat_id"`
+}
 
 // WriteAccessAllowed represents a service message about a user allowing a bot added to the attachment menu to write messages.
 // Currently holds no information.

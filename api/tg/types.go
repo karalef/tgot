@@ -1,5 +1,17 @@
 package tg
 
+var (
+	// False is a pointer to a boolean value of false.
+	False = new(bool)
+
+	// True is a pointer to a boolean value of true.
+	True = func() *bool {
+		t := new(bool)
+		*t = true
+		return t
+	}()
+)
+
 // Contact represents a phone contact.
 type Contact struct {
 	PhoneNumber string `json:"phone_number"`

@@ -235,13 +235,20 @@ func (c ChatContext) Unban(userID int64, onlyIfBanned bool) error {
 	return c.method("unbanChatMember", d)
 }
 
+// RestrictChatMember contains parameters for restrictChatMember method.
+type RestrictChatMember struct {
+	UserID                 int64
+	Permissions            tg.ChatPermissions
+	IndependentPermissions bool
+	Until                  int64
+}
+
 // Restrict restricts a user in a supergroup.
-func (c ChatContext) Restrict(userID int64, perms tg.ChatPermissions, until ...int64) error {
-	d := api.NewData().SetInt64("user_id", userID)
-	d.SetJSON("permissions", perms)
-	if len(until) > 0 {
-		d.SetInt64("until_date", until[0], true)
-	}
+func (c ChatContext) Restrict(r RestrictChatMember) error {
+	d := api.NewData().SetInt64("user_id", r.UserID)
+	d.SetJSON("permissions", r.Permissions)
+	d.SetBool("use_independent_chat_permissions", r.IndependentPermissions)
+	d.SetInt64("until_date", r.Until)
 	return c.method("restrictChatMember", d)
 }
 
@@ -284,8 +291,9 @@ func (c ChatContext) UnbanSenderChat(senderID int64) error {
 }
 
 // SetPermissions sets default chat permissions for all members.
-func (c ChatContext) SetPermissions(perms tg.ChatPermissions) error {
+func (c ChatContext) SetPermissions(perms tg.ChatPermissions, independentPerms ...bool) error {
 	d := api.NewData().SetJSON("permissions", perms)
+	d.SetBool("use_independent_chat_permissions", len(independentPerms) > 0 && independentPerms[0])
 	return c.method("setChatPermissions", d)
 }
 
