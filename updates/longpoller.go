@@ -2,6 +2,7 @@ package updates
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/karalef/tgot"
@@ -34,7 +35,6 @@ func StartLongPolling(b *tgot.Bot, timeout, limit, offset int) error {
 }
 
 // LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
-// It must be created via NewLongPoller otherwise only for testing purposes.
 type LongPoller struct {
 	timeout int
 	limit   int
@@ -73,13 +73,10 @@ func (lp *LongPoller) RunContext(ctx context.Context, b *tgot.Bot) error {
 	for a := b.API(); ; {
 		d.SetInt("offset", lp.offset)
 		upds, err := api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
-		switch err {
-		case nil:
-		case context.Canceled, context.DeadlineExceeded:
-			if e := b.Err(); e != nil {
-				return e
-			}
-			return nil
+		switch {
+		case err == nil:
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			return b.Err()
 		default:
 			return err
 		}
