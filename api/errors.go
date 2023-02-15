@@ -68,11 +68,6 @@ func (e *Error) Is(err error) bool {
 	return false
 }
 
-// HTTPError represents http error.
-type HTTPError struct {
-	baseError[error]
-}
-
 // DownloadError represents download error.
 type DownloadError struct {
 	Status int

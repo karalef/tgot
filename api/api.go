@@ -19,7 +19,7 @@ const DefaultFileURL = "https://api.telegram.org/file/bot"
 // New creates a new API instance.
 // If apiURL or fileURL are empty, the Telegram defaults are used.
 // If client is nil, the http.DefaultClient is used.
-func New(token string, apiURL, fileURL string, client Client) (*API, error) {
+func New(token string, apiURL, fileURL string, client *http.Client) (*API, error) {
 	if token == "" {
 		return nil, errors.New("no token provided")
 	}
@@ -30,7 +30,7 @@ func New(token string, apiURL, fileURL string, client Client) (*API, error) {
 		fileURL = DefaultFileURL
 	}
 	if client == nil {
-		client = WrapStdHTTP(http.DefaultClient)
+		client = http.DefaultClient
 	}
 	return &API{
 		token:   token,
@@ -50,7 +50,7 @@ type API struct {
 	token   string
 	apiURL  string
 	fileURL string
-	client  Client
+	client  *http.Client
 }
 
 // Request performs a request to the Bot API with background context,
@@ -72,22 +72,27 @@ func Request[T any](a *API, method string, d *Data) (T, error) {
 }
 
 // RequestContext performs a request to the Bot API.
-func RequestContext[T any](ctx context.Context, a *API, method string, data *Data) (T, error) {
+func RequestContext[T any](ctx context.Context, a *API, method string, data *Data) (result T, err error) {
 	ctype, reader := data.Data()
 
-	var nilResult T
 	u := a.apiURL + a.token + "/" + method
-	status, body, err := a.client.Post(ctx, u, ctype, reader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, reader)
 	if err != nil {
-		return nilResult, &HTTPError{makeError(method, data, err)}
+		return result, err
 	}
-	defer body.Close()
+	req.Header.Set("Content-Type", ctype)
 
-	r, raw, err := DecodeJSON[tg.APIResponse[T]](body)
+	resp, err := a.client.Do(req)
 	if err != nil {
-		return nilResult, &JSONError{
+		return result, err
+	}
+	defer resp.Body.Close()
+
+	r, raw, err := DecodeJSON[tg.APIResponse[T]](resp.Body)
+	if err != nil {
+		return result, &JSONError{
 			baseError: makeError(method, data, err),
-			Status:    status,
+			Status:    resp.StatusCode,
 			Response:  raw,
 		}
 	}
@@ -105,15 +110,19 @@ func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
 
 // DownloadFileContext downloads a file from the server.
 func (a *API) DownloadFileContext(ctx context.Context, path string) (io.ReadCloser, error) {
-	status, body, err := a.client.Get(ctx, a.fileURL+a.token+"/"+path)
-	if status != http.StatusOK || err != nil {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.fileURL+a.token+"/"+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := a.client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		return nil, &DownloadError{
-			Status: status,
+			Status: resp.StatusCode,
 			Path:   path,
 			Err:    err,
 		}
 	}
-	return body, nil
+	return resp.Body, nil
 }
 
 // DecodeJSON decodes reader into object or
