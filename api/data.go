@@ -5,7 +5,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/url"
-	"reflect"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -17,16 +16,17 @@ import (
 func NewData() *Data {
 	return &Data{
 		Params: make(map[string]string),
-		Files:  make(map[string]tg.Inputtable),
+		Files:  make(map[string]*tg.InputFile),
 	}
 }
 
 // Data contains query parameters and files data.
 type Data struct {
+	// contains query parameters and files that does not need to be uploaded.
 	Params map[string]string
 
-	// key must be params key or multipart field.
-	Files map[string]tg.Inputtable
+	// key is a multipart field name.
+	Files map[string]*tg.InputFile
 }
 
 // Data encodes the values into “URL encoded” form or multipart/form-data.
@@ -34,19 +34,13 @@ func (d *Data) Data() (string, io.Reader) {
 	if d == nil || len(d.Params) == 0 && len(d.Files) == 0 {
 		return "", nil
 	}
-	for _, f := range d.Files {
-		_, r := f.FileData()
-		if r != nil {
-			return d.writeMultipart()
-		}
+	if len(d.Files) > 0 {
+		return d.writeMultipart()
 	}
-	vals := make(url.Values, len(d.Params)+len(d.Files))
+
+	vals := make(url.Values, len(d.Params))
 	for k, v := range d.Params {
 		vals.Set(k, v)
-	}
-	for k, f := range d.Files {
-		urlid, _ := f.FileData()
-		vals.Set(k, urlid)
 	}
 	return "application/x-www-form-urlencoded", strings.NewReader(vals.Encode())
 }
@@ -93,7 +87,7 @@ func (d *Data) SetBool(key string, v bool) *Data {
 
 // SetJSON sets the key to JSON value.
 func (d *Data) SetJSON(key string, v interface{}) *Data {
-	if v != nil && !reflect.ValueOf(v).IsZero() {
+	if v != nil {
 		b, _ := json.Marshal(v)
 		d.Set(key, string(b))
 	}
@@ -108,8 +102,15 @@ func (d *Data) SetFile(field string, file, thumb tg.Inputtable) {
 
 // AddFile adds file.
 func (d *Data) AddFile(field string, file tg.Inputtable) {
-	if !isNil(file) {
-		d.Files[field] = file
+	if isNil(file) {
+		return
+	}
+
+	if inp, ok := file.(*tg.InputFile); ok {
+		d.Files[field] = inp
+	} else {
+		urlid, _ := file.FileData()
+		d.Params[field] = urlid
 	}
 }
 
@@ -129,16 +130,6 @@ func (d *Data) writeMultipart() (string, io.Reader) {
 		}
 
 		for field, file := range d.Files {
-			if _, ok := file.(*tg.InputFile); !ok {
-				urlid, _ := file.FileData()
-				err := mp.WriteField(field, urlid)
-				if err != nil {
-					w.CloseWithError(err)
-					return
-				}
-				continue
-			}
-
 			name, reader := file.FileData()
 			part, err := mp.CreateFormFile(field, name)
 			if err != nil {
