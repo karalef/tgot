@@ -1,4 +1,4 @@
-package tgpassport
+package passport
 
 import (
 	"encoding/json"
@@ -17,24 +17,24 @@ const (
 	ScopeAddressDocument tg.PassportElementType = "address_document"
 )
 
-// PassportScope represents the data to be requested.
-type PassportScope struct {
-	Data []PassportScopeElement `json:"data"`
-	V    int                    `json:"v"` // must be 1
+// Scope represents the data to be requested.
+type Scope struct {
+	Data []ScopeElement `json:"data"`
+	V    int            `json:"v"` // must be 1
 }
 
-// PassportScopeElement represents a requested element.
-type PassportScopeElement interface {
+// ScopeElement represents a requested element.
+type ScopeElement interface {
 	passportScopeElement()
 }
 
-// PassportScopeElementOneOfSeveral represents several elements one of which must be provided.
-type PassportScopeElementOneOfSeveral struct {
+// ScopeElementOneOfSeveral represents several elements one of which must be provided.
+type ScopeElementOneOfSeveral struct {
 	// List of elements one of which must be provided;
 	// must contain either several of “passport”, “driver_license”, “identity_card”,
 	// “internal_passport” or several of “utility_bill”, “bank_statement”, “rental_agreement”,
 	// “passport_registration”, “temporary_registration”
-	OneOf []PassportScopeElementOne `json:"one_of"`
+	OneOf []ScopeElementOne `json:"one_of"`
 
 	// Use this parameter if you want to request a selfie with the document from this list that the user chooses to upload.
 	Selfie bool `json:"selfie,omitempty"`
@@ -43,10 +43,10 @@ type PassportScopeElementOneOfSeveral struct {
 	Translation bool `json:"translation,omitempty"`
 }
 
-func (PassportScopeElementOneOfSeveral) passportScopeElement() {}
+func (ScopeElementOneOfSeveral) passportScopeElement() {}
 
-// PassportScopeElementOne represents one particular element that must be provided.
-type PassportScopeElementOne struct {
+// ScopeElementOne represents one particular element that must be provided.
+type ScopeElementOne struct {
 	// Element type. One of "personal_details", "passport", "driver_license", "identity_card",
 	// "internal_passport", "address", "utility_bill", "bank_statement", "rental_agreement",
 	// "passport_registration", "temporary_registration", "phone_number", "email"
@@ -66,12 +66,12 @@ type PassportScopeElementOne struct {
 	NativeNames bool `json:"native_names,omitempty"`
 }
 
-func (PassportScopeElementOne) passportScopeElement() {}
+func (ScopeElementOne) passportScopeElement() {}
 
 // RequestParams contains parameters to request information.
 type RequestParams struct {
 	BotID int
-	Scope PassportScope
+	Scope Scope
 
 	// Public key of the bot.
 	PublicKey string

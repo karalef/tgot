@@ -1,4 +1,4 @@
-package tgpassport
+package passport
 
 import (
 	"crypto/aes"
@@ -12,6 +12,7 @@ import (
 	"errors"
 
 	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/api/tgpassport"
 )
 
 func decrypt(secret, hash, encrypted []byte) ([]byte, error) {
@@ -55,7 +56,7 @@ func fromBase64(s string) ([]byte, error) {
 }
 
 // DecryptCredentials decrypts telegram encrypted passport credentials.
-func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, nonce string) (*Credentials, error) {
+func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, nonce string) (*tgpassport.Credentials, error) {
 	secret, err := fromBase64(ecreds.Secret)
 	if err != nil {
 		return nil, invalidBase64("secret")
@@ -83,7 +84,7 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 		return nil, err
 	}
 
-	var creds Credentials
+	var creds tgpassport.Credentials
 	err = json.Unmarshal(data, &creds)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 }
 
 // DecryptData decrypts base64-encoded encrypted data.
-func DecryptData[T DataType](creds DataCredentials, data string) (*T, error) {
+func DecryptData[T tgpassport.DataType](creds tgpassport.DataCredentials, data string) (*T, error) {
 	encryptedData, err := fromBase64(data)
 	if err != nil {
 		return nil, invalidBase64("data")
@@ -113,7 +114,7 @@ func DecryptData[T DataType](creds DataCredentials, data string) (*T, error) {
 }
 
 // DecryptFile decrypts encrypted file data.
-func DecryptFile(creds FileCredentials, fileData []byte) ([]byte, error) {
+func DecryptFile(creds tgpassport.FileCredentials, fileData []byte) ([]byte, error) {
 	return decrypt([]byte(creds.Secret), []byte(creds.FileHash), fileData)
 }
 

@@ -1,19 +1,6 @@
 package tgpassport
 
-import (
-	"encoding/json"
-
-	apipkg "github.com/karalef/tgot/api"
-)
-
-// SetPassportDataErrors informs a user that some of the Telegram Passport elements they provided contains errors.
-// The user will not be able to re-submit their Passport to you until the errors are fixed.
-func SetPassportDataErrors(api *apipkg.API, userID int, errs []PassportElementError) error {
-	data := apipkg.NewData()
-	data.SetInt("user_id", userID)
-	data.SetJSON("errors", errs)
-	return api.Request("setPassportDataErrors", data)
-}
+import "encoding/json"
 
 // PassportElementError represents an error in the Telegram Passport element which was submitted
 // that should be resolved by the user.
