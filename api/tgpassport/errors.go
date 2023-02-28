@@ -1,6 +1,6 @@
 package tgpassport
 
-import "encoding/json"
+import "github.com/karalef/tgot/api/internal"
 
 // PassportElementError represents an error in the Telegram Passport element which was submitted
 // that should be resolved by the user.
@@ -12,12 +12,11 @@ type PassportElementError struct {
 
 // MarshalJSON implements json.Marshaler.
 func (e *PassportElementError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	return internal.MergeJSON(struct {
 		Source  string `json:"source"`
 		Type    string `json:"type"`
 		Message string `json:"message"`
-		ErrorSource
-	}{e.ErrorSource.source(), e.Type, e.Message, e.ErrorSource})
+	}{e.ErrorSource.source(), e.Type, e.Message}, e.ErrorSource)
 }
 
 // ErrorSource interface.

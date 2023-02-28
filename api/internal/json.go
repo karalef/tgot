@@ -1,8 +1,9 @@
-package tg
+package internal
 
 import "encoding/json"
 
-func mergeJSON(v ...interface{}) ([]byte, error) {
+// MergeJSON merges JSON objects.
+func MergeJSON(v ...interface{}) ([]byte, error) {
 	var data []byte
 	for i := range v {
 		d, err := json.Marshal(v[i])

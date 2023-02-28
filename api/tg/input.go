@@ -3,6 +3,8 @@ package tg
 import (
 	"bytes"
 	"io"
+
+	"github.com/karalef/tgot/api/internal"
 )
 
 // Inputtable is an interface for FileID, FileURL and InputFile.
@@ -86,7 +88,7 @@ type InputMedia[T InputMediaData] struct {
 func (*InputMedia[T]) inputMedia() {}
 
 func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
-	return mergeJSON(i.Data, struct {
+	return internal.MergeJSON(i.Data, struct {
 		Type      string          `json:"type"`
 		Media     Inputtable      `json:"media"`
 		Caption   string          `json:"caption,omitempty"`

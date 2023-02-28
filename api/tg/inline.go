@@ -1,5 +1,7 @@
 package tg
 
+import "github.com/karalef/tgot/api/internal"
+
 // InlineQuery is an incoming inline query. When the user sends
 // an empty query, your bot could return some default or
 // trending results.
@@ -42,7 +44,7 @@ func (InlineQueryResult[T]) inlineQueryResult() {}
 
 // MarshalJSON implements json.Marshaler.
 func (r *InlineQueryResult[T]) MarshalJSON() ([]byte, error) {
-	return mergeJSON(struct {
+	return internal.MergeJSON(struct {
 		Type string `json:"type"`
 		ID   string `json:"id"`
 	}{r.Result.inlineQueryResultType(), r.ID}, r.Result)
