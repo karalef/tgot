@@ -55,10 +55,7 @@ func (d *Data) Set(k, v string, force ...bool) *Data {
 
 // SetInt sets the key to int value.
 func (d *Data) SetInt(key string, v int, force ...bool) *Data {
-	if v != 0 || len(force) > 0 && force[0] {
-		d.Set(key, strconv.Itoa(v))
-	}
-	return d
+	return d.SetInt64(key, int64(v), force...)
 }
 
 // SetInt64 sets the key to int64 value.
@@ -71,22 +68,27 @@ func (d *Data) SetInt64(key string, v int64, force ...bool) *Data {
 
 // SetFloat sets the key to float value.
 func (d *Data) SetFloat(key string, v float32, force ...bool) *Data {
+	return d.SetFloat64(key, float64(v), force...)
+}
+
+// SetFloat64 sets the key to float64 value.
+func (d *Data) SetFloat64(key string, v float64, force ...bool) *Data {
 	if v != 0 || len(force) > 0 && force[0] {
-		d.Set(key, strconv.FormatFloat(float64(v), 'f', 6, 32))
+		d.Set(key, strconv.FormatFloat(v, 'f', 6, 64))
 	}
 	return d
 }
 
 // SetBool sets the key to bool value.
-func (d *Data) SetBool(key string, v bool) *Data {
-	if v {
+func (d *Data) SetBool(key string, v bool, force ...bool) *Data {
+	if v || len(force) > 0 && force[0] {
 		d.Set(key, strconv.FormatBool(v))
 	}
 	return d
 }
 
 // SetJSON sets the key to JSON value.
-func (d *Data) SetJSON(key string, v interface{}) *Data {
+func (d *Data) SetJSON(key string, v any) *Data {
 	if v != nil {
 		b, _ := json.Marshal(v)
 		d.Set(key, string(b))
