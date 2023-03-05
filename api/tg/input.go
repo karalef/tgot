@@ -97,11 +97,6 @@ func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
 	}{i.Data.inputMediaType(), i.Media, i.Caption, i.ParseMode, i.Entities})
 }
 
-// NewInputMediaPhoto creates new InputMediaPhoto object.
-func NewInputMediaPhoto(file Inputtable) *InputMedia[InputMediaPhoto] {
-	return &InputMedia[InputMediaPhoto]{Media: file}
-}
-
 // InputMediaPhoto represents a photo to be sent.
 type InputMediaPhoto struct {
 	HasSpoiler bool `json:"has_spoiler,omitempty"`
@@ -113,7 +108,7 @@ func (InputMediaPhoto) inputMediaType() string {
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
-	Thumbnail         Inputtable `json:"thumb,omitempty"`
+	Thumbnail         *InputFile `json:"thumb,omitempty"`
 	Width             int        `json:"width,omitempty"`
 	Height            int        `json:"height,omitempty"`
 	Duration          int        `json:"duration,omitempty"`
@@ -128,7 +123,7 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	Thumbnail  Inputtable `json:"thumb,omitempty"`
+	Thumbnail  *InputFile `json:"thumb,omitempty"`
 	Width      int        `json:"width,omitempty"`
 	Height     int        `json:"height,omitempty"`
 	Duration   int        `json:"duration,omitempty"`
@@ -141,7 +136,7 @@ func (InputMediaAnimation) inputMediaType() string {
 
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
-	Thumbnail Inputtable `json:"thumb,omitempty"`
+	Thumbnail *InputFile `json:"thumb,omitempty"`
 	Duration  int        `json:"duration,omitempty"`
 	Performer string     `json:"performer,omitempty"`
 	Title     string     `json:"title,omitempty"`
@@ -153,7 +148,7 @@ func (InputMediaAudio) inputMediaType() string {
 
 // InputMediaDocument represents a general file to be sent.
 type InputMediaDocument struct {
-	Thumbnail            Inputtable `json:"thumb,omitempty"`
+	Thumbnail            *InputFile `json:"thumb,omitempty"`
 	DisableTypeDetection bool       `json:"disable_content_type_detection,omitempty"`
 }
 
