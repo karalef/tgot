@@ -11,6 +11,7 @@ type Chat struct {
 	IsForum   bool     `json:"is_forum"`
 
 	// Returned only in getChat.
+
 	Photo                      *ChatPhoto       `json:"photo"`
 	ActiveUsernames            []string         `json:"active_usernames"`
 	EmojiStatusCustomEmoji     string           `json:"emoji_status_custom_emoji_id"`
@@ -34,29 +35,9 @@ type Chat struct {
 	Location                   *ChatLocation    `json:"location"`
 }
 
-// IsPrivate returns true if chat is private.
-func (c *Chat) IsPrivate() bool {
-	return c.Type == ChatPrivate
-}
-
-// IsGroup returns true if chat is group.
-func (c *Chat) IsGroup() bool {
-	return c.Type == ChatGroup
-}
-
-// IsSuperGroup returns true if chat is supergroup.
-func (c *Chat) IsSuperGroup() bool {
-	return c.Type == ChatSuperGroup
-}
-
-// IsAnyGroup returns true if chat is group or supergroup.
-func (c *Chat) IsAnyGroup() bool {
-	return c.Type == ChatGroup || c.Type == ChatSuperGroup
-}
-
-// IsChannel returns true if chat is channel.
-func (c *Chat) IsChannel() bool {
-	return c.Type == ChatChannel
+// Is returns true if the chat type matches the one specified.
+func (c *Chat) Is(t ChatType) bool {
+	return c.Type == t
 }
 
 // ChatType represents one of the possible chat types.
@@ -183,12 +164,12 @@ type ChatMemberUpdated struct {
 
 // ChatMember contains information about one member of a chat.
 type ChatMember struct {
-	Status      string `json:"status"`
-	User        *User  `json:"user"`
-	CustomTitle string `json:"custom_title"`
-	CanBeEdited bool   `json:"can_be_edited"`
-	IsMember    bool   `json:"is_member"`
-	UntilDate   int64  `json:"until_date"`
+	Status      MemberStatus `json:"status"`
+	User        *User        `json:"user"`
+	CustomTitle string       `json:"custom_title"`
+	CanBeEdited bool         `json:"can_be_edited"`
+	IsMember    bool         `json:"is_member"`
+	UntilDate   int64        `json:"until_date"`
 
 	CanSendMessages   bool `json:"can_send_messages"`
 	CanSendAudios     bool `json:"can_send_audios,omitempty"`
@@ -203,32 +184,20 @@ type ChatMember struct {
 	ChatAdministratorRights
 }
 
-// IsOwner func.
-func (m *ChatMember) IsOwner() bool {
-	return m.Status == "creator"
+// Is returns true if the user status matches the one specified.
+func (m *ChatMember) Is(s MemberStatus) bool {
+	return m.Status == s
 }
 
-// IsAdmin func.
-func (m *ChatMember) IsAdmin() bool {
-	return m.Status == "administrator"
-}
+// MemberStatus represents one of the possible member status.
+type MemberStatus string
 
-// IsDefault func.
-func (m *ChatMember) IsDefault() bool {
-	return m.Status == "member"
-}
-
-// IsRestricted func.
-func (m *ChatMember) IsRestricted() bool {
-	return m.Status == "restricted"
-}
-
-// IsLeft func.
-func (m *ChatMember) IsLeft() bool {
-	return m.Status == "left"
-}
-
-// IsBanned func.
-func (m *ChatMember) IsBanned() bool {
-	return m.Status == "kicked"
-}
+// all available member statuses.
+const (
+	MemberCreator    MemberStatus = "creator"
+	MemberAdmin      MemberStatus = "administrator"
+	MemberDefault    MemberStatus = "member"
+	MemberRestricted MemberStatus = "restricted"
+	MemberLeft       MemberStatus = "left"
+	MemberKicked     MemberStatus = "kicked"
+)
