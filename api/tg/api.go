@@ -180,3 +180,13 @@ func MenuButtonWebApp(text string, webApp *WebAppInfo) *MenuButton {
 func MenuButtonDefault() *MenuButton {
 	return &MenuButton{Type: MenuButtonTypeDefault}
 }
+
+// BotDescription represents the bot's description.
+type BotDescription struct {
+	Description string `json:"description"`
+}
+
+// BotShortDescription represents the bot's short description.
+type BotShortDescription struct {
+	ShortDescription string `json:"short_description"`
+}

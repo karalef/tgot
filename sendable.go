@@ -401,11 +401,13 @@ var _ Sendable = Sticker{}
 // Sticker contains information about the sticker to be sent.
 type Sticker struct {
 	Sticker     tg.Inputtable
+	Emoji       string
 	ReplyMarkup tg.ReplyMarkup
 }
 
 func (s Sticker) sendData(d *api.Data) string {
 	d.SetFile("sticker", s.Sticker, nil)
+	d.Set("emoji", s.Emoji)
 	d.SetJSON("reply_markup", s.ReplyMarkup)
 	return "sendSticker"
 }

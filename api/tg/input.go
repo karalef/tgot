@@ -66,6 +66,14 @@ func FileBytes(name string, data []byte) *InputFile {
 	return FileReader(name, bytes.NewReader(data))
 }
 
+// InputSticker describes a sticker to be added to a sticker set.
+type InputSticker struct {
+	Sticker      Inputtable    `json:"sticker"`
+	EmojiList    []string      `json:"emoji_list"`
+	MaskPosition *MaskPosition `json:"mask_position,omitempty"`
+	Keywords     []string      `json:"keywords,omitempty"`
+}
+
 // MediaInputter is an interface for InputMedia.
 type MediaInputter interface {
 	inputMedia()
@@ -108,7 +116,7 @@ func (InputMediaPhoto) inputMediaType() string {
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
-	Thumbnail         *InputFile `json:"thumb,omitempty"`
+	Thumbnail         *InputFile `json:"thumbnail,omitempty"`
 	Width             int        `json:"width,omitempty"`
 	Height            int        `json:"height,omitempty"`
 	Duration          int        `json:"duration,omitempty"`
@@ -123,7 +131,7 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	Thumbnail  *InputFile `json:"thumb,omitempty"`
+	Thumbnail  *InputFile `json:"thumbnail,omitempty"`
 	Width      int        `json:"width,omitempty"`
 	Height     int        `json:"height,omitempty"`
 	Duration   int        `json:"duration,omitempty"`
@@ -136,7 +144,7 @@ func (InputMediaAnimation) inputMediaType() string {
 
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
-	Thumbnail *InputFile `json:"thumb,omitempty"`
+	Thumbnail *InputFile `json:"thumbnail,omitempty"`
 	Duration  int        `json:"duration,omitempty"`
 	Performer string     `json:"performer,omitempty"`
 	Title     string     `json:"title,omitempty"`
@@ -148,7 +156,7 @@ func (InputMediaAudio) inputMediaType() string {
 
 // InputMediaDocument represents a general file to be sent.
 type InputMediaDocument struct {
-	Thumbnail            *InputFile `json:"thumb,omitempty"`
+	Thumbnail            *InputFile `json:"thumbnail,omitempty"`
 	DisableTypeDetection bool       `json:"disable_content_type_detection,omitempty"`
 }
 

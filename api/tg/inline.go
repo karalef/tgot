@@ -251,9 +251,9 @@ type InlineQueryResultArticle struct {
 	URL                 string                `json:"url,omitempty"`
 	HideURL             bool                  `json:"hide_url,omitempty"`
 	Description         string                `json:"description,omitempty"`
-	ThumbnaimURL        string                `json:"thumb_url,omitempty"`
-	ThumbnailWidth      int                   `json:"thumb_width,omitempty"`
-	ThumbnailHeight     int                   `json:"thumb_height,omitempty"`
+	ThumbnailURL        string                `json:"thumbnail_url,omitempty"`
+	ThumbnailWidth      int                   `json:"thumbnail_width,omitempty"`
+	ThumbnailHeight     int                   `json:"thumbnail_height,omitempty"`
 }
 
 func (InlineQueryResultArticle) inlineQueryResultType() string {
@@ -285,9 +285,9 @@ type InlineQueryResultContact struct {
 	VCard               string                `json:"vcard,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
-	ThumbnailURL        string                `json:"thumb_url,omitempty"`
-	ThumbnailWidth      int                   `json:"thumb_width,omitempty"`
-	ThumbnailHeight     int                   `json:"thumb_height,omitempty"`
+	ThumbnailURL        string                `json:"thumbnail_url,omitempty"`
+	ThumbnailWidth      int                   `json:"thumbnail_width,omitempty"`
+	ThumbnailHeight     int                   `json:"thumbnail_height,omitempty"`
 }
 
 func (InlineQueryResultContact) inlineQueryResultType() string {
@@ -315,9 +315,9 @@ type InlineQueryResultDocument struct {
 	Description         string                `json:"description,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
-	ThumbnailURL        string                `json:"thumb_url,omitempty"`
-	ThumbnailWidth      int                   `json:"thumb_width,omitempty"`
-	ThumbnailHeight     int                   `json:"thumb_height,omitempty"`
+	ThumbnailURL        string                `json:"thumbnail_url,omitempty"`
+	ThumbnailWidth      int                   `json:"thumbnail_width,omitempty"`
+	ThumbnailHeight     int                   `json:"thumbnail_height,omitempty"`
 }
 
 func (InlineQueryResultDocument) inlineQueryResultType() string {
@@ -327,11 +327,11 @@ func (InlineQueryResultDocument) inlineQueryResultType() string {
 // InlineQueryResultGIF is an inline query response GIF.
 type InlineQueryResultGIF struct {
 	URL                 string                `json:"gif_url"`
-	ThumbnailURL        string                `json:"thumb_url"`
+	ThumbnailURL        string                `json:"thumbnail_url"`
 	Width               int                   `json:"gif_width,omitempty"`
 	Height              int                   `json:"gif_height,omitempty"`
 	Duration            int                   `json:"gif_duration,omitempty"`
-	ThumbnailMIMEType   string                `json:"thumb_mime_type,omitempty"`
+	ThumbnailMIMEType   string                `json:"thumbnail_mime_type,omitempty"`
 	Title               string                `json:"title,omitempty"`
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
@@ -350,9 +350,9 @@ type InlineQueryResultLocation struct {
 	Title               string                `json:"title"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
-	ThumbnailURL        string                `json:"thumb_url,omitempty"`
-	ThumbnailWidth      int                   `json:"thumb_width,omitempty"`
-	ThumbnailHeight     int                   `json:"thumb_height,omitempty"`
+	ThumbnailURL        string                `json:"thumbnail_url,omitempty"`
+	ThumbnailWidth      int                   `json:"thumbnail_width,omitempty"`
+	ThumbnailHeight     int                   `json:"thumbnail_height,omitempty"`
 }
 
 func (InlineQueryResultLocation) inlineQueryResultType() string {
@@ -362,7 +362,7 @@ func (InlineQueryResultLocation) inlineQueryResultType() string {
 // InlineQueryResultMPEG4GIF is an inline query response MPEG4 GIF.
 type InlineQueryResultMPEG4GIF struct {
 	URL                 string                `json:"mpeg4_url"`
-	ThumbnailURL        string                `json:"thumb_url"`
+	ThumbnailURL        string                `json:"thumbnail_url"`
 	Width               int                   `json:"mpeg4_width,omitempty"`
 	Height              int                   `json:"mpeg4_height,omitempty"`
 	Duration            int                   `json:"mpeg4_duration,omitempty"`
@@ -381,7 +381,7 @@ func (InlineQueryResultMPEG4GIF) inlineQueryResultType() string {
 // InlineQueryResultPhoto is an inline query response photo.
 type InlineQueryResultPhoto struct {
 	URL                 string                `json:"photo_url"`
-	ThumbnailURL        string                `json:"thumb_url"`
+	ThumbnailURL        string                `json:"thumbnail_url"`
 	Width               int                   `json:"photo_width,omitempty"`
 	Height              int                   `json:"photo_height,omitempty"`
 	Title               string                `json:"title,omitempty"`
@@ -409,9 +409,9 @@ type InlineQueryResultVenue struct {
 	GooglePlaceType     string                `json:"google_place_type,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
-	ThumbnailURL        string                `json:"thumb_url,omitempty"`
-	ThumbnailWidth      int                   `json:"thumb_width,omitempty"`
-	ThumbnailHeight     int                   `json:"thumb_height,omitempty"`
+	ThumbnailURL        string                `json:"thumbnail_url,omitempty"`
+	ThumbnailWidth      int                   `json:"thumbnail_width,omitempty"`
+	ThumbnailHeight     int                   `json:"thumbnail_height,omitempty"`
 }
 
 func (InlineQueryResultVenue) inlineQueryResultType() string {
@@ -422,7 +422,7 @@ func (InlineQueryResultVenue) inlineQueryResultType() string {
 type InlineQueryResultVideo struct {
 	URL                 string                `json:"video_url"`
 	MimeType            string                `json:"mime_type"`
-	ThumbnailURL        string                `json:"thumb_url"`
+	ThumbnailURL        string                `json:"thumbnail_url"`
 	Title               string                `json:"title"`
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`

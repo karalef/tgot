@@ -23,7 +23,7 @@ type Animation struct {
 	Width     int        `json:"width"`
 	Height    int        `json:"height"`
 	Duration  int        `json:"duration"`
-	Thumbnail *PhotoSize `json:"thumb"`
+	Thumbnail *PhotoSize `json:"thumbnail"`
 	FileName  string     `json:"file_name"`
 	MimeType  string     `json:"mime_type"`
 }
@@ -38,7 +38,7 @@ type Audio struct {
 	Title     string     `json:"title"`
 	FileName  string     `json:"file_name"`
 	MimeType  string     `json:"mime_type"`
-	Thumbnail *PhotoSize `json:"thumb"`
+	Thumbnail *PhotoSize `json:"thumbnail"`
 }
 
 // Document represents a general file
@@ -46,7 +46,7 @@ type Audio struct {
 type Document struct {
 	FileData
 
-	Thumbnail *PhotoSize `json:"thumb"`
+	Thumbnail *PhotoSize `json:"thumbnail"`
 	FileName  string     `json:"file_name"`
 	MimeType  string     `json:"mime_type"`
 }
@@ -58,7 +58,7 @@ type Video struct {
 	Width     int        `json:"width"`
 	Height    int        `json:"height"`
 	Duration  int        `json:"duration"`
-	Thumbnail *PhotoSize `json:"thumb"`
+	Thumbnail *PhotoSize `json:"thumbnail"`
 	FileName  string     `json:"file_name"`
 	MimeType  string     `json:"mime_type"`
 }
@@ -69,7 +69,7 @@ type VideoNote struct {
 
 	Length    int        `json:"length"`
 	Duration  int        `json:"duration"`
-	Thumbnail *PhotoSize `json:"thumb"`
+	Thumbnail *PhotoSize `json:"thumbnail"`
 }
 
 // Voice represents a voice note.
@@ -84,17 +84,18 @@ type Voice struct {
 type Sticker struct {
 	FileData
 
-	Type          StickerType   `json:"type"`
-	Width         int           `json:"width"`
-	Height        int           `json:"height"`
-	IsAnimated    bool          `json:"is_animated"`
-	IsVideo       bool          `json:"is_video"`
-	Thumbnail     *PhotoSize    `json:"thumb"`
-	Emoji         string        `json:"emoji"`
-	SetName       string        `json:"set_name"`
-	Premium       *File         `json:"premium_animation"`
-	MaskPosition  *MaskPosition `json:"mask_position"`
-	CustomEmojiID string        `json:"custom_emoji_id"`
+	Type            StickerType   `json:"type"`
+	Width           int           `json:"width"`
+	Height          int           `json:"height"`
+	IsAnimated      bool          `json:"is_animated"`
+	IsVideo         bool          `json:"is_video"`
+	Thumbnail       *PhotoSize    `json:"thumbnail"`
+	Emoji           string        `json:"emoji"`
+	SetName         string        `json:"set_name"`
+	Premium         *File         `json:"premium_animation"`
+	MaskPosition    *MaskPosition `json:"mask_position"`
+	CustomEmojiID   string        `json:"custom_emoji_id"`
+	NeedsRepainting bool          `json:"needs_repainting"`
 }
 
 // File object represents a file ready to be downloaded.

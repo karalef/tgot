@@ -73,3 +73,30 @@ func (b *Bot) SetDefaultChatMenuButton(menu tg.MenuButton) error {
 func (b *Bot) GetDefaultChatMenuButton() (*tg.MenuButton, error) {
 	return api.Request[*tg.MenuButton](b.api, "getChatMenuButton", nil)
 }
+
+// SetDescription changes the bot's description, which is shown in the chat with the bot if the chat is empty.
+func (b *Bot) SetDescription(description, lang string) error {
+	d := api.NewData().SetJSON("description", description)
+	d.Set("language_code", lang)
+	return b.api.Request("setMyDescription", d)
+}
+
+// GetDescription returns the current bot description for the given user language.
+func (b *Bot) GetDescription(lang string) (*tg.BotDescription, error) {
+	d := api.NewData().Set("language_code", lang)
+	return api.Request[*tg.BotDescription](b.api, "getMyDescription", d)
+}
+
+// SetShortDescription changes the bot's short description, which is shown on the bot's profile page and
+// is sent together with the link when users share the bot.
+func (b *Bot) SetShortDescription(shortDescription, lang string) error {
+	d := api.NewData().SetJSON("short_description", shortDescription)
+	d.Set("language_code", lang)
+	return b.api.Request("setMyShortDescription", d)
+}
+
+// GetShortDescription returns the current bot short description for the given user language.
+func (b *Bot) GetShortDescription(lang string) (*tg.BotShortDescription, error) {
+	d := api.NewData().Set("language_code", lang)
+	return api.Request[*tg.BotShortDescription](b.api, "getMyShortDescription", d)
+}

@@ -99,7 +99,7 @@ func (d *Data) SetJSON(key string, v any) *Data {
 // SetFile sets file with thumbnail.
 func (d *Data) SetFile(field string, file, thumb tg.Inputtable) {
 	d.AddFile(field, file)
-	d.AddFile("thumb", thumb)
+	d.AddFile("thumbnail", thumb)
 }
 
 // AddFile adds file.

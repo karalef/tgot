@@ -69,7 +69,7 @@ type StickerSet struct {
 	IsAnimated  bool        `json:"is_animated"`
 	IsVideo     bool        `json:"is_video"`
 	Stickers    []Sticker   `json:"stickers"`
-	Thumbnail   *PhotoSize  `json:"thumb"`
+	Thumbnail   *PhotoSize  `json:"thumbnail"`
 }
 
 // StickerType is a Sticker type.
@@ -89,3 +89,13 @@ type MaskPosition struct {
 	YShift float32 `json:"y_shift"`
 	Scale  float32 `json:"scale"`
 }
+
+// StickerFormat is a Sticker format.
+type StickerFormat string
+
+// all available sticker formats.
+const (
+	StickerStatic   StickerFormat = "static"
+	StickerAnimated StickerFormat = "animated"
+	StickerVideo    StickerFormat = "video"
+)
