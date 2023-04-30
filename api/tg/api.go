@@ -181,6 +181,11 @@ func MenuButtonDefault() *MenuButton {
 	return &MenuButton{Type: MenuButtonTypeDefault}
 }
 
+// BotName represents the bot's name.
+type BotName struct {
+	Name string `json:"name"`
+}
+
 // BotDescription represents the bot's description.
 type BotDescription struct {
 	Description string `json:"description"`

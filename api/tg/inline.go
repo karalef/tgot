@@ -124,6 +124,13 @@ type InputInvoiceMessageContent struct {
 	IsFlexible                bool           `json:"is_flexible,omitempty"`
 }
 
+// InlineQueryResultsButton represents a button to be shown above inline query results.
+type InlineQueryResultsButton struct {
+	Text           string      `json:"text"`
+	WebApp         *WebAppInfo `json:"web_app,omitempty"`
+	StartParameter string      `json:"start_parameter,omitempty"`
+}
+
 // InlineQueryResultCachedAudio is an inline query response with cached audio.
 type InlineQueryResultCachedAudio struct {
 	AudioID             string                `json:"audio_file_id"`

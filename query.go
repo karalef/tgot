@@ -54,12 +54,11 @@ type InlineContext = QueryContext[InlineAnswer]
 
 // InlineAnswer represents an answer to inline query.
 type InlineAnswer struct {
-	Results           []tg.InlineQueryResulter
-	CacheTime         *int
-	IsPersonal        bool
-	NextOffset        string
-	SwitchPMText      string
-	SwitchPMParameter string
+	Results    []tg.InlineQueryResulter
+	CacheTime  *int
+	IsPersonal bool
+	NextOffset string
+	Button     *tg.InlineQueryResultsButton
 }
 
 func (a InlineAnswer) answerData(d *api.Data, queryID string) string {
@@ -70,8 +69,7 @@ func (a InlineAnswer) answerData(d *api.Data, queryID string) string {
 	}
 	d.SetBool("is_personal", a.IsPersonal)
 	d.Set("next_offset", a.NextOffset)
-	d.Set("switch_pm_text", a.SwitchPMText)
-	d.Set("switch_pm_parameter", a.SwitchPMParameter)
+	d.SetJSON("button", a.Button)
 	return "answerInlineQuery"
 }
 

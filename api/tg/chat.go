@@ -154,12 +154,13 @@ type ChatJoinRequest struct {
 
 // ChatMemberUpdated represents changes in the status of a chat member.
 type ChatMemberUpdated struct {
-	Chat       *Chat           `json:"chat"`
-	From       *User           `json:"from"`
-	Date       int64           `json:"date"`
-	Old        *ChatMember     `json:"old_chat_member"`
-	New        *ChatMember     `json:"new_chat_member"`
-	InviteLink *ChatInviteLink `json:"invite_link"`
+	Chat                    *Chat           `json:"chat"`
+	From                    *User           `json:"from"`
+	Date                    int64           `json:"date"`
+	Old                     *ChatMember     `json:"old_chat_member"`
+	New                     *ChatMember     `json:"new_chat_member"`
+	InviteLink              *ChatInviteLink `json:"invite_link"`
+	ViaChatFolderInviteLink bool            `json:"via_chat_folder_invite_link"`
 }
 
 // ChatMember contains information about one member of a chat.

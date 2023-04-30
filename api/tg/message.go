@@ -198,9 +198,10 @@ type ChatShared struct {
 	ChatID    int64 `json:"chat_id"`
 }
 
-// WriteAccessAllowed represents a service message about a user allowing a bot added to the attachment menu to write messages.
-// Currently holds no information.
-type WriteAccessAllowed struct{}
+// WriteAccessAllowed represents a service message about a user allowing a bot to write messages after adding the bot to the attachment menu or launching a Web App from a link.
+type WriteAccessAllowed struct {
+	WebAppName string `json:"web_app_name"`
+}
 
 // ParseMode type.
 type ParseMode string

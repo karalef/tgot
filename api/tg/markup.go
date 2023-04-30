@@ -106,15 +106,25 @@ type InlineKeyboardMarkup struct {
 
 // InlineKeyboardButton represents one button of an inline keyboard.
 type InlineKeyboardButton struct {
-	Text                string        `json:"text"`
-	URL                 string        `json:"url,omitempty"`
-	CallbackData        string        `json:"callback_data,omitempty"`
-	WebApp              *WebAppInfo   `json:"web_app,omitempty"`
-	LoginURL            *LoginURL     `json:"login_url,omitempty"`
-	SwitchInline        string        `json:"switch_inline_query,omitempty"`
-	SwitchInlineCurrent string        `json:"switch_inline_query_current_chat,omitempty"`
-	CallbackGame        *CallbackGame `json:"callback_game,omitempty"`
-	Pay                 bool          `json:"pay,omitempty"`
+	Text                string                       `json:"text"`
+	URL                 string                       `json:"url,omitempty"`
+	CallbackData        string                       `json:"callback_data,omitempty"`
+	WebApp              *WebAppInfo                  `json:"web_app,omitempty"`
+	LoginURL            *LoginURL                    `json:"login_url,omitempty"`
+	SwitchInline        string                       `json:"switch_inline_query,omitempty"`
+	SwitchInlineCurrent string                       `json:"switch_inline_query_current_chat,omitempty"`
+	SwitchInlineChosen  *SwitchInlineQueryChosenChat `json:"switch_inline_query_chosen_chat,omitempty"`
+	CallbackGame        *CallbackGame                `json:"callback_game,omitempty"`
+	Pay                 bool                         `json:"pay,omitempty"`
+}
+
+// SwitchInlineQueryChosenChat represents an inline button that switches the current user to inline mode in a chosen chat, with an optional default inline query.
+type SwitchInlineQueryChosenChat struct {
+	Query            string `json:"query"`
+	AllowUserChat    bool   `json:"allow_user_chat,omitempty"`
+	AllowBotChat     bool   `json:"allow_bot_chat,omitempty"`
+	AllowGroupChat   bool   `json:"allow_group_chat,omitempty"`
+	AllowChannelChat bool   `json:"allow_channel_chat,omitempty"`
 }
 
 // LoginURL represents a parameter of the inline keyboard button
