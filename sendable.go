@@ -1,9 +1,6 @@
 package tgot
 
 import (
-	"errors"
-	"strconv"
-
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
@@ -228,22 +225,17 @@ type MediaGroup struct {
 	ReplyMarkup *tg.InlineKeyboardMarkup
 }
 
-func (g MediaGroup) data() (*api.Data, error) {
-	d := api.NewData()
-	err := prepareInputMedia(d, g.Media...)
-	if err == nil {
-		d.SetJSON("media", g.Media)
-	}
+func (g MediaGroup) data(d *api.Data) {
+	prepareInputMedia(d, g.Media...)
+	d.SetJSON("media", g.Media)
 	d.SetJSON("reply_markup", g.ReplyMarkup)
-	return d, err
 }
 
-func prepareInputMedia(d *api.Data, media ...tg.MediaInputter) error {
+func prepareInputMedia(d *api.Data, media ...tg.MediaInputter) {
 	if len(media) == 0 {
-		return nil
+		return
 	}
 	for i := range media {
-		n := strconv.Itoa(i)
 		var med, thumb tg.Inputtable
 		switch m := media[i].(type) {
 		case *tg.InputMedia[tg.InputMediaPhoto]:
@@ -257,24 +249,14 @@ func prepareInputMedia(d *api.Data, media ...tg.MediaInputter) error {
 		case *tg.InputMedia[tg.InputMediaAnimation]:
 			med, thumb = m.Media, m.Data.Thumbnail
 		default:
-			return errors.New("unsupported media group entry " + n + " type")
+			panic("unsupported media type")
 		}
 		if med == nil {
-			return errors.New("media group entry " + n + " does not exist")
-		}
-		if f, ok := med.(*tg.InputFile); ok {
-			field := "file-" + n
-			d.AddFile(field, f.AsMedia(field))
-		}
-		if thumb == nil {
 			continue
 		}
-		if f, ok := thumb.(*tg.InputFile); ok {
-			field := "file-" + n + "-thumb"
-			d.AddFile(field, f.AsMedia(field))
-		}
+		d.AddAttach(med)
+		d.AddAttach(thumb)
 	}
-	return nil
 }
 
 var _ Sendable = Location{}

@@ -179,10 +179,8 @@ func (c ChatContext) Send(s Sendable, opts ...SendOptions) (*tg.Message, error) 
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
 func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Message, error) {
-	d, err := mg.data()
-	if err != nil {
-		return nil, err
-	}
+	d := api.NewData()
+	mg.data(d)
 	embed(d, opts)
 	return chatMethod[[]tg.Message](c, "sendMediaGroup", d)
 }

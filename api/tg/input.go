@@ -12,21 +12,18 @@ type Inputtable interface {
 	FileData() (string, io.Reader)
 }
 
-// FileID represents the file that has already been uploaded to Telegram.
-type FileID string
+type fileString string
 
 // FileData returns the file data.
-func (f FileID) FileData() (string, io.Reader) {
+func (f fileString) FileData() (string, io.Reader) {
 	return string(f), nil
 }
+
+// FileID represents the file that has already been uploaded to Telegram.
+type FileID = fileString
 
 // FileURL represents the file URL that is used without uploading.
-type FileURL string
-
-// FileData returns the file data.
-func (f FileURL) FileData() (string, io.Reader) {
-	return string(f), nil
-}
+type FileURL = fileString
 
 // InputFile represents the contents of a file to be uploaded.
 type InputFile struct {
@@ -41,8 +38,8 @@ func (f *InputFile) FileData() (string, io.Reader) {
 	return f.Name, f.Data
 }
 
-// AsMedia sets the link to the multipart field.
-func (f *InputFile) AsMedia(field string) *InputFile {
+// AsAttachment sets the link to the multipart field.
+func (f *InputFile) AsAttachment(field string) *InputFile {
 	f.field = field
 	return f
 }

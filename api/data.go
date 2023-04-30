@@ -27,6 +27,8 @@ type Data struct {
 
 	// key is a multipart field name.
 	Files map[string]*tg.InputFile
+
+	attachCounter int
 }
 
 // Data encodes the values into “URL encoded” form or multipart/form-data.
@@ -114,6 +116,18 @@ func (d *Data) AddFile(field string, file tg.Inputtable) {
 		urlid, _ := file.FileData()
 		d.Params[field] = urlid
 	}
+}
+
+// AddAttach links a file to the multipart field and adds it.
+// If the file is not *tg.InputFile, it does nothing.
+func (d *Data) AddAttach(file tg.Inputtable) {
+	f, ok := file.(*tg.InputFile)
+	if !ok || f == nil {
+		return
+	}
+	d.attachCounter++
+	field := "file-" + strconv.Itoa(d.attachCounter)
+	d.AddFile(field, f.AsAttachment(field))
 }
 
 func (d *Data) writeMultipart() (string, io.Reader) {

@@ -115,10 +115,8 @@ func (t Topic) Send(s Sendable, opts ...SendOptions) (*tg.Message, error) {
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
 func (t Topic) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Message, error) {
-	d, err := mg.data()
-	if err != nil {
-		return nil, err
-	}
+	d := api.NewData()
+	mg.data(d)
 	embed(d, opts)
 	return topicMethod[[]tg.Message](t, "sendMediaGroup", d)
 }

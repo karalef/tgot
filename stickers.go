@@ -1,8 +1,6 @@
 package tgot
 
 import (
-	"strconv"
-
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
@@ -19,27 +17,18 @@ func (c Context) GetCustomEmojiStickers(ids ...string) ([]tg.Sticker, error) {
 	return method[[]tg.Sticker](c, "getCustomEmojiStickers", d)
 }
 
-func prepareInputStickers(d *api.Data, stickers ...tg.InputSticker) error {
-	for i, s := range stickers {
-		f, ok := s.Sticker.(*tg.InputFile)
-		if !ok {
-			continue
-		}
-		field := "sticker-" + strconv.Itoa(i)
-		d.AddFile(field, f.AsMedia(field))
+func prepareInputStickers(d *api.Data, stickers ...tg.InputSticker) {
+	for _, s := range stickers {
+		d.AddAttach(s.Sticker)
 	}
-	return nil
 }
 
 // UploadStickerFile uploads a .PNG file with a sticker for later use
 // in createNewStickerSet and addStickerToSet methods.
-func (c Context) UploadStickerFile(userID int64, sticker tg.InputSticker, format tg.StickerFormat) (*tg.File, error) {
+func (c Context) UploadStickerFile(userID int64, sticker *tg.InputFile, format tg.StickerFormat) (*tg.File, error) {
 	d := api.NewData()
-	if err := prepareInputStickers(d, sticker); err != nil {
-		return nil, err
-	}
 	d.SetInt64("user_id", userID)
-	d.SetJSON("sticker", sticker)
+	d.AddFile("sticker", sticker)
 	d.Set("sticker_format", string(format))
 	return method[*tg.File](c, "uploadStickerFile", d)
 }
@@ -58,9 +47,7 @@ type NewStickerSet struct {
 // CreateNewStickerSet creates a new sticker set owned by a user.
 func (c Context) CreateNewStickerSet(newSet NewStickerSet) error {
 	d := api.NewData()
-	if err := prepareInputStickers(api.NewData(), newSet.Stickers...); err != nil {
-		return err
-	}
+	prepareInputStickers(api.NewData(), newSet.Stickers...)
 	d.SetInt64("user_id", newSet.UserID)
 	d.Set("name", newSet.Name)
 	d.Set("title", newSet.Title)
@@ -71,7 +58,7 @@ func (c Context) CreateNewStickerSet(newSet NewStickerSet) error {
 	return c.method("createNewStickerSet", d)
 }
 
-// NewSticker contains common parameters for adding a sticker to a set.
+// NewSticker contains parameters for adding a sticker to a set.
 type NewSticker struct {
 	UserID  int64
 	SetName string
@@ -81,9 +68,7 @@ type NewSticker struct {
 // AddSticker adds a new sticker to a set created by the bot.
 func (c Context) AddSticker(sticker NewSticker) error {
 	d := api.NewData()
-	if err := prepareInputStickers(d, sticker.Sticker); err != nil {
-		return err
-	}
+	prepareInputStickers(d, sticker.Sticker)
 	d.SetInt64("user_id", sticker.UserID)
 	d.Set("name", sticker.SetName)
 	d.SetJSON("sticker", sticker.Sticker)
