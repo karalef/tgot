@@ -25,9 +25,16 @@ func (p *Polls) Route(ctx tgot.Context, q *tg.PollAnswer) {
 // PollHandler represents poll answers handler.
 type PollHandler = Handler[tgot.Context, string, *tg.PollAnswer]
 
-// Reg registers poll answers handler.
-func (p *Polls) Reg(pollID string, h PollHandler) {
+// Register registers poll answers handler.
+func (p *Polls) Register(pollID string, h PollHandler) {
 	if pollID != "" {
-		p.Router.Reg(pollID, h)
+		p.Router.Register(pollID, h)
+	}
+}
+
+// RegisterOneTime registers poll answers handler which will be unregistered after first call.
+func (p *Polls) RegisterOneTime(pollID string, h PollHandler) {
+	if pollID != "" {
+		p.Router.RegisterOneTime(pollID, h)
 	}
 }

@@ -10,29 +10,38 @@ import (
 // NewRouter makes new initialized queries router.
 func NewRouter[Ctx tgot.BaseContext[Ctx], Key comparable, Data any]() *Router[Ctx, Key, Data] {
 	return &Router[Ctx, Key, Data]{
-		handlers: make(map[Key]Handler[Ctx, Key, Data]),
+		handlers: make(map[Key]handler[Ctx, Key, Data]),
 	}
 }
 
-// Handler represents handler with timeout.
-type Handler[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] interface {
+// BaseHandler provides base handler methods.
+type BaseHandler[Key comparable] interface {
 	Name() string
 
-	// If unreg is true, handler will be automatically deleted.
-	Handle(Ctx, Key, Data) (unreg bool)
-
-	// Specifies when the handler will be automatically unreged.
+	// Specifies when the handler will be automatically unregistered.
 	Timeout() time.Time
 
 	// Called when the handler times out.
-	// The current handler will be automatically unreged so do not
-	// call Unreg from this function as this will cause a goroutine leaking.
+	// The current handler will be automatically unregistered so do not
+	// call Unregister from this function as this will cause a goroutine leaking.
 	Cancel(tgot.Context, Key)
+}
+
+// Handler is a handler.
+type Handler[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] interface {
+	BaseHandler[Key]
+
+	Handle(Ctx, Key, Data)
+}
+
+type handler[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] struct {
+	Handler[Ctx, Key, Data]
+	oneTime bool
 }
 
 // Router routes queries.
 type Router[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] struct {
-	handlers map[Key]Handler[Ctx, Key, Data]
+	handlers map[Key]handler[Ctx, Key, Data]
 	mut      sync.Mutex
 }
 
@@ -42,7 +51,7 @@ func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
 		if t.Before(h.Timeout()) {
 			continue
 		}
-		delete(r.handlers, key)
+		r.unregister(key)
 		h.Cancel(ctx.Child(h.Name()), key)
 	}
 }
@@ -52,20 +61,20 @@ func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	r.mut.Lock()
 	r.gc(ctx.Ctx())
 	h, ok := r.handlers[key]
-	r.mut.Unlock()
 	if !ok {
+		r.mut.Unlock()
 		return
 	}
-
-	unreg := h.Handle(ctx.Child(h.Name()), key, data)
-	if unreg {
-		r.Unreg(key)
+	if h.oneTime {
+		r.unregister(key)
 	}
+	r.mut.Unlock()
+
+	h.Handle(ctx.Child(h.Name()), key, data)
 }
 
-// Reg registers handler for key.
-func (r *Router[Ctx, Key, Data]) Reg(key Key, h Handler[Ctx, Key, Data]) {
-	if h == nil || h.Timeout().Before(time.Now()) {
+func (r *Router[Ctx, Key, Data]) reg(key Key, h handler[Ctx, Key, Data]) {
+	if h.Handler == nil || h.Timeout().Before(time.Now()) {
 		return
 	}
 	r.mut.Lock()
@@ -73,9 +82,23 @@ func (r *Router[Ctx, Key, Data]) Reg(key Key, h Handler[Ctx, Key, Data]) {
 	r.mut.Unlock()
 }
 
-// Unreg deletes handler associated with the key.
-func (r *Router[Ctx, Key, Data]) Unreg(key Key) {
-	r.mut.Lock()
+// Register registers handler for key.
+func (r *Router[Ctx, Key, Data]) Register(key Key, h Handler[Ctx, Key, Data]) {
+	r.reg(key, handler[Ctx, Key, Data]{Handler: h})
+}
+
+// RegisterOneTime registers handler for key which will be unregistered after first call.
+func (r *Router[Ctx, Key, Data]) RegisterOneTime(key Key, h Handler[Ctx, Key, Data]) {
+	r.reg(key, handler[Ctx, Key, Data]{Handler: h, oneTime: true})
+}
+
+func (r *Router[Ctx, Key, Data]) unregister(key Key) {
 	delete(r.handlers, key)
+}
+
+// Unregister deletes handler associated with the key.
+func (r *Router[Ctx, Key, Data]) Unregister(key Key) {
+	r.mut.Lock()
+	r.unregister(key)
 	r.mut.Unlock()
 }
