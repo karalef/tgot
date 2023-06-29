@@ -11,9 +11,13 @@ type MessageHandler struct {
 	// considered as not for the current bot.
 	Username string
 
-	// if true then Message will be called for commands not for the current bot,
+	// if true then command will be handled even it is not for the current bot,
 	// otherwise the message will be ignored.
 	PassNotForMe bool
+
+	// if true and the PassNotForMe is true then Message will be called
+	// for commands not for the current bot, otherwise the message will be passed to Message.
+	PassToCommand bool
 
 	// is called when the message is not a command.
 	Message func(tgot.ChatContext, *tg.Message)
@@ -33,10 +37,15 @@ func (h *MessageHandler) Handle(ctx tgot.ChatContext, msg *tg.Message) {
 		return
 	}
 	if mention != "" && mention != h.Username {
-		if h.PassNotForMe && h.Message != nil {
-			h.Message(ctx, msg)
+		if !h.PassNotForMe {
+			return
 		}
-		return
+		if !h.PassToCommand {
+			if h.Message != nil {
+				h.Message(ctx, msg)
+			}
+			return
+		}
 	}
 	h.Command(ctx.Child("Commands"), msg, cmd, args)
 }

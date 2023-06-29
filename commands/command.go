@@ -1,21 +1,21 @@
 package commands
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api/tg"
 )
 
-// Command respresents simple command.
+// Command represents simple command.
 type Command struct {
-	Cmd  string
-	Func func(tgot.ChatContext, *tg.Message, []string) error
+	Name    string
+	Aliases []string
+	Func    func(tgot.ChatContext, *tg.Message, []string) error
 
-	Description string
-	FullDesc    string
-	Args        []Arg
+	Args            []Arg
+	Description     string
+	FullDescription string
 }
 
 // Arg type.
@@ -25,19 +25,27 @@ type Arg struct {
 	Consts   []string
 }
 
-// Run runs command function.
-func (c Command) Run(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
-	if c.Func != nil {
-		return c.Func(ctx, msg, args)
-	}
-	return errors.New("not implemented")
-}
-
 // Help generates help message.
 func (c Command) Help() tgot.Message {
 	sb := strings.Builder{}
+	entities := make([]tg.MessageEntity, 2, 3)
+
+	// description
+	sb.WriteString(c.Name + " - " + c.Description)
+	entities[0] = tg.MessageEntity{
+		Type:   tg.EntityBold,
+		Offset: 0,
+		Length: sb.Len(),
+	}
+
+	// usage
+	sb.WriteString("\n\nUsage:\n")
+	entities[1] = tg.MessageEntity{
+		Type:   tg.EntityCodeBlock,
+		Offset: sb.Len(),
+	}
 	sb.WriteByte(Prefix)
-	sb.WriteString(c.Cmd)
+	sb.WriteString(c.Name)
 	for _, a := range c.Args {
 		sb.WriteByte(' ')
 		if a.Required {
@@ -59,27 +67,17 @@ func (c Command) Help() tgot.Message {
 			sb.WriteByte('}')
 		}
 	}
-	entities := make([]tg.MessageEntity, 2, 3)
-	entities[0] = tg.MessageEntity{
-		Type:   tg.EntityCodeBlock,
-		Offset: 0,
-		Length: sb.Len(),
-	}
-	sb.WriteString("\n\n")
-	sb.WriteString(c.Description)
-	entities[1] = tg.MessageEntity{
-		Type:   tg.EntityBold,
-		Offset: entities[0].Length + 2,
-		Length: len(c.Description),
-	}
-	if len(c.FullDesc) > 0 {
+	entities[1].Length = sb.Len() - entities[1].Offset
+
+	// full description
+	if len(c.FullDescription) > 0 {
 		sb.WriteString("\n\n")
-		sb.WriteString(c.FullDesc)
 		entities = append(entities, tg.MessageEntity{
 			Type:   tg.EntityItalic,
-			Offset: sb.Len() - len(c.FullDesc) - 1,
-			Length: len(c.FullDesc),
+			Offset: sb.Len(),
+			Length: len(c.FullDescription),
 		})
+		sb.WriteString(c.FullDescription)
 	}
 
 	return tgot.Message{
@@ -94,7 +92,7 @@ func MakeHelp(list *List) *Command {
 		return nil
 	}
 	h := Command{
-		Cmd:         "help",
+		Name:        "help",
 		Description: "help",
 		Args: []Arg{
 			{
@@ -115,7 +113,7 @@ func MakeHelp(list *List) *Command {
 		for _, c := range *list {
 			sb.WriteByte('\n')
 			sb.WriteByte(Prefix)
-			sb.WriteString(c.Cmd + " - " + c.Description)
+			sb.WriteString(c.Name + " - " + c.Description)
 		}
 		return ctx.ReplyE(msg.ID, tgot.NewMessage(sb.String()))
 	}
