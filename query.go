@@ -27,10 +27,6 @@ type QueryContext[T answerable] struct {
 	once *sync.Once
 }
 
-func (c QueryContext[T]) Ctx() Context {
-	return c.Context
-}
-
 func (c QueryContext[T]) Child(name string) QueryContext[T] {
 	c.Context = c.Context.Child(name)
 	return c

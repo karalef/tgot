@@ -10,6 +10,7 @@ import (
 
 type baseContext interface {
 	Ctx() Context
+	Name() string
 }
 
 // BaseContext can infer any context type.
@@ -34,6 +35,9 @@ type Context struct {
 
 // Ctx returns Context.
 func (c Context) Ctx() Context { return c }
+
+// Name returns context name.
+func (c Context) Name() string { return c.name }
 
 // Child creates sub context.
 func (c Context) Child(name string) Context {
