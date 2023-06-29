@@ -19,7 +19,11 @@ type CallbackHandler interface {
 	Name() string
 
 	// If unreg is true, handler will be automatically deleted.
-	Handle(tgot.MessageContext, *tg.CallbackQuery) (ans tgot.CallbackAnswer, unreg bool, err error)
+	Handle(tgot.MessageContext, *tg.CallbackQuery) (ans tgot.CallbackAnswer, unreg bool)
+
+	// Called if the tgot.CallbackContext.Answer returns an error.
+	// if forceUnreg is true the handler will be deleted even if the Handle method has returned false.
+	OnError(ctx tgot.CallbackContext, err error) (forceUnreg bool)
 
 	// Specifies when the handler will be automatically unreged.
 	Timeout() time.Time
@@ -27,7 +31,7 @@ type CallbackHandler interface {
 	// Called when the handler times out.
 	// The current handler will be automatically unreged so do not
 	// call Unreg from this function as this will cause a deadlock.
-	Cancel(tgot.MessageContext) error
+	Cancel(tgot.MessageContext)
 }
 
 // Callbacks routes callback queries.
@@ -60,17 +64,14 @@ type callbackWrapper struct {
 	CallbackHandler
 }
 
-func (w *callbackWrapper) Handle(qc tgot.CallbackContext, sig tgot.MsgSignature, q *tg.CallbackQuery) (bool, error) {
-	ans, unreg, err := w.CallbackHandler.Handle(qc.OpenMessage(sig), q)
-	if err != nil {
-		return unreg, err
+func (w *callbackWrapper) Handle(qc tgot.CallbackContext, sig tgot.MsgSignature, q *tg.CallbackQuery) bool {
+	ans, unreg := w.CallbackHandler.Handle(qc.OpenMessage(sig), q)
+	if err := qc.Answer(ans); err != nil {
+		unreg = unreg || w.CallbackHandler.OnError(qc, err)
 	}
-	if err = qc.Answer(ans); err != nil {
-		qc.Logger().Error("'%s' answer error: %s", w.Name(), err.Error())
-	}
-	return unreg, nil
+	return unreg
 }
 
-func (w *callbackWrapper) Cancel(ctx tgot.Context, sig tgot.MsgSignature) error {
-	return w.CallbackHandler.Cancel(ctx.OpenMessage(sig))
+func (w *callbackWrapper) Cancel(ctx tgot.Context, sig tgot.MsgSignature) {
+	w.CallbackHandler.Cancel(ctx.OpenMessage(sig))
 }

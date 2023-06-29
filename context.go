@@ -1,15 +1,22 @@
 package tgot
 
 import (
-	"bytes"
 	"io"
 	"runtime"
-	"strconv"
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
-	"github.com/karalef/tgot/logger"
 )
+
+type baseContext interface {
+	Ctx() Context
+}
+
+// BaseContext can infer any context type.
+type BaseContext[c baseContext] interface {
+	baseContext
+	Child(string) c
+}
 
 // MakeContext creates new context.
 //
@@ -32,11 +39,6 @@ func (c Context) Ctx() Context { return c }
 func (c Context) Child(name string) Context {
 	c.name += "::" + name
 	return c
-}
-
-// Logger returns context logger.
-func (c Context) Logger() *logger.Logger {
-	return c.bot.log.Child(c.name)
 }
 
 // GetMe returns basic information about the bot.
@@ -102,50 +104,43 @@ func method[T any](c Context, method string, d ...*api.Data) (T, error) {
 		data = d[0]
 	}
 	result, err := api.Request[T](c.bot.api, method, data)
-	if err == nil {
-		return result, nil
-	}
-	if e, ok := err.(*api.Error); ok {
-		switch e.Err.Code {
-		case 404: // Not Found
-			panic("telegram method is not found but is present in the current implementation (" + method + ")")
-		case 401: // Not Authorized
-			c.bot.cancel(err)
-			runtime.Goexit()
-		case 400, 500: // Bad Request, Internal Server Error
-			c.bot.log.Error("%s\n%s\n%s", err.Error(), c.name, traceback(2))
-		}
+	if err != nil {
+		return result, c.bot.onError(c, result, err)
 	}
 
 	return result, err
 }
 
-func traceback(skip int) string {
-	pc := make([]uintptr, 0, 16)
-	for {
-		n := runtime.Callers(2+skip+len(pc), pc[len(pc):cap(pc)])
-		pc = pc[:len(pc)+n]
-		if len(pc) < cap(pc) {
-			break
-		}
-
-		newpc := make([]uintptr, len(pc), len(pc)*2)
-		copy(newpc, pc)
-		pc = newpc
+// OnErrorDefault represents default error handler.
+//
+// It:
+//
+// - panics if the JSON response cannot be parsed;
+//
+// - panics if the method is not found;
+//
+// - cancels the current call (using runtime.Goexit) and
+// changes the state of the bot to an error if 401 (Not Authorized) or
+// or 500 (Internal Server Error) status is returned;
+//
+// - returns the err in any other case.
+func OnErrorDefault(c Context, result any, err error) error {
+	if e, ok := err.(*api.JSONError); ok {
+		panic("incorrect Telegram JSON response (" + e.Method + "): " + e.Error())
 	}
 
-	buf := bytes.NewBuffer(make([]byte, 0, 512))
-	frames := runtime.CallersFrames(pc)
-
-	for {
-		f, more := frames.Next()
-		buf.WriteString(f.Function + "\n\t" + f.File)
-		buf.WriteString(":" + strconv.Itoa(f.Line))
-		if !more {
-			break
-		}
-		buf.WriteByte('\n')
+	tgErr, ok := err.(*api.Error)
+	if !ok {
+		return err
 	}
 
-	return buf.String()
+	switch tgErr.Err.Code {
+	case 404: // Not Found
+		panic("Telegram method is not found but is present in the current implementation: " + tgErr.Method)
+	case 401, 500: // Not Authorized, Internal Server Error
+		c.bot.SetError(err)
+		runtime.Goexit()
+	}
+
+	return err
 }

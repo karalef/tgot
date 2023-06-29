@@ -8,19 +8,19 @@ import (
 // MessageHandler handles message and if it is a command calls the command handler.
 type MessageHandler struct {
 	// if empty then any commands with a mention will be
-	// considered as not for the current bot
+	// considered as not for the current bot.
 	Username string
 
 	// if true then Message will be called for commands not for the current bot,
-	// otherwise the message will be ignored
+	// otherwise the message will be ignored.
 	PassNotForMe bool
 
-	// is called when the message is not a command
+	// is called when the message is not a command.
 	Message func(tgot.ChatContext, *tg.Message)
 
 	// Command is called when the message is a command for the current bot.
-	// It creates a child context with name 'Commands' and logs an error.
-	Command func(ctx tgot.ChatContext, msg *tg.Message, cmd string, args []string) error
+	// The ctx is a child of original context with name 'Commands'.
+	Command func(ctx tgot.ChatContext, msg *tg.Message, cmd string, args []string)
 }
 
 // Handle handles message.
@@ -38,9 +38,5 @@ func (h *MessageHandler) Handle(ctx tgot.ChatContext, msg *tg.Message) {
 		}
 		return
 	}
-	ctx = ctx.Child("Commands")
-	err := h.Command(ctx, msg, cmd, args)
-	if err != nil {
-		ctx.Logger().Error("command '%s' ended with an error: %s", cmd, err.Error())
-	}
+	h.Command(ctx.Child("Commands"), msg, cmd, args)
 }

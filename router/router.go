@@ -5,44 +5,33 @@ import (
 	"time"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/logger"
 )
 
-// NewRouter makes new inited queries router.
-func NewRouter[Ctx ctxType[Ctx], Key comparable, Data any]() *Router[Ctx, Key, Data] {
+// NewRouter makes new initialized queries router.
+func NewRouter[Ctx tgot.BaseContext[Ctx], Key comparable, Data any]() *Router[Ctx, Key, Data] {
 	return &Router[Ctx, Key, Data]{
 		handlers: make(map[Key]Handler[Ctx, Key, Data]),
 	}
 }
 
-type baseContext interface {
-	Ctx() tgot.Context
-	Logger() *logger.Logger
-}
-
-type ctxType[c baseContext] interface {
-	baseContext
-	Child(string) c
-}
-
 // Handler represents handler with timeout.
-type Handler[Ctx ctxType[Ctx], Key comparable, Data any] interface {
+type Handler[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] interface {
 	Name() string
 
 	// If unreg is true, handler will be automatically deleted.
-	Handle(Ctx, Key, Data) (unreg bool, err error)
+	Handle(Ctx, Key, Data) (unreg bool)
 
 	// Specifies when the handler will be automatically unreged.
 	Timeout() time.Time
 
 	// Called when the handler times out.
 	// The current handler will be automatically unreged so do not
-	// call Unreg from this function as this will cause a deadlock.
-	Cancel(tgot.Context, Key) error
+	// call Unreg from this function as this will cause a goroutine leaking.
+	Cancel(tgot.Context, Key)
 }
 
 // Router routes queries.
-type Router[Ctx ctxType[Ctx], Key comparable, Data any] struct {
+type Router[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] struct {
 	handlers map[Key]Handler[Ctx, Key, Data]
 	mut      sync.Mutex
 }
@@ -54,10 +43,7 @@ func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
 			continue
 		}
 		delete(r.handlers, key)
-		err := h.Cancel(ctx.Child(h.Name()), key)
-		if err != nil {
-			ctx.Logger().Error("Cancel '%s' ended with an error: %s", h.Name(), err.Error())
-		}
+		h.Cancel(ctx.Child(h.Name()), key)
 	}
 }
 
@@ -71,10 +57,7 @@ func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 		return
 	}
 
-	unreg, err := h.Handle(ctx.Child(h.Name()), key, data)
-	if err != nil {
-		ctx.Logger().Error("handler '%s' ended with an error: %s", h.Name(), err.Error())
-	}
+	unreg := h.Handle(ctx.Child(h.Name()), key, data)
 	if unreg {
 		r.Unreg(key)
 	}

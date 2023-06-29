@@ -5,7 +5,6 @@ import (
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
-	"github.com/karalef/tgot/logger"
 )
 
 type answerable interface {
@@ -30,10 +29,6 @@ type QueryContext[T answerable] struct {
 
 func (c QueryContext[T]) Ctx() Context {
 	return c.Context
-}
-
-func (c QueryContext[T]) Logger() *logger.Logger {
-	return c.Context.Logger()
 }
 
 func (c QueryContext[T]) Child(name string) QueryContext[T] {

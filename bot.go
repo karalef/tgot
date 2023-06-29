@@ -6,20 +6,19 @@ import (
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
-	"github.com/karalef/tgot/logger"
 )
 
 // NewWithToken creates new bit with specified token and default http client.
-func NewWithToken(token string, log ...*logger.Logger) (*Bot, error) {
+func NewWithToken(token string) (*Bot, error) {
 	a, err := api.New(token, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
-	return New(a, log...)
+	return New(a)
 }
 
 // New creates new bot.
-func New(api *api.API, log ...*logger.Logger) (*Bot, error) {
+func New(api *api.API) (*Bot, error) {
 	if api == nil {
 		return nil, errors.New("nil api")
 	}
@@ -31,12 +30,6 @@ func New(api *api.API, log ...*logger.Logger) (*Bot, error) {
 		return nil, err
 	}
 
-	if len(log) > 0 {
-		b.log = log[0]
-	} else {
-		b.log = logger.Default("Bot")
-	}
-
 	return b, nil
 }
 
@@ -44,8 +37,12 @@ func New(api *api.API, log ...*logger.Logger) (*Bot, error) {
 type Bot struct {
 	err atomic.Pointer[error]
 	api *api.API
-	log *logger.Logger
 	me  tg.User
+
+	// OnError is called when an error occurs while method execution with context.
+	// The returned error will be returned to the method caller.
+	// If this function is nil, OnErrorDefault is used.
+	OnError func(c Context, result any, err error) error
 
 	Handler
 }
@@ -84,7 +81,10 @@ func (b *Bot) Close() error {
 	return b.api.Request("close", nil)
 }
 
-func (b *Bot) cancel(err error) {
+// SetError changes the state of the bot to an error.
+// It does nothing if the bot is already in an error state.
+// The error state prevents any updates handling.
+func (b *Bot) SetError(err error) {
 	b.err.CompareAndSwap(nil, &err)
 }
 
@@ -94,6 +94,14 @@ func (b *Bot) Err() error {
 		return *e
 	}
 	return nil
+}
+
+func (b *Bot) onError(c Context, result any, err error) error {
+	fn := b.OnError
+	if fn == nil {
+		fn = OnErrorDefault
+	}
+	return fn(c, result, err)
 }
 
 // Handle routes the update to the matching handler.
