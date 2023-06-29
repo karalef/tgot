@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -65,8 +66,7 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 		return nil, errors.New("empty secret")
 	}
 
-	// TODO: maybe SHA-1?
-	secret, err = rsa.DecryptOAEP(sha256.New(), rand.Reader, priv, secret, nil)
+	secret, err = rsa.DecryptOAEP(sha1.New(), rand.Reader, priv, secret, nil)
 	if err != nil {
 		return nil, err
 	}
