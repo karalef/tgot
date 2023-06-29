@@ -7,31 +7,72 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-// Command represents simple command.
-type Command struct {
-	Name    string
+// Command represents command.
+type Command interface {
+	Name() string
+	Description() string
+	Run(tgot.ChatContext, *tg.Message, []string)
+
+	// Is returns true if this command matches the given string.
+	Is(string) bool
+
+	// Help generates help message.
+	Help() tgot.Message
+}
+
+var _ Command = SimpleCommand{}
+
+// SimpleCommand represents simple command.
+type SimpleCommand struct {
+	Command string
 	Aliases []string
 	Func    func(tgot.ChatContext, *tg.Message, []string) error
 
-	Args            []Arg
-	Description     string
-	FullDescription string
+	Args     []Arg
+	Desc     string
+	FullDesc string
 }
 
 // Arg type.
 type Arg struct {
-	Required bool
 	Name     string
 	Consts   []string
+	Required bool
+}
+
+// Name returns command name.
+func (c SimpleCommand) Name() string { return c.Command }
+
+// Description returns command description.
+func (c SimpleCommand) Description() string { return c.Desc }
+
+// Run runs command.
+func (c SimpleCommand) Run(ctx tgot.ChatContext, msg *tg.Message, args []string) {
+	if c.Func != nil {
+		c.Func(ctx, msg, args)
+	}
+}
+
+// Is returns true if this command matches the given string.
+func (c SimpleCommand) Is(cmd string) bool {
+	if c.Command == cmd {
+		return true
+	}
+	for _, a := range c.Aliases {
+		if a == cmd {
+			return true
+		}
+	}
+	return false
 }
 
 // Help generates help message.
-func (c Command) Help() tgot.Message {
+func (c SimpleCommand) Help() tgot.Message {
 	sb := strings.Builder{}
 	entities := make([]tg.MessageEntity, 2, 3)
 
 	// description
-	sb.WriteString(c.Name + " - " + c.Description)
+	sb.WriteString(c.Command + " - " + c.Desc)
 	entities[0] = tg.MessageEntity{
 		Type:   tg.EntityBold,
 		Offset: 0,
@@ -45,7 +86,7 @@ func (c Command) Help() tgot.Message {
 		Offset: sb.Len(),
 	}
 	sb.WriteByte(Prefix)
-	sb.WriteString(c.Name)
+	sb.WriteString(c.Command)
 	for _, a := range c.Args {
 		sb.WriteByte(' ')
 		if a.Required {
@@ -70,14 +111,14 @@ func (c Command) Help() tgot.Message {
 	entities[1].Length = sb.Len() - entities[1].Offset
 
 	// full description
-	if len(c.FullDescription) > 0 {
+	if len(c.FullDesc) > 0 {
 		sb.WriteString("\n\n")
 		entities = append(entities, tg.MessageEntity{
 			Type:   tg.EntityItalic,
 			Offset: sb.Len(),
-			Length: len(c.FullDescription),
+			Length: len(c.FullDesc),
 		})
-		sb.WriteString(c.FullDescription)
+		sb.WriteString(c.FullDesc)
 	}
 
 	return tgot.Message{
@@ -87,13 +128,10 @@ func (c Command) Help() tgot.Message {
 }
 
 // MakeHelp creates '/help' command.
-func MakeHelp(list *List) *Command {
-	if list == nil {
-		return nil
-	}
-	h := Command{
-		Name:        "help",
-		Description: "help",
+func MakeHelp(list *List) SimpleCommand {
+	h := SimpleCommand{
+		Command: "help",
+		Desc:    "help",
 		Args: []Arg{
 			{
 				Name: "command",
@@ -113,9 +151,9 @@ func MakeHelp(list *List) *Command {
 		for _, c := range *list {
 			sb.WriteByte('\n')
 			sb.WriteByte(Prefix)
-			sb.WriteString(c.Name + " - " + c.Description)
+			sb.WriteString(c.Name() + " - " + c.Description())
 		}
 		return ctx.ReplyE(msg.ID, tgot.NewMessage(sb.String()))
 	}
-	return &h
+	return h
 }
