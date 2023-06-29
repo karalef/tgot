@@ -175,7 +175,7 @@ func (b *Bot) Handle(upd *tg.Update) error {
 // ErrNotSpecified is returned by Handle if the update contains an object not specified in Handler.
 var ErrNotSpecified = errors.New("handler is not specified")
 
-// Handler conatains all available updates handler functions.
+// Handler contains all available updates handler functions.
 type Handler struct {
 	OnMessage           func(ChatContext, *tg.Message)
 	OnEditedMessage     func(ChatContext, *tg.Message)
@@ -209,7 +209,7 @@ func (h *Handler) Allowed() []string {
 	add(h.OnEditedChannelPost != nil, "edited_channel_post")
 	add(h.OnCallbackQuery != nil, "callback_query")
 	add(h.OnInlineQuery != nil, "inline_query")
-	add(h.OnInlineChosen != nil, "inline_choosen")
+	add(h.OnInlineChosen != nil, "chosen_inline_result")
 	add(h.OnShippingQuery != nil, "shipping_query")
 	add(h.OnPreCheckoutQuery != nil, "pre_checkout_query")
 	add(h.OnPoll != nil, "poll")
