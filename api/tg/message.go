@@ -69,6 +69,7 @@ type Message struct {
 	PassportData              *PassportData              `json:"passport_data"`
 	ProximityAlert            *ProximityAlert            `json:"proximity_alert_triggered"`
 	BoostAdded                *ChatBoostAdded            `json:"boost_added"`
+	ChatBackgroundSet         *ChatBackground            `json:"chat_background_set"`
 	ForumTopicCreated         *ForumTopicCreated         `json:"forum_topic_created"`
 	ForumTopicEdited          *ForumTopicEdited          `json:"forum_topic_edited"`
 	ForumTopicClosed          *ForumTopicClosed          `json:"forum_topic_closed"`
@@ -387,6 +388,54 @@ func (m MaybeInaccessibleMessage) IsInaccessible() bool {
 // ChatBoostAdded represents a service message about a user boosting a chat.
 type ChatBoostAdded struct {
 	BoostCount int `json:"boost_count"`
+}
+
+// ChatBackground represents a chat background.
+type ChatBackground struct {
+	Type BackgroundType
+}
+
+// BackgroundType represents the type of background.
+type BackgroundTypeType string
+
+// all available background types.
+const (
+	BackgroundTypeFill BackgroundTypeType = "fill"
+)
+
+// BackgroundType describes the type of a background.
+type BackgroundType struct {
+	Type BackgroundTypeType `json:"type"`
+
+	// fill
+	Fill             *BackgroundFill `json:"fill"`
+	DarkThemeDimming uint8           `json:"dark_theme_dimming"`
+}
+
+// BackgroundFill represents the fill type of a background.
+type BackgroundFillType string
+
+// all available background fill types.
+const (
+	BackgroundFillSolid            BackgroundFillType = "solid"
+	BackgroundFillGradient         BackgroundFillType = "gradient"
+	BackgroundFillFreeformGradient BackgroundFillType = "freeform_gradient"
+)
+
+// BackgroundFill describes the way a background is filled based on the selected colors.
+type BackgroundFill struct {
+	Type BackgroundFillType `json:"type"`
+
+	// solid
+	Color uint32 `json:"color"` // rgb24
+
+	// gradient
+	TopColor      uint32 `json:"top_color"`      // rgb24
+	BottomColor   uint32 `json:"bottom_color"`   // rgb24
+	RotationAngle uint16 `json:"rotation_angle"` // degrees
+
+	// freeform_gradient
+	Colors []uint32 `json:"colors"` // rgb24
 }
 
 // ParseMode type.

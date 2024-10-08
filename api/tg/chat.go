@@ -9,10 +9,13 @@ type Chat struct {
 	FirstName string   `json:"first_name"`
 	LastName  string   `json:"last_name"`
 	IsForum   bool     `json:"is_forum"`
+}
 
-	// Returned only in getChat.
-
+// ChatFullInfo contains full information about a chat.
+type ChatFullInfo struct {
+	Chat
 	AccentColorID                  uint8                 `json:"accent_color_id"`
+	MaxReactionCount               uint                  `json:"max_reaction_count"`
 	Photo                          *ChatPhoto            `json:"photo"`
 	ActiveUsernames                []string              `json:"active_usernames"`
 	Birthdate                      *Birthdate            `json:"birthdate"`
@@ -177,6 +180,7 @@ type ChatMemberUpdated struct {
 	Old                     *ChatMember     `json:"old_chat_member"`
 	New                     *ChatMember     `json:"new_chat_member"`
 	InviteLink              *ChatInviteLink `json:"invite_link"`
+	ViaJoinRequest          bool            `json:"via_join_request"`
 	ViaChatFolderInviteLink bool            `json:"via_chat_folder_invite_link"`
 }
 

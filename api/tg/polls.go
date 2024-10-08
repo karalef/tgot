@@ -4,6 +4,7 @@ package tg
 type Poll struct {
 	ID                  string          `json:"id"`
 	Question            string          `json:"question"`
+	QuestionEntities    []MessageEntity `json:"question_entities"`
 	Options             []PollOption    `json:"options"`
 	VoterCount          int             `json:"total_voter_count"`
 	IsClosed            bool            `json:"is_closed"`
@@ -28,8 +29,9 @@ const (
 
 // PollOption contains information about one answer option in a poll.
 type PollOption struct {
-	Text       string `json:"text"`
-	VoterCount int    `json:"voter_count"`
+	Text         string          `json:"text"`
+	TextEntities []MessageEntity `json:"text_entities"`
+	VoterCount   int             `json:"voter_count"`
 }
 
 // PollAnswer represents an answer of a user in a non-anonymous poll.
@@ -38,4 +40,11 @@ type PollAnswer struct {
 	VoterChat *Chat  `json:"voter_chat"`
 	User      *User  `json:"user"`
 	Options   []int  `json:"option_ids"`
+}
+
+// InputPollOption contains information about one answer option in a poll to be sent.
+type InputPollOption struct {
+	Text      string          `json:"text"`
+	ParseMode ParseMode       `json:"text_parse_mode"`
+	Entities  []MessageEntity `json:"text_entities"`
 }

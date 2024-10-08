@@ -333,7 +333,9 @@ var _ Sendable = Poll{}
 // Poll contains information about the poll to be sent.
 type Poll struct {
 	Question             string
-	Options              []string
+	ParseMode            tg.ParseMode
+	Entities             []tg.MessageEntity
+	Options              []tg.InputPollOption
 	IsAnonymous          bool
 	Type                 tg.PollType
 	MultipleAnswers      bool
@@ -349,6 +351,8 @@ type Poll struct {
 
 func (poll Poll) sendData(d *api.Data) string {
 	d.Set("question", poll.Question)
+	d.Set("parse_mode", string(poll.ParseMode))
+	d.SetJSON("entities", poll.Entities)
 	d.SetJSON("options", poll.Options)
 	d.SetBool("is_anonymous", poll.IsAnonymous)
 	d.Set("type", string(poll.Type))

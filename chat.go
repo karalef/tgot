@@ -100,8 +100,8 @@ func chatMethod[T any](c ChatContext, meth string, d ...*api.Data) (T, error) {
 }
 
 // GetInfo returns up to date information about the chat.
-func (c ChatContext) GetInfo() (*tg.Chat, error) {
-	return chatMethod[*tg.Chat](c, "getChat")
+func (c ChatContext) GetInfo() (*tg.ChatFullInfo, error) {
+	return chatMethod[*tg.ChatFullInfo](c, "getChat")
 }
 
 // GetAdmins returns a list of administrators in a chat.

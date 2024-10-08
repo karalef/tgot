@@ -40,6 +40,9 @@ type Dice struct {
 	Value int       `json:"value"`
 }
 
+// Indefinite live period.
+const LivePeriodIndefinite = 0x7FFFFFFF
+
 // Location represents a point on the map.
 type Location struct {
 	Long               float32  `json:"longitude"`

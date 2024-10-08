@@ -71,6 +71,7 @@ func (c MessageContext) msgMethod(meth string, d *api.Data) (*tg.Message, error)
 type LiveLocation struct {
 	Long               float32
 	Lat                float32
+	LivePeriod         int64
 	HorizontalAccuracy *float32
 	Heading            int
 	AlertRadius        int
@@ -81,6 +82,7 @@ func (c MessageContext) EditLiveLocation(l LiveLocation, replyMarkup ...tg.Inlin
 	d := api.NewData()
 	d.SetFloat("latitude", l.Lat)
 	d.SetFloat("longitude", l.Long)
+	d.SetInt64("live_period", l.LivePeriod)
 	if l.HorizontalAccuracy != nil {
 		d.SetFloat("horizontal_accuracy", *l.HorizontalAccuracy, true)
 	}
