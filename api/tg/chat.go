@@ -12,28 +12,34 @@ type Chat struct {
 
 	// Returned only in getChat.
 
-	Photo                      *ChatPhoto       `json:"photo"`
-	ActiveUsernames            []string         `json:"active_usernames"`
-	EmojiStatusCustomEmoji     string           `json:"emoji_status_custom_emoji_id"`
-	EmojiStatusExpirationDate  int64            `json:"emoji_status_expiration_date"`
-	Bio                        string           `json:"bio"`
-	HasPrivateForwards         bool             `json:"has_private_forwards"`
-	HasRestrictedVoiceAndVideo bool             `json:"has_restricted_voice_and_video_messages"`
-	JoinToSend                 bool             `json:"join_to_send_messages"`
-	JoinByRequest              bool             `json:"join_by_request"`
-	Description                string           `json:"description"`
-	InviteLink                 string           `json:"invite_link"`
-	PinnedMessage              *Message         `json:"pinned_message"`
-	Permissions                *ChatPermissions `json:"permissions"`
-	SlowModeDelay              int              `json:"slow_mode_delay"`
-	AutoDeleteTime             int              `json:"message_auto_delete_time"`
-	HasAgressiveAntiSpam       bool             `json:"has_aggressive_anti_spam_enabled"`
-	HasHiddenMembers           bool             `json:"has_hidden_members"`
-	HasProtectedContent        bool             `json:"has_protected_content"`
-	StickerSetName             string           `json:"sticker_set_name"`
-	CanSetStickerSet           bool             `json:"can_set_sticker_set"`
-	LinkedChatID               int64            `json:"linked_chat_id"`
-	Location                   *ChatLocation    `json:"location"`
+	AccentColorID                  uint8            `json:"accent_color_id"`
+	Photo                          *ChatPhoto       `json:"photo"`
+	ActiveUsernames                []string         `json:"active_usernames"`
+	AvailableReactions             []ReactionType   `json:"available_reactions"`
+	BackgroundCustomEmojiID        string           `json:"background_custom_emoji_id"`
+	ProfileAccentColorID           uint8            `json:"profile_accent_color_id"`
+	ProfileBackgroundCustomEmojiID string           `json:"profile_background_custom_emoji_id"`
+	EmojiStatusCustomEmoji         string           `json:"emoji_status_custom_emoji_id"`
+	EmojiStatusExpirationDate      int64            `json:"emoji_status_expiration_date"`
+	Bio                            string           `json:"bio"`
+	HasPrivateForwards             bool             `json:"has_private_forwards"`
+	HasRestrictedVoiceAndVideo     bool             `json:"has_restricted_voice_and_video_messages"`
+	JoinToSend                     bool             `json:"join_to_send_messages"`
+	JoinByRequest                  bool             `json:"join_by_request"`
+	Description                    string           `json:"description"`
+	InviteLink                     string           `json:"invite_link"`
+	PinnedMessage                  *Message         `json:"pinned_message"`
+	Permissions                    *ChatPermissions `json:"permissions"`
+	SlowModeDelay                  int              `json:"slow_mode_delay"`
+	AutoDeleteTime                 int              `json:"message_auto_delete_time"`
+	HasAgressiveAntiSpam           bool             `json:"has_aggressive_anti_spam_enabled"`
+	HasHiddenMembers               bool             `json:"has_hidden_members"`
+	HasProtectedContent            bool             `json:"has_protected_content"`
+	HasVisibleHistory              bool             `json:"has_visible_history"`
+	StickerSetName                 string           `json:"sticker_set_name"`
+	CanSetStickerSet               bool             `json:"can_set_sticker_set"`
+	LinkedChatID                   int64            `json:"linked_chat_id"`
+	Location                       *ChatLocation    `json:"location"`
 }
 
 // Is returns true if the chat type matches the one specified.

@@ -36,33 +36,103 @@ func (e *APIError) Error() string {
 
 // Update object represents an incoming update.
 type Update struct {
-	ID                int                `json:"update_id"`
-	Message           *Message           `json:"message"`
-	EditedMessage     *Message           `json:"edited_message"`
-	ChannelPost       *Message           `json:"channel_post"`
-	EditedChannelPost *Message           `json:"edited_channel_post"`
-	CallbackQuery     *CallbackQuery     `json:"callback_query"`
-	InlineQuery       *InlineQuery       `json:"inline_query"`
-	InlineChosen      *InlineChosen      `json:"chosen_inline_result"`
-	ShippingQuery     *ShippingQuery     `json:"shipping_query"`
-	PreCheckoutQuery  *PreCheckoutQuery  `json:"pre_checkout_query"`
-	Poll              *Poll              `json:"poll"`
-	PollAnswer        *PollAnswer        `json:"poll_answer"`
-	MyChatMember      *ChatMemberUpdated `json:"my_chat_member"`
-	ChatMember        *ChatMemberUpdated `json:"chat_member"`
-	ChatJoinRequest   *ChatJoinRequest   `json:"chat_join_request"`
+	ID                   int                          `json:"update_id"`
+	Message              *Message                     `json:"message"`
+	EditedMessage        *Message                     `json:"edited_message"`
+	ChannelPost          *Message                     `json:"channel_post"`
+	EditedChannelPost    *Message                     `json:"edited_channel_post"`
+	CallbackQuery        *CallbackQuery               `json:"callback_query"`
+	MessageReaction      *MessageReactionUpdated      `json:"message_reaction"`
+	MessageReactionCount *MessageReactionCountUpdated `json:"message_reaction_count"`
+	InlineQuery          *InlineQuery                 `json:"inline_query"`
+	InlineChosen         *InlineChosen                `json:"chosen_inline_result"`
+	ShippingQuery        *ShippingQuery               `json:"shipping_query"`
+	PreCheckoutQuery     *PreCheckoutQuery            `json:"pre_checkout_query"`
+	Poll                 *Poll                        `json:"poll"`
+	PollAnswer           *PollAnswer                  `json:"poll_answer"`
+	MyChatMember         *ChatMemberUpdated           `json:"my_chat_member"`
+	ChatMember           *ChatMemberUpdated           `json:"chat_member"`
+	ChatJoinRequest      *ChatJoinRequest             `json:"chat_join_request"`
+	ChatBoost            *ChatBoostUpdated            `json:"chat_boost"`
+	RemovedChatBoost     *ChatBoostRemoved            `json:"removed_chat_boost"`
+}
+
+// ChatBoostUpdated represents a boost added to a chat or changed.
+type ChatBoostUpdated struct {
+	Chat  Chat      `json:"chat"`
+	Boost ChatBoost `json:"boost"`
+}
+
+// ChatBoostRemoved represents a boost removed from a chat.
+type ChatBoostRemoved struct {
+	Chat       Chat            `json:"chat"`
+	BoostID    string          `json:"boost_id"`
+	RemoveDate int64           `json:"remove_date"`
+	Source     ChatBoostSource `json:"source"`
+}
+
+// ChatBoost contains information about a chat boost.
+type ChatBoost struct {
+	BoostID        string          `json:"boost_id"`
+	AddDate        int64           `json:"add_date"`
+	ExpirationDate int64           `json:"expiration_date"`
+	Source         ChatBoostSource `json:"source"`
+}
+
+// ChatBoostSourceType represents the type of a chat boost.
+type ChatBoostSourceType string
+
+// chat boost source types.
+const (
+	ChatBoostSourcePremium  ChatBoostSourceType = "premium"
+	ChatBoostSourceGiftCode ChatBoostSourceType = "gift_code"
+	ChatBoostSourceGiveaway ChatBoostSourceType = "giveaway"
+)
+
+// ChatBoostSource describes the source of a chat boost.
+type ChatBoostSource struct {
+	Source            ChatBoostSourceType `json:"source"`
+	User              User                `json:"user"`
+	GiveawayMessageID int                 `json:"giveaway_message_id"`
+	PrizeStarCount    int                 `json:"prize_star_count"`
+	IsClaimed         bool                `json:"is_unclaimed"`
+}
+
+// MessageReactionUpdated represents a change of a reaction on a message performed by a user.
+type MessageReactionUpdated struct {
+	Chat        Chat           `json:"chat"`
+	MessageID   int            `json:"message_id"`
+	User        *User          `json:"user"`
+	ActorChat   *Chat          `json:"actor_chat"`
+	Date        int64          `json:"date"`
+	OldReaction []ReactionType `json:"old_reaction"`
+	NewReaction []ReactionType `json:"new_reaction"`
+}
+
+// MessageReactionCountUpdated represents reaction changes on a message with anonymous reactions.
+type MessageReactionCountUpdated struct {
+	Chat      Chat            `json:"chat"`
+	MessageID int             `json:"message_id"`
+	Date      int64           `json:"date"`
+	Reactions []ReactionCount `json:"reactions"`
+}
+
+// ReactionCount represents a reaction added to a message along with the number of times it was added.
+type ReactionCount struct {
+	Type       ReactionType `json:"type"`
+	TotalCount int          `json:"total_count"`
 }
 
 // CallbackQuery represents an incoming callback query from a callback
 // button in an inline keyboard.
 type CallbackQuery struct {
-	ID              string   `json:"id"`
-	From            *User    `json:"from"`
-	Message         *Message `json:"message"`
-	InlineMessageID string   `json:"inline_message_id"`
-	ChatInstance    string   `json:"chat_instance"`
-	Data            string   `json:"data"`
-	GameShortName   string   `json:"game_short_name"`
+	ID              string                    `json:"id"`
+	From            *User                     `json:"from"`
+	Message         *MaybeInaccessibleMessage `json:"message"`
+	InlineMessageID string                    `json:"inline_message_id"`
+	ChatInstance    string                    `json:"chat_instance"`
+	Data            string                    `json:"data"`
+	GameShortName   string                    `json:"game_short_name"`
 }
 
 // WebhookInfo describes the current status of a webhook.

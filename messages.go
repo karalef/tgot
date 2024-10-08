@@ -5,36 +5,39 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-// MessageSignature creates a chat message signature.
-func MessageSignature(msg *tg.Message) MsgSignature {
-	return MsgSignature{chatID: ChatID(msg.Chat.ID), msgID: msg.ID}
+// MessageID creates a chat message id.
+func MessageID(msg *tg.Message) MsgID {
+	return MsgID{chatID: ChatID(msg.Chat.ID), msgID: msg.ID}
 }
 
-// InlineSignature creates an inline message signature.
-func InlineSignature(i *tg.InlineChosen) MsgSignature {
-	return MsgSignature{inline: i.InlineMessageID}
+// InlineMsgID creates an inline message id.
+func InlineMsgID(i *tg.InlineChosen) MsgID {
+	return MsgID{inline: i.InlineMessageID}
 }
 
-// CallbackSignature creates a MessageSignature of any callback message type.
-func CallbackSignature(q *tg.CallbackQuery) MsgSignature {
-	if q.Message != nil {
-		return MessageSignature(q.Message)
+// CallbackMsgID creates a MessageID of any callback message type.
+func CallbackMsgID(q *tg.CallbackQuery) MsgID {
+	if q.Message == nil {
+		return MsgID{inline: q.InlineMessageID}
 	}
-	return MsgSignature{inline: q.InlineMessageID}
+	return MsgID{
+		chatID: ChatID(q.Message.Chat().ID),
+		msgID:  q.Message.ID(),
+	}
 }
 
-// MsgSignature contains inline message id or chat id with message id.
-type MsgSignature struct {
+// MsgID contains inline message id or chat id with message id.
+type MsgID struct {
 	chatID Chat
 	msgID  int
 	inline string
 }
 
-func (s MsgSignature) isInline() bool {
+func (s MsgID) isInline() bool {
 	return s.inline != ""
 }
 
-func (s MsgSignature) signature(d *api.Data) {
+func (s MsgID) signature(d *api.Data) {
 	if s.isInline() {
 		d.Set("inline_message_id", s.inline)
 		return
@@ -44,7 +47,7 @@ func (s MsgSignature) signature(d *api.Data) {
 }
 
 // OpenMessage makes message interface.
-func (c Context) OpenMessage(sig MsgSignature) MessageContext {
+func (c Context) OpenMessage(sig MsgID) MessageContext {
 	return MessageContext{c, sig}
 }
 
@@ -53,7 +56,7 @@ func (c Context) OpenMessage(sig MsgSignature) MessageContext {
 // For inline messages the result message will always be nil.
 type MessageContext struct {
 	Context
-	sig MsgSignature
+	sig MsgID
 }
 
 func (c MessageContext) msgMethod(meth string, d *api.Data) (*tg.Message, error) {
@@ -100,10 +103,10 @@ func (c MessageContext) StopLiveLocation(replyMarkup ...tg.InlineKeyboardMarkup)
 
 // EditText contains parameters for editing message text.
 type EditText struct {
-	Text                  string
-	ParseMode             tg.ParseMode
-	Entities              []tg.MessageEntity
-	DisableWebPagePreview bool
+	Text               string
+	ParseMode          tg.ParseMode
+	Entities           []tg.MessageEntity
+	LinkPreviewOptions tg.LinkPreviewOptions
 }
 
 // EditText edits text and game messages.
@@ -112,7 +115,7 @@ func (c MessageContext) EditText(t EditText, replyMarkup ...tg.InlineKeyboardMar
 	d.Set("text", t.Text)
 	d.Set("parse_mode", string(t.ParseMode))
 	d.SetJSON("entities", t.Entities)
-	d.SetBool("disable_web_page_preview", t.DisableWebPagePreview)
+	d.SetJSON("link_preview_options", t.LinkPreviewOptions)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -144,4 +147,14 @@ func (c MessageContext) EditMedia(m tg.MediaInputter, replyMarkup ...tg.InlineKe
 func (c MessageContext) EditReplyMarkup(replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData().SetJSON("reply_markup", replyMarkup)
 	return c.msgMethod("editMessageReplyMarkup", d)
+}
+
+// SetReaction changes the chosen reactions on a message.
+func (c MessageContext) SetReaction(reaction []tg.ReactionType, isBig ...bool) error {
+	d := api.NewData()
+	d.SetJSON("reaction", reaction)
+	if len(isBig) > 0 {
+		d.SetBool("is_big", isBig[0])
+	}
+	return c.method("setMessageReaction", d)
 }

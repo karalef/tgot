@@ -65,15 +65,21 @@ func (c ChatContext) SendText(text string, pm ...tg.ParseMode) error {
 	return c.SendE(msg)
 }
 
+// ReplyTo creates ReplyParameters with only message ID.
+func ReplyTo(msgID int) tg.ReplyParameters {
+	return tg.ReplyParametersData[int64]{
+		MessageID: msgID,
+	}
+}
+
 // Reply replies to the specified message.
-func (c ChatContext) Reply(to int, s Sendable) (*tg.Message, error) {
-	return c.Send(s, SendOptions{ReplyTo: to})
+func (c ChatContext) Reply(r tg.ReplyParameters, s Sendable) (*tg.Message, error) {
+	return c.Send(s, SendOptions{ReplyParameters: r})
 }
 
 // ReplyE replies to the specified message and returns only an error.
-func (c ChatContext) ReplyE(to int, s Sendable) error {
-	_, err := c.Reply(to, s)
-	return err
+func (c ChatContext) ReplyE(r tg.ReplyParameters, s Sendable) error {
+	return c.SendE(s, SendOptions{ReplyParameters: r})
 }
 
 func (c ChatContext) method(method string, d ...*api.Data) error {
@@ -119,7 +125,7 @@ func (c ChatContext) Leave() error {
 	return c.method("leaveChat")
 }
 
-// Forward contains paramenets for forwarding the message.
+// Forward contains parameters for forwarding the message.
 type Forward struct {
 	MessageID           int
 	DisableNotification bool
@@ -139,6 +145,27 @@ func (c ChatContext) Forward(from Chat, fwd Forward) (*tg.Message, error) {
 	from.setChatID(d, "from_chat_id")
 	fwd.data(d)
 	return chatMethod[*tg.Message](c, "forwardMessage", d)
+}
+
+// ForwardMany contains parameters for forwarding multiple messages.
+type ForwardMany struct {
+	MessageIDs          []int
+	DisableNotification bool
+	ProtectContent      bool
+}
+
+func (fwd ForwardMany) data(d *api.Data) {
+	d.SetJSON("message_ids", fwd.MessageIDs)
+	d.SetBool("disable_notification", fwd.DisableNotification)
+	d.SetBool("protect_content", fwd.ProtectContent)
+}
+
+// ForwardMessages forwards multiple messages of any kind.
+func (c ChatContext) ForwardMessages(from Chat, fwd ForwardMany) ([]tg.MessageID, error) {
+	d := api.NewData()
+	from.setChatID(d, "from_chat_id")
+	fwd.data(d)
+	return chatMethod[[]tg.MessageID](c, "forwardMessages", d)
 }
 
 // Copy contains parameters for copying the message.
@@ -164,6 +191,28 @@ func (c ChatContext) Copy(from Chat, cp Copy, opts ...SendOptions) (*tg.MessageI
 		opts[0].embed(d)
 	}
 	return chatMethod[*tg.MessageID](c, "copyMessage", d)
+}
+
+// CopyMany contains parameters for copying multiple messages.
+type CopyMany struct {
+	MessageIDs    []int
+	RemoveCaption bool
+}
+
+func (cp CopyMany) data(d *api.Data) {
+	d.SetJSON("message_ids", cp.MessageIDs)
+	d.SetBool("remove_caption", cp.RemoveCaption)
+}
+
+// CopyMessages copies messages of any kind.
+func (c ChatContext) CopyMessages(from Chat, cp CopyMany, opts ...SendOptions) ([]tg.MessageID, error) {
+	d := api.NewData()
+	from.setChatID(d, "from_chat_id")
+	cp.data(d)
+	if len(opts) > 0 {
+		opts[0].embed(d)
+	}
+	return chatMethod[[]tg.MessageID](c, "copyMessages", d)
 }
 
 // Send sends any Sendable object.
@@ -206,6 +255,12 @@ func (c ChatContext) StopPoll(msgID int, replyMarkup ...tg.InlineKeyboardMarkup)
 func (c ChatContext) DeleteMessage(msgID int) error {
 	d := api.NewData().SetInt("message_id", msgID)
 	return c.method("deleteMessage", d)
+}
+
+// DeleteMessages deletes multiple messages simultaneously.
+func (c ChatContext) DeleteMessages(msgIDs []int) error {
+	d := api.NewData().SetJSON("message_ids", msgIDs)
+	return c.method("deleteMessages", d)
 }
 
 // Ban contains parameters for banning a chat member.
@@ -412,4 +467,10 @@ func (c ChatContext) SetMenuButton(menu tg.MenuButton) error {
 // GetMenuButton returns the current value of the bot's menu button in a private chat.
 func (c ChatContext) GetMenuButton() (*tg.MenuButton, error) {
 	return chatMethod[*tg.MenuButton](c, "getChatMenuButton")
+}
+
+// GetUserBoosts returns the list of boosts added to a chat by a user.
+func (c ChatContext) GetUserBoosts(userID int64) (*tg.UserChatBoosts, error) {
+	d := api.NewData().SetInt64("user_id", userID)
+	return chatMethod[*tg.UserChatBoosts](c, "getUserChatBoosts", d)
 }

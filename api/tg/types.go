@@ -99,3 +99,35 @@ const (
 	StickerAnimated StickerFormat = "animated"
 	StickerVideo    StickerFormat = "video"
 )
+
+// ReplyParameters describes reply parameters for the message that is being sent.
+type ReplyParameters interface {
+	replyParameters()
+}
+
+// ReplyParametersData describes reply parameters for the message that is being sent.
+type ReplyParametersData[ID ChatID] struct {
+	MessageID                int             `json:"message_id"`
+	ChatID                   ID              `json:"chat_id,omitempty"`
+	AllowSendingWithoutReply bool            `json:"allow_sending_without_reply,omitempty"`
+	Quote                    string          `json:"quote,omitempty"`
+	QuoteParseMode           ParseMode       `json:"quote_parse_mode,omitempty"`
+	QuoteEntities            []MessageEntity `json:"quote_entities,omitempty"`
+	QuotePosition            int             `json:"quote_position,omitempty"`
+}
+
+func (ReplyParametersData[ID]) replyParameters() {}
+
+// LinkPreviewOptions describes the options used for link preview generation.
+type LinkPreviewOptions struct {
+	IsDisabled       bool   `json:"is_disabled,omitempty"`
+	URL              string `json:"url,omitempty"`
+	PreferSmallMedia bool   `json:"prefer_small_media,omitempty"`
+	PreferLargeMedia bool   `json:"prefer_large_media,omitempty"`
+	ShowAboveText    bool   `json:"show_above_text,omitempty"`
+}
+
+// UserChatBoosts represents a list of boosts added to a chat by a user.
+type UserChatBoosts struct {
+	Boosts []ChatBoost `json:"boosts"`
+}

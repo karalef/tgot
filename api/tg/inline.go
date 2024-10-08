@@ -65,10 +65,10 @@ func (InputInvoiceMessageContent) inputMessageContent()  {}
 // InputTextMessageContent represents the content of a text message to be sent
 // as the result of an inline query.
 type InputTextMessageContent struct {
-	Text                  string          `json:"message_text"`
-	ParseMode             ParseMode       `json:"parse_mode,omitempty"`
-	Entities              []MessageEntity `json:"entities,omitempty"`
-	DisableWebPagePreview bool            `json:"disable_web_page_preview,omitempty"`
+	Text               string             `json:"message_text"`
+	ParseMode          ParseMode          `json:"parse_mode,omitempty"`
+	Entities           []MessageEntity    `json:"entities,omitempty"`
+	LinkPreviewOptions LinkPreviewOptions `json:"link_preview_options,omitempty"`
 }
 
 // InputLocationMessageContent represents the content of a location message to be sent

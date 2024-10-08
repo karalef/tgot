@@ -141,9 +141,9 @@ func MakeHelp(list *List) SimpleCommand {
 	h.Func = func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		if len(args) > 0 {
 			if cmd := list.GetCmd(args[0]); cmd != nil {
-				return ctx.ReplyE(msg.ID, cmd.Help())
+				return ctx.ReplyE(tgot.ReplyTo(msg.ID), cmd.Help())
 			}
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("command not found"))
+			return ctx.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewMessage("command not found"))
 		}
 		var sb strings.Builder
 		sb.WriteString("Commands list\n")
@@ -153,7 +153,7 @@ func MakeHelp(list *List) SimpleCommand {
 			sb.WriteByte(Prefix)
 			sb.WriteString(c.Name() + " - " + c.Description())
 		}
-		return ctx.ReplyE(msg.ID, tgot.NewMessage(sb.String()))
+		return ctx.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewMessage(sb.String()))
 	}
 	return h
 }

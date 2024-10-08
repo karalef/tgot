@@ -31,17 +31,15 @@ func (c CaptionData) embed(d *api.Data) {
 
 // SendOptions cointains common send* parameters.
 type SendOptions struct {
-	DisableNotification      bool
-	ProtectContent           bool
-	ReplyTo                  int
-	AllowSendingWithoutReply bool
+	DisableNotification bool
+	ProtectContent      bool
+	ReplyParameters     tg.ReplyParameters
 }
 
 func (o SendOptions) embed(d *api.Data) {
 	d.SetBool("disable_notification", o.DisableNotification)
 	d.SetBool("protect_content", o.ProtectContent)
-	d.SetInt("reply_to_message_id", o.ReplyTo)
-	d.SetBool("allow_sending_without_reply", o.AllowSendingWithoutReply)
+	d.SetJSON("reply_parameters", o.ReplyParameters)
 }
 
 // NewMessage makes a new message.
@@ -51,18 +49,18 @@ var _ Sendable = Message{}
 
 // Message contains information about the message to be sent.
 type Message struct {
-	Text                  string
-	ParseMode             tg.ParseMode
-	Entities              []tg.MessageEntity
-	DisableWebPagePreview bool
-	ReplyMarkup           tg.ReplyMarkup
+	Text               string
+	ParseMode          tg.ParseMode
+	Entities           []tg.MessageEntity
+	LinkPreviewOptions tg.LinkPreviewOptions
+	ReplyMarkup        tg.ReplyMarkup
 }
 
 func (m Message) sendData(d *api.Data) string {
 	d.Set("text", m.Text)
 	d.Set("parse_mode", string(m.ParseMode))
 	d.SetJSON("entities", m.Entities)
-	d.SetBool("disable_web_page_preview", m.DisableWebPagePreview)
+	d.SetJSON("link_preview_options", m.LinkPreviewOptions)
 	d.SetJSON("reply_markup", m.ReplyMarkup)
 	return "sendMessage"
 }

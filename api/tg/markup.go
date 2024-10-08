@@ -31,21 +31,22 @@ type ReplyKeyboardMarkup struct {
 
 // KeyboardButton represents one button of the reply keyboard.
 type KeyboardButton struct {
-	Text            string                     `json:"text"`
-	RequestUser     *KeyboardButtonRequestUser `json:"request_user,omitempty"`
-	RequestChat     *KeyboardButtonRequestChat `json:"request_chat,omitempty"`
-	RequestContact  bool                       `json:"request_contact,omitempty"`
-	RequestLocation bool                       `json:"request_location,omitempty"`
-	RequestPoll     *ButtonPollType            `json:"request_poll,omitempty"`
-	WebApp          *WebAppInfo                `json:"web_app,omitmepty"`
+	Text            string                      `json:"text"`
+	RequestUsers    *KeyboardButtonRequestUsers `json:"request_users,omitempty"`
+	RequestChat     *KeyboardButtonRequestChat  `json:"request_chat,omitempty"`
+	RequestContact  bool                        `json:"request_contact,omitempty"`
+	RequestLocation bool                        `json:"request_location,omitempty"`
+	RequestPoll     *ButtonPollType             `json:"request_poll,omitempty"`
+	WebApp          *WebAppInfo                 `json:"web_app,omitmepty"`
 }
 
-// KeyboardButtonRequestUser defines the criteria used to request a suitable user.
+// KeyboardButtonRequestUsers defines the criteria used to request a suitable user.
 // The identifier of the selected user will be shared with the bot when the corresponding button is pressed.
-type KeyboardButtonRequestUser struct {
+type KeyboardButtonRequestUsers struct {
 	RequestID     int   `json:"request_id"`
 	UserIsBot     *bool `json:"user_is_bot,omitempty"`
 	UserIsPremium *bool `json:"user_is_premium,omitempty"`
+	MaxQuantity   int   `json:"max_quantity,omitempty"`
 }
 
 // KeyboardButtonRequestChat defines the criteria used to request a suitable chat.
