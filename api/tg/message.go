@@ -33,6 +33,7 @@ type Message struct {
 	Document                  *Document                  `json:"document"`
 	Photo                     []PhotoSize                `json:"photo"`
 	Sticker                   *Sticker                   `json:"sticker"`
+	Story                     *Story                     `json:"story"`
 	Video                     *Video                     `json:"video"`
 	VideoNote                 *VideoNote                 `json:"video_note"`
 	Voice                     *Voice                     `json:"voice"`

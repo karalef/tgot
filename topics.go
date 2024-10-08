@@ -102,6 +102,11 @@ func (t Topic) UnpinAllMessages() error {
 	return t.method("unpinAllForumTopicMessages")
 }
 
+// UnpinAllGeneralMessages clears the list of pinned messages in a General forum topic.
+func (t Topic) UnpinAllGeneralMessages() error {
+	return t.method("unpinAllGeneralForumTopicMessages")
+}
+
 // Send sends any Sendable object.
 func (t Topic) Send(s Sendable, opts ...SendOptions) (*tg.Message, error) {
 	if s == nil {

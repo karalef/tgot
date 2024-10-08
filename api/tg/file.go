@@ -98,6 +98,9 @@ type Sticker struct {
 	NeedsRepainting bool          `json:"needs_repainting"`
 }
 
+// Story represents a story.
+type Story struct{}
+
 // File object represents a file ready to be downloaded.
 type File struct {
 	FileData
