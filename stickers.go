@@ -39,7 +39,6 @@ type NewStickerSet struct {
 	Name            string
 	Title           string
 	Stickers        []tg.InputSticker
-	Format          tg.StickerFormat
 	Type            tg.StickerType
 	NeedsRepainting bool
 }
@@ -52,7 +51,6 @@ func (c Context) CreateNewStickerSet(newSet NewStickerSet) error {
 	d.Set("name", newSet.Name)
 	d.Set("title", newSet.Title)
 	d.SetJSON("stickers", newSet.Stickers)
-	d.Set("sticker_format", string(newSet.Format))
 	d.Set("sticker_type", string(newSet.Type))
 	d.SetBool("needs_repainting", newSet.NeedsRepainting)
 	return c.method("createNewStickerSet", d)
@@ -65,13 +63,17 @@ type NewSticker struct {
 	Sticker tg.InputSticker
 }
 
+func (n NewSticker) data(d *api.Data) {
+	prepareInputStickers(d, n.Sticker)
+	d.SetInt64("user_id", n.UserID)
+	d.Set("name", n.SetName)
+	d.SetJSON("sticker", n.Sticker)
+}
+
 // AddSticker adds a new sticker to a set created by the bot.
 func (c Context) AddSticker(sticker NewSticker) error {
 	d := api.NewData()
-	prepareInputStickers(d, sticker.Sticker)
-	d.SetInt64("user_id", sticker.UserID)
-	d.Set("name", sticker.SetName)
-	d.SetJSON("sticker", sticker.Sticker)
+	sticker.data(d)
 	return c.method("addStickerToSet", d)
 }
 
@@ -122,11 +124,12 @@ func (c Context) SetStickerSetTitle(setName string, title string) error {
 }
 
 // SetStickerSetThumbnail sets the thumbnail of a sticker set.
-func (c Context) SetStickerSetThumbnail(setName string, userID int64, thumb tg.Inputtable) error {
+func (c Context) SetStickerSetThumbnail(setName string, userID int64, thumb tg.Inputtable, format tg.StickerFormat) error {
 	d := api.NewData()
 	d.Set("name", setName)
 	d.SetInt64("user_id", userID)
 	d.AddFile("thumbnail", thumb)
+	d.Set("format", string(format))
 	return c.method("setStickerSetThumbnail", d)
 }
 
@@ -136,6 +139,14 @@ func (c Context) SetCustomEmojiStickerSetThumbnail(setName string, customEmojiID
 	d.Set("name", setName)
 	d.Set("custom_emoji_id", customEmojiID)
 	return c.method("setCustomEmojiStickerSetThumbnail", d)
+}
+
+// ReplaceStickerInSet replace an existing sticker in a sticker set with a new one.
+func (c Context) ReplaceStickerInSet(old string, sticker NewSticker) error {
+	d := api.NewData()
+	d.Set("old_sticker", old)
+	sticker.data(d)
+	return c.method("replaceStickerInSet", d)
 }
 
 // DeleteStickerSet deletes a sticker set that was created by the bot.

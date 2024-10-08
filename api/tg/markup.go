@@ -43,10 +43,13 @@ type KeyboardButton struct {
 // KeyboardButtonRequestUsers defines the criteria used to request a suitable user.
 // The identifier of the selected user will be shared with the bot when the corresponding button is pressed.
 type KeyboardButtonRequestUsers struct {
-	RequestID     int   `json:"request_id"`
-	UserIsBot     *bool `json:"user_is_bot,omitempty"`
-	UserIsPremium *bool `json:"user_is_premium,omitempty"`
-	MaxQuantity   int   `json:"max_quantity,omitempty"`
+	RequestID       int   `json:"request_id"`
+	UserIsBot       *bool `json:"user_is_bot,omitempty"`
+	UserIsPremium   *bool `json:"user_is_premium,omitempty"`
+	MaxQuantity     int   `json:"max_quantity,omitempty"`
+	RequestName     bool  `json:"request_name,omitempty"`
+	RequestUsername bool  `json:"request_username,omitempty"`
+	RequestPhoto    bool  `json:"request_photo,omitempty"`
 }
 
 // KeyboardButtonRequestChat defines the criteria used to request a suitable chat.
@@ -60,6 +63,9 @@ type KeyboardButtonRequestChat struct {
 	UserAdminRights *ChatAdministratorRights `json:"user_admin_rights,omitempty"`
 	BotAdminRights  *ChatAdministratorRights `json:"bot_admin_rights,omitempty"`
 	BotIsMember     bool                     `json:"bot_is_member,omitempty"`
+	RequestTitle    bool                     `json:"request_title,omitempty"`
+	RequestUsername bool                     `json:"request_username,omitempty"`
+	RequestPhoto    bool                     `json:"request_photo,omitempty"`
 }
 
 // ButtonPollType represents type of a poll, which is allowed

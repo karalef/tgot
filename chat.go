@@ -236,8 +236,9 @@ func (c ChatContext) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Me
 
 // SendChatAction sends chat action to tell the user that something
 // is happening on the bot's side.
-func (c ChatContext) SendChatAction(act tg.ChatAction) error {
+func (c ChatContext) SendChatAction(act tg.ChatAction, businessConnID string) error {
 	d := api.NewData().Set("action", string(act))
+	d.Set("business_connection_id", businessConnID)
 	return c.method("sendChatAction", d)
 }
 

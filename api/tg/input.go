@@ -66,6 +66,7 @@ func FileBytes(name string, data []byte) *InputFile {
 // InputSticker describes a sticker to be added to a sticker set.
 type InputSticker struct {
 	Sticker      Inputtable    `json:"sticker"`
+	Format       StickerFormat `json:"format"`
 	EmojiList    []string      `json:"emoji_list"`
 	MaskPosition *MaskPosition `json:"mask_position,omitempty"`
 	Keywords     []string      `json:"keywords,omitempty"`

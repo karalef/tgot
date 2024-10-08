@@ -142,6 +142,14 @@ func (t Topic) Forward(from Chat, fwd Forward) (*tg.Message, error) {
 	return topicMethod[*tg.Message](t, "forwardMessage", d)
 }
 
+// ForwardMessages forwards multiple messages of any kind.
+func (t Topic) ForwardMessages(from Chat, fwd ForwardMany) error {
+	d := api.NewData()
+	from.setChatID(d, "from_chat_id")
+	fwd.data(d)
+	return t.method("forwardMessages", d)
+}
+
 // Copy copies messages of any kind.
 // Service messages and invoice messages can't be copied.
 func (t Topic) Copy(from Chat, cp Copy, opts ...SendOptions) (*tg.MessageID, error) {
@@ -152,4 +160,15 @@ func (t Topic) Copy(from Chat, cp Copy, opts ...SendOptions) (*tg.MessageID, err
 		opts[0].embed(d)
 	}
 	return topicMethod[*tg.MessageID](t, "copyMessage", d)
+}
+
+// CopyMessages copies messages of any kind.
+func (t Topic) CopyMessages(from Chat, cp CopyMany, opts ...SendOptions) ([]tg.MessageID, error) {
+	d := api.NewData()
+	from.setChatID(d, "from_chat_id")
+	cp.data(d)
+	if len(opts) > 0 {
+		opts[0].embed(d)
+	}
+	return topicMethod[[]tg.MessageID](t, "copyMessages", d)
 }

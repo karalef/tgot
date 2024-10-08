@@ -13,9 +13,10 @@ type User struct {
 
 	// Returned only in getMe
 
-	CanJoinGroups      bool `json:"can_join_groups"`
-	CanReadAllMessages bool `json:"can_read_all_group_messages"`
-	SupportsInline     bool `json:"supports_inline_queries"`
+	CanJoinGroups        bool `json:"can_join_groups"`
+	CanReadAllMessages   bool `json:"can_read_all_group_messages"`
+	SupportsInline       bool `json:"supports_inline_queries"`
+	CanConnectToBusiness bool `json:"can_connect_to_business"`
 }
 
 // UserProfilePhotos represent a user's profile pictures.

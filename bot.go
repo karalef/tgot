@@ -139,7 +139,7 @@ func (b *Bot) Handle(upd *tg.Update) error {
 		b.OnInlineQuery(ctx, upd.InlineQuery)
 
 	case upd.InlineChosen != nil && b.OnInlineChosen != nil:
-		ctx := b.MakeContext("InlineChosen").OpenMessage(InlineSignature(upd.InlineChosen))
+		ctx := b.MakeContext("InlineChosen").OpenMessage(InlineMsgID(upd.InlineChosen))
 		b.OnInlineChosen(ctx, upd.InlineChosen)
 
 	case upd.ShippingQuery != nil && b.OnShippingQuery != nil:

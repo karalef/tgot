@@ -66,8 +66,6 @@ type StickerSet struct {
 	Name        string      `json:"name"`
 	Title       string      `json:"title"`
 	StickerType StickerType `json:"sticker_type"`
-	IsAnimated  bool        `json:"is_animated"`
-	IsVideo     bool        `json:"is_video"`
 	Stickers    []Sticker   `json:"stickers"`
 	Thumbnail   *PhotoSize  `json:"thumbnail"`
 }

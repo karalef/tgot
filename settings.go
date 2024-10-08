@@ -113,3 +113,9 @@ func (b *Bot) GetShortDescription(lang string) (*tg.BotShortDescription, error) 
 	d := api.NewData().Set("language_code", lang)
 	return api.Request[*tg.BotShortDescription](b.api, "getMyShortDescription", d)
 }
+
+// GetBusinessConnection returns information about the connection of the bot with a business account.
+func (b *Bot) GetBusinessConnection(id string) (*tg.BusinessConnection, error) {
+	d := api.NewData().Set("business_connection_id", id)
+	return api.Request[*tg.BusinessConnection](b.api, "getBusinessConnection", d)
+}

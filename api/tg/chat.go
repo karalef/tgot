@@ -12,36 +12,41 @@ type Chat struct {
 
 	// Returned only in getChat.
 
-	AccentColorID                  uint8            `json:"accent_color_id"`
-	Photo                          *ChatPhoto       `json:"photo"`
-	ActiveUsernames                []string         `json:"active_usernames"`
-	AvailableReactions             []ReactionType   `json:"available_reactions"`
-	BackgroundCustomEmojiID        string           `json:"background_custom_emoji_id"`
-	ProfileAccentColorID           uint8            `json:"profile_accent_color_id"`
-	ProfileBackgroundCustomEmojiID string           `json:"profile_background_custom_emoji_id"`
-	EmojiStatusCustomEmoji         string           `json:"emoji_status_custom_emoji_id"`
-	EmojiStatusExpirationDate      int64            `json:"emoji_status_expiration_date"`
-	Bio                            string           `json:"bio"`
-	HasPrivateForwards             bool             `json:"has_private_forwards"`
-	HasRestrictedVoiceAndVideo     bool             `json:"has_restricted_voice_and_video_messages"`
-	JoinToSend                     bool             `json:"join_to_send_messages"`
-	JoinByRequest                  bool             `json:"join_by_request"`
-	Description                    string           `json:"description"`
-	InviteLink                     string           `json:"invite_link"`
-	PinnedMessage                  *Message         `json:"pinned_message"`
-	Permissions                    *ChatPermissions `json:"permissions"`
-	SlowModeDelay                  int              `json:"slow_mode_delay"`
-	UnrestrictBoostCount           int              `json:"unrestrict_boost_count"`
-	AutoDeleteTime                 int              `json:"message_auto_delete_time"`
-	HasAgressiveAntiSpam           bool             `json:"has_aggressive_anti_spam_enabled"`
-	HasHiddenMembers               bool             `json:"has_hidden_members"`
-	HasProtectedContent            bool             `json:"has_protected_content"`
-	HasVisibleHistory              bool             `json:"has_visible_history"`
-	StickerSetName                 string           `json:"sticker_set_name"`
-	CanSetStickerSet               bool             `json:"can_set_sticker_set"`
-	CustomEmojiStickerSetName      string           `json:"custom_emoji_sticker_set_name"`
-	LinkedChatID                   int64            `json:"linked_chat_id"`
-	Location                       *ChatLocation    `json:"location"`
+	AccentColorID                  uint8                 `json:"accent_color_id"`
+	Photo                          *ChatPhoto            `json:"photo"`
+	ActiveUsernames                []string              `json:"active_usernames"`
+	Birthdate                      *Birthdate            `json:"birthdate"`
+	BusinessIntro                  *BusinessIntro        `json:"business_intro"`
+	BusinessLocation               *BusinessLocation     `json:"business_location"`
+	BusinessOpeningHours           *BusinessOpeningHours `json:"business_opening_hours"`
+	PersonalChat                   *Chat                 `json:"personal_chat"`
+	AvailableReactions             []ReactionType        `json:"available_reactions"`
+	BackgroundCustomEmojiID        string                `json:"background_custom_emoji_id"`
+	ProfileAccentColorID           uint8                 `json:"profile_accent_color_id"`
+	ProfileBackgroundCustomEmojiID string                `json:"profile_background_custom_emoji_id"`
+	EmojiStatusCustomEmoji         string                `json:"emoji_status_custom_emoji_id"`
+	EmojiStatusExpirationDate      int64                 `json:"emoji_status_expiration_date"`
+	Bio                            string                `json:"bio"`
+	HasPrivateForwards             bool                  `json:"has_private_forwards"`
+	HasRestrictedVoiceAndVideo     bool                  `json:"has_restricted_voice_and_video_messages"`
+	JoinToSend                     bool                  `json:"join_to_send_messages"`
+	JoinByRequest                  bool                  `json:"join_by_request"`
+	Description                    string                `json:"description"`
+	InviteLink                     string                `json:"invite_link"`
+	PinnedMessage                  *Message              `json:"pinned_message"`
+	Permissions                    *ChatPermissions      `json:"permissions"`
+	SlowModeDelay                  int                   `json:"slow_mode_delay"`
+	UnrestrictBoostCount           int                   `json:"unrestrict_boost_count"`
+	AutoDeleteTime                 int                   `json:"message_auto_delete_time"`
+	HasAgressiveAntiSpam           bool                  `json:"has_aggressive_anti_spam_enabled"`
+	HasHiddenMembers               bool                  `json:"has_hidden_members"`
+	HasProtectedContent            bool                  `json:"has_protected_content"`
+	HasVisibleHistory              bool                  `json:"has_visible_history"`
+	StickerSetName                 string                `json:"sticker_set_name"`
+	CanSetStickerSet               bool                  `json:"can_set_sticker_set"`
+	CustomEmojiStickerSetName      string                `json:"custom_emoji_sticker_set_name"`
+	LinkedChatID                   int64                 `json:"linked_chat_id"`
+	Location                       *ChatLocation         `json:"location"`
 }
 
 // Is returns true if the chat type matches the one specified.
@@ -214,3 +219,35 @@ const (
 	MemberLeft       MemberStatus = "left"
 	MemberKicked     MemberStatus = "kicked"
 )
+
+// BusinessIntro contains information about the start page settings of a Telegram Business account.
+type BusinessIntro struct {
+	Title   string   `json:"title"`
+	Message string   `json:"message"`
+	Sticker *Sticker `json:"sticker"`
+}
+
+// BusinessLocation contains information about the location of a Telegram Business account.
+type BusinessLocation struct {
+	Address  string    `json:"address"`
+	Location *Location `json:"location"`
+}
+
+// BusinessOpeningHoursInterval describes an interval of time during which a business is open.
+type BusinessOpeningHoursInterval struct {
+	OpeningMinute int `json:"opening_minute"`
+	ClosingMinute int `json:"closing_minute"`
+}
+
+// BusinessOpeningHours describes the opening hours of a business.
+type BusinessOpeningHours struct {
+	TimeZoneName string                         `json:"time_zone_name"`
+	OpeningHours []BusinessOpeningHoursInterval `json:"opening_hours"`
+}
+
+// Birthdate describes the birthdate of a user.
+type Birthdate struct {
+	Day   uint8  `json:"day"`
+	Month uint8  `json:"month"`
+	Year  uint16 `json:"year"`
+}

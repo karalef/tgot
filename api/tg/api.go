@@ -36,25 +36,29 @@ func (e *APIError) Error() string {
 
 // Update object represents an incoming update.
 type Update struct {
-	ID                   int                          `json:"update_id"`
-	Message              *Message                     `json:"message"`
-	EditedMessage        *Message                     `json:"edited_message"`
-	ChannelPost          *Message                     `json:"channel_post"`
-	EditedChannelPost    *Message                     `json:"edited_channel_post"`
-	CallbackQuery        *CallbackQuery               `json:"callback_query"`
-	MessageReaction      *MessageReactionUpdated      `json:"message_reaction"`
-	MessageReactionCount *MessageReactionCountUpdated `json:"message_reaction_count"`
-	InlineQuery          *InlineQuery                 `json:"inline_query"`
-	InlineChosen         *InlineChosen                `json:"chosen_inline_result"`
-	ShippingQuery        *ShippingQuery               `json:"shipping_query"`
-	PreCheckoutQuery     *PreCheckoutQuery            `json:"pre_checkout_query"`
-	Poll                 *Poll                        `json:"poll"`
-	PollAnswer           *PollAnswer                  `json:"poll_answer"`
-	MyChatMember         *ChatMemberUpdated           `json:"my_chat_member"`
-	ChatMember           *ChatMemberUpdated           `json:"chat_member"`
-	ChatJoinRequest      *ChatJoinRequest             `json:"chat_join_request"`
-	ChatBoost            *ChatBoostUpdated            `json:"chat_boost"`
-	RemovedChatBoost     *ChatBoostRemoved            `json:"removed_chat_boost"`
+	ID                      int                          `json:"update_id"`
+	Message                 *Message                     `json:"message"`
+	EditedMessage           *Message                     `json:"edited_message"`
+	ChannelPost             *Message                     `json:"channel_post"`
+	EditedChannelPost       *Message                     `json:"edited_channel_post"`
+	BusinessConnection      *BusinessConnection          `json:"business_connection"`
+	BusinessMessage         *Message                     `json:"business_message"`
+	EditedBusinessMessage   *Message                     `json:"edited_business_message"`
+	DeletedBusinessMessages *BusinessMessagesDeleted     `json:"deleted_business_messages"`
+	CallbackQuery           *CallbackQuery               `json:"callback_query"`
+	MessageReaction         *MessageReactionUpdated      `json:"message_reaction"`
+	MessageReactionCount    *MessageReactionCountUpdated `json:"message_reaction_count"`
+	InlineQuery             *InlineQuery                 `json:"inline_query"`
+	InlineChosen            *InlineChosen                `json:"chosen_inline_result"`
+	ShippingQuery           *ShippingQuery               `json:"shipping_query"`
+	PreCheckoutQuery        *PreCheckoutQuery            `json:"pre_checkout_query"`
+	Poll                    *Poll                        `json:"poll"`
+	PollAnswer              *PollAnswer                  `json:"poll_answer"`
+	MyChatMember            *ChatMemberUpdated           `json:"my_chat_member"`
+	ChatMember              *ChatMemberUpdated           `json:"chat_member"`
+	ChatJoinRequest         *ChatJoinRequest             `json:"chat_join_request"`
+	ChatBoost               *ChatBoostUpdated            `json:"chat_boost"`
+	RemovedChatBoost        *ChatBoostRemoved            `json:"removed_chat_boost"`
 }
 
 // ChatBoostUpdated represents a boost added to a chat or changed.
@@ -264,4 +268,21 @@ type BotDescription struct {
 // BotShortDescription represents the bot's short description.
 type BotShortDescription struct {
 	ShortDescription string `json:"short_description"`
+}
+
+// BusinessConnection describes the connection of the bot with a business account.
+type BusinessConnection struct {
+	ID         string `json:"id"`
+	User       User   `json:"user"`
+	UserChatID int64  `json:"user_chat_id"`
+	Date       int64  `json:"date"`
+	CanReply   bool   `json:"can_reply"`
+	IsEnabled  bool   `json:"is_enabled"`
+}
+
+// BusinessMessagesDeleted is received when messages are deleted from a connected business account.
+type BusinessMessagesDeleted struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	Chat                 Chat   `json:"chat"`
+	MessageIDs           []int  `json:"message_ids"`
 }

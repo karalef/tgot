@@ -31,12 +31,14 @@ func (c CaptionData) embed(d *api.Data) {
 
 // SendOptions cointains common send* parameters.
 type SendOptions struct {
-	DisableNotification bool
-	ProtectContent      bool
-	ReplyParameters     tg.ReplyParameters
+	BusinessConnectionID string
+	DisableNotification  bool
+	ProtectContent       bool
+	ReplyParameters      tg.ReplyParameters
 }
 
 func (o SendOptions) embed(d *api.Data) {
+	d.Set("business_connection_id", o.BusinessConnectionID)
 	d.SetBool("disable_notification", o.DisableNotification)
 	d.SetBool("protect_content", o.ProtectContent)
 	d.SetJSON("reply_parameters", o.ReplyParameters)
