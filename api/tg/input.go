@@ -105,7 +105,8 @@ func (i InputMedia[T]) MarshalJSON() ([]byte, error) {
 
 // InputMediaPhoto represents a photo to be sent.
 type InputMediaPhoto struct {
-	HasSpoiler bool `json:"has_spoiler,omitempty"`
+	HasSpoiler            bool `json:"has_spoiler,omitempty"`
+	ShowCaptionAboveMedia bool `json:"show_caption_above_media,omitempty"`
 }
 
 func (InputMediaPhoto) inputMediaType() string {
@@ -114,12 +115,13 @@ func (InputMediaPhoto) inputMediaType() string {
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
-	Thumbnail         *InputFile `json:"thumbnail,omitempty"`
-	Width             int        `json:"width,omitempty"`
-	Height            int        `json:"height,omitempty"`
-	Duration          int        `json:"duration,omitempty"`
-	SupportsStreaming bool       `json:"supports_streaming,omitempty"`
-	HasSpoiler        bool       `json:"has_spoiler,omitempty"`
+	Thumbnail             *InputFile `json:"thumbnail,omitempty"`
+	Width                 int        `json:"width,omitempty"`
+	Height                int        `json:"height,omitempty"`
+	Duration              int        `json:"duration,omitempty"`
+	SupportsStreaming     bool       `json:"supports_streaming,omitempty"`
+	HasSpoiler            bool       `json:"has_spoiler,omitempty"`
+	ShowCaptionAboveMedia bool       `json:"show_caption_above_media,omitempty"`
 }
 
 func (InputMediaVideo) inputMediaType() string {
@@ -129,11 +131,12 @@ func (InputMediaVideo) inputMediaType() string {
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
 type InputMediaAnimation struct {
-	Thumbnail  *InputFile `json:"thumbnail,omitempty"`
-	Width      int        `json:"width,omitempty"`
-	Height     int        `json:"height,omitempty"`
-	Duration   int        `json:"duration,omitempty"`
-	HasSpoiler bool       `json:"has_spoiler,omitempty"`
+	Thumbnail             *InputFile `json:"thumbnail,omitempty"`
+	Width                 int        `json:"width,omitempty"`
+	Height                int        `json:"height,omitempty"`
+	Duration              int        `json:"duration,omitempty"`
+	HasSpoiler            bool       `json:"has_spoiler,omitempty"`
+	ShowCaptionAboveMedia bool       `json:"show_caption_above_media,omitempty"`
 }
 
 func (InputMediaAnimation) inputMediaType() string {

@@ -163,13 +163,14 @@ func (InlineQueryResultCachedDocument) inlineQueryResultType() string {
 
 // InlineQueryResultCachedGIF is an inline query response with cached gif.
 type InlineQueryResultCachedGIF struct {
-	GIFID               string                `json:"gif_file_id"`
-	Title               string                `json:"title,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	GIFID                 string                `json:"gif_file_id"`
+	Title                 string                `json:"title,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultCachedGIF) inlineQueryResultType() string {
@@ -179,13 +180,14 @@ func (InlineQueryResultCachedGIF) inlineQueryResultType() string {
 // InlineQueryResultCachedMPEG4GIF is an inline query response with cached
 // H.264/MPEG-4 AVC video without sound gif.
 type InlineQueryResultCachedMPEG4GIF struct {
-	MPEG4FileID         string                `json:"mpeg4_file_id"`
-	Title               string                `json:"title,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	MPEG4FileID           string                `json:"mpeg4_file_id"`
+	Title                 string                `json:"title,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultCachedMPEG4GIF) inlineQueryResultType() string {
@@ -194,14 +196,15 @@ func (InlineQueryResultCachedMPEG4GIF) inlineQueryResultType() string {
 
 // InlineQueryResultCachedPhoto is an inline query response with cached photo.
 type InlineQueryResultCachedPhoto struct {
-	PhotoID             string                `json:"photo_file_id"`
-	Title               string                `json:"title,omitempty"`
-	Description         string                `json:"description,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	PhotoID               string                `json:"photo_file_id"`
+	Title                 string                `json:"title,omitempty"`
+	Description           string                `json:"description,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultCachedPhoto) inlineQueryResultType() string {
@@ -221,14 +224,15 @@ func (InlineQueryResultCachedSticker) inlineQueryResultType() string {
 
 // InlineQueryResultCachedVideo is an inline query response with cached video.
 type InlineQueryResultCachedVideo struct {
-	VideoID             string                `json:"video_file_id"`
-	Title               string                `json:"title"`
-	Description         string                `json:"description,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	VideoID               string                `json:"video_file_id"`
+	Title                 string                `json:"title"`
+	Description           string                `json:"description,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultCachedVideo) inlineQueryResultType() string {
@@ -333,18 +337,19 @@ func (InlineQueryResultDocument) inlineQueryResultType() string {
 
 // InlineQueryResultGIF is an inline query response GIF.
 type InlineQueryResultGIF struct {
-	URL                 string                `json:"gif_url"`
-	ThumbnailURL        string                `json:"thumbnail_url"`
-	Width               int                   `json:"gif_width,omitempty"`
-	Height              int                   `json:"gif_height,omitempty"`
-	Duration            int                   `json:"gif_duration,omitempty"`
-	ThumbnailMIMEType   string                `json:"thumbnail_mime_type,omitempty"`
-	Title               string                `json:"title,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	URL                   string                `json:"gif_url"`
+	ThumbnailURL          string                `json:"thumbnail_url"`
+	Width                 int                   `json:"gif_width,omitempty"`
+	Height                int                   `json:"gif_height,omitempty"`
+	Duration              int                   `json:"gif_duration,omitempty"`
+	ThumbnailMIMEType     string                `json:"thumbnail_mime_type,omitempty"`
+	Title                 string                `json:"title,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultGIF) inlineQueryResultType() string {
@@ -368,17 +373,18 @@ func (InlineQueryResultLocation) inlineQueryResultType() string {
 
 // InlineQueryResultMPEG4GIF is an inline query response MPEG4 GIF.
 type InlineQueryResultMPEG4GIF struct {
-	URL                 string                `json:"mpeg4_url"`
-	ThumbnailURL        string                `json:"thumbnail_url"`
-	Width               int                   `json:"mpeg4_width,omitempty"`
-	Height              int                   `json:"mpeg4_height,omitempty"`
-	Duration            int                   `json:"mpeg4_duration,omitempty"`
-	Title               string                `json:"title,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	URL                   string                `json:"mpeg4_url"`
+	ThumbnailURL          string                `json:"thumbnail_url"`
+	Width                 int                   `json:"mpeg4_width,omitempty"`
+	Height                int                   `json:"mpeg4_height,omitempty"`
+	Duration              int                   `json:"mpeg4_duration,omitempty"`
+	Title                 string                `json:"title,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultMPEG4GIF) inlineQueryResultType() string {
@@ -387,17 +393,18 @@ func (InlineQueryResultMPEG4GIF) inlineQueryResultType() string {
 
 // InlineQueryResultPhoto is an inline query response photo.
 type InlineQueryResultPhoto struct {
-	URL                 string                `json:"photo_url"`
-	ThumbnailURL        string                `json:"thumbnail_url"`
-	Width               int                   `json:"photo_width,omitempty"`
-	Height              int                   `json:"photo_height,omitempty"`
-	Title               string                `json:"title,omitempty"`
-	Description         string                `json:"description,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	URL                   string                `json:"photo_url"`
+	ThumbnailURL          string                `json:"thumbnail_url"`
+	Width                 int                   `json:"photo_width,omitempty"`
+	Height                int                   `json:"photo_height,omitempty"`
+	Title                 string                `json:"title,omitempty"`
+	Description           string                `json:"description,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultPhoto) inlineQueryResultType() string {
@@ -427,19 +434,20 @@ func (InlineQueryResultVenue) inlineQueryResultType() string {
 
 // InlineQueryResultVideo is an inline query response video.
 type InlineQueryResultVideo struct {
-	URL                 string                `json:"video_url"`
-	MimeType            string                `json:"mime_type"`
-	ThumbnailURL        string                `json:"thumbnail_url"`
-	Title               string                `json:"title"`
-	Caption             string                `json:"caption,omitempty"`
-	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
-	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	Width               int                   `json:"video_width,omitempty"`
-	Height              int                   `json:"video_height,omitempty"`
-	Duration            int                   `json:"video_duration,omitempty"`
-	Description         string                `json:"description,omitempty"`
-	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	URL                   string                `json:"video_url"`
+	MimeType              string                `json:"mime_type"`
+	ThumbnailURL          string                `json:"thumbnail_url"`
+	Title                 string                `json:"title"`
+	Caption               string                `json:"caption,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
+	Width                 int                   `json:"video_width,omitempty"`
+	Height                int                   `json:"video_height,omitempty"`
+	Duration              int                   `json:"video_duration,omitempty"`
+	Description           string                `json:"description,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
 }
 
 func (InlineQueryResultVideo) inlineQueryResultType() string {

@@ -32,6 +32,7 @@ func (c CaptionData) embed(d *api.Data) {
 // SendOptions cointains common send* parameters.
 type SendOptions struct {
 	BusinessConnectionID string
+	MessageEffectID      string
 	DisableNotification  bool
 	ProtectContent       bool
 	ReplyParameters      tg.ReplyParameters
@@ -39,6 +40,7 @@ type SendOptions struct {
 
 func (o SendOptions) embed(d *api.Data) {
 	d.Set("business_connection_id", o.BusinessConnectionID)
+	d.Set("message_effect_id", o.MessageEffectID)
 	d.SetBool("disable_notification", o.DisableNotification)
 	d.SetBool("protect_content", o.ProtectContent)
 	d.SetJSON("reply_parameters", o.ReplyParameters)
@@ -76,8 +78,9 @@ var _ Sendable = Photo{}
 type Photo struct {
 	Photo tg.Inputtable
 	CaptionData
-	HasSpoiler  bool
-	ReplyMarkup tg.ReplyMarkup
+	HasSpoiler            bool
+	ReplyMarkup           tg.ReplyMarkup
+	ShowCaptionAboveMedia bool
 }
 
 func (ph Photo) sendData(d *api.Data) string {
@@ -85,6 +88,7 @@ func (ph Photo) sendData(d *api.Data) string {
 	ph.CaptionData.embed(d)
 	d.SetBool("has_spoiler", ph.HasSpoiler)
 	d.SetJSON("reply_markup", ph.ReplyMarkup)
+	d.SetBool("show_caption_above_media", ph.ShowCaptionAboveMedia)
 	return "sendPhoto"
 }
 
@@ -137,12 +141,13 @@ type Video struct {
 	Video     tg.Inputtable
 	Thumbnail tg.Inputtable
 	CaptionData
-	Duration          int
-	Width             int
-	Height            int
-	HasSpoiler        bool
-	SupportsStreaming bool
-	ReplyMarkup       tg.ReplyMarkup
+	Duration              int
+	Width                 int
+	Height                int
+	HasSpoiler            bool
+	SupportsStreaming     bool
+	ReplyMarkup           tg.ReplyMarkup
+	ShowCaptionAboveMedia bool
 }
 
 func (v Video) sendData(d *api.Data) string {
@@ -154,6 +159,7 @@ func (v Video) sendData(d *api.Data) string {
 	d.SetBool("has_spoiler", v.HasSpoiler)
 	d.SetBool("supports_streaming", v.SupportsStreaming)
 	d.SetJSON("reply_markup", v.ReplyMarkup)
+	d.SetBool("show_caption_above_media", v.ShowCaptionAboveMedia)
 	return "sendVideo"
 }
 
@@ -164,11 +170,12 @@ type Animation struct {
 	Animation tg.Inputtable
 	Thumbnail tg.Inputtable
 	CaptionData
-	Duration    int
-	Width       int
-	Height      int
-	HasSpoiler  bool
-	ReplyMarkup tg.ReplyMarkup
+	Duration              int
+	Width                 int
+	Height                int
+	HasSpoiler            bool
+	ReplyMarkup           tg.ReplyMarkup
+	ShowCaptionAboveMedia bool
 }
 
 func (a Animation) sendData(d *api.Data) string {
@@ -179,6 +186,7 @@ func (a Animation) sendData(d *api.Data) string {
 	d.SetInt("height", a.Height)
 	d.SetBool("has_spoiler", a.HasSpoiler)
 	d.SetJSON("reply_markup", a.ReplyMarkup)
+	d.SetBool("show_caption_above_media", a.ShowCaptionAboveMedia)
 	return "sendAnimation"
 }
 

@@ -36,6 +36,12 @@ func (c Context) CreateInvoiceLink(l CreateInvoiceLink) (string, error) {
 	return method[string](c, "createInvoiceLink", d)
 }
 
+// RefundStartPayment refunds a successful payment in Telegram Stars.
+func (c Context) RefundStartPayment(userID int64, chargeID string) error {
+	d := api.NewData().SetInt64("user_id", userID).Set("telegram_payment_charge_id", chargeID)
+	return c.method("refundStarPayment", d)
+}
+
 // ShippingContext type.
 type ShippingContext = QueryContext[ShippingAnswer]
 

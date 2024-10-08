@@ -125,9 +125,10 @@ func (c MessageContext) EditText(t EditText, replyMarkup ...tg.InlineKeyboardMar
 }
 
 // EditCaption edits captions of messages.
-func (c MessageContext) EditCaption(cap CaptionData, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditCaption(cap CaptionData, showCaptionAboveMedia bool, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
 	cap.embed(d)
+	d.SetBool("show_caption_above_media", showCaptionAboveMedia)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}

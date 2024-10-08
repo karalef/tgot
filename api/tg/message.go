@@ -31,6 +31,7 @@ type Message struct {
 	Text                      string                     `json:"text"`
 	Entities                  []MessageEntity            `json:"entities"`
 	LinkPreviewOptions        *LinkPreviewOptions        `json:"link_preview_options"`
+	EffectID                  string                     `json:"effect_id"`
 	Animation                 *Animation                 `json:"animation"`
 	Audio                     *Audio                     `json:"audio"`
 	Document                  *Document                  `json:"document"`
@@ -42,6 +43,7 @@ type Message struct {
 	Voice                     *Voice                     `json:"voice"`
 	Caption                   string                     `json:"caption"`
 	CaptionEntities           []MessageEntity            `json:"caption_entities"`
+	ShowCaptionAboveMedia     bool                       `json:"show_caption_above_media"`
 	HasMediaSpoiler           bool                       `json:"has_media_spoiler"`
 	Contact                   *Contact                   `json:"contact"`
 	Dice                      *Dice                      `json:"dice"`
@@ -115,24 +117,25 @@ type EntityType string
 
 // all available entity types.
 const (
-	EntityMention       EntityType = "mention"
-	EntityHashtag       EntityType = "hashtag"
-	EntityCashtag       EntityType = "cashtag"
-	EntityCommand       EntityType = "bot_command"
-	EntityURL           EntityType = "url"
-	EntityEmail         EntityType = "email"
-	EntityPhone         EntityType = "phone_number"
-	EntityBold          EntityType = "bold"
-	EntityItalic        EntityType = "italic"
-	EntityUnderline     EntityType = "underline"
-	EntityStrikethrough EntityType = "strikethrough"
-	EntitySpoiler       EntityType = "spoiler"
-	EntityCode          EntityType = "code"
-	EntityCodeBlock     EntityType = "pre"
-	EntityTextLink      EntityType = "text_link"
-	EntityTextMention   EntityType = "text_mention"
-	EntityCustomEmoji   EntityType = "custom_emoji"
-	EntityBlockquote    EntityType = "blockquote"
+	EntityMention              EntityType = "mention"
+	EntityHashtag              EntityType = "hashtag"
+	EntityCashtag              EntityType = "cashtag"
+	EntityCommand              EntityType = "bot_command"
+	EntityURL                  EntityType = "url"
+	EntityEmail                EntityType = "email"
+	EntityPhone                EntityType = "phone_number"
+	EntityBold                 EntityType = "bold"
+	EntityItalic               EntityType = "italic"
+	EntityUnderline            EntityType = "underline"
+	EntityStrikethrough        EntityType = "strikethrough"
+	EntitySpoiler              EntityType = "spoiler"
+	EntityCode                 EntityType = "code"
+	EntityCodeBlock            EntityType = "pre"
+	EntityTextLink             EntityType = "text_link"
+	EntityTextMention          EntityType = "text_mention"
+	EntityCustomEmoji          EntityType = "custom_emoji"
+	EntityBlockquote           EntityType = "blockquote"
+	EntityExpandableBlockQuote EntityType = "expandable_blockquote"
 )
 
 // ProximityAlert represents the content of a service message,

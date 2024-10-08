@@ -172,13 +172,15 @@ func (c ChatContext) ForwardMessages(from Chat, fwd ForwardMany) ([]tg.MessageID
 type Copy struct {
 	MessageID int
 	CaptionData
-	ReplyMarkup tg.ReplyMarkup
+	ReplyMarkup           tg.ReplyMarkup
+	ShowCaptionAboveMedia bool
 }
 
 func (cp Copy) data(d *api.Data) {
 	d.SetInt("message_id", cp.MessageID)
 	cp.CaptionData.embed(d)
 	d.SetJSON("reply_markup", cp.ReplyMarkup)
+	d.SetBool("show_caption_above_media", cp.ShowCaptionAboveMedia)
 }
 
 // Copy copies messages of any kind.
