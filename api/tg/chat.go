@@ -31,6 +31,7 @@ type Chat struct {
 	PinnedMessage                  *Message         `json:"pinned_message"`
 	Permissions                    *ChatPermissions `json:"permissions"`
 	SlowModeDelay                  int              `json:"slow_mode_delay"`
+	UnrestrictBoostCount           int              `json:"unrestrict_boost_count"`
 	AutoDeleteTime                 int              `json:"message_auto_delete_time"`
 	HasAgressiveAntiSpam           bool             `json:"has_aggressive_anti_spam_enabled"`
 	HasHiddenMembers               bool             `json:"has_hidden_members"`
@@ -38,6 +39,7 @@ type Chat struct {
 	HasVisibleHistory              bool             `json:"has_visible_history"`
 	StickerSetName                 string           `json:"sticker_set_name"`
 	CanSetStickerSet               bool             `json:"can_set_sticker_set"`
+	CustomEmojiStickerSetName      string           `json:"custom_emoji_sticker_set_name"`
 	LinkedChatID                   int64            `json:"linked_chat_id"`
 	Location                       *ChatLocation    `json:"location"`
 }

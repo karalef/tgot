@@ -99,7 +99,10 @@ type Sticker struct {
 }
 
 // Story represents a story.
-type Story struct{}
+type Story struct {
+	Chat Chat `json:"chat"`
+	ID   int  `json:"id"`
+}
 
 // File object represents a file ready to be downloaded.
 type File struct {

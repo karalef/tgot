@@ -10,6 +10,7 @@ type Message struct {
 	MessageThreadID           int                        `json:"message_thread_id"`
 	From                      *User                      `json:"from"`
 	SenderChat                *Chat                      `json:"sender_chat"`
+	SenderBoostCount          int                        `json:"sender_boost_count"`
 	Date                      int64                      `json:"date"`
 	Chat                      *Chat                      `json:"chat"`
 	ForwardOrigin             *MessageOrigin             `json:"forward_origin"`
@@ -18,6 +19,7 @@ type Message struct {
 	ReplyTo                   *Message                   `json:"reply_to_message"`
 	ExternalReply             *ExternalReplyInfo         `json:"external_reply"`
 	Quote                     *TextQuote                 `json:"quote"`
+	ReplyToStory              *Story                     `json:"reply_to_story"`
 	ViaBot                    *User                      `json:"via_bot"`
 	EditDate                  int64                      `json:"edit_date"`
 	HasProtectedContent       bool                       `json:"has_protected_content"`
@@ -63,6 +65,7 @@ type Message struct {
 	ConnectedWebsite          string                     `json:"connected_website"`
 	PassportData              *PassportData              `json:"passport_data"`
 	ProximityAlert            *ProximityAlert            `json:"proximity_alert_triggered"`
+	BoostAdded                *ChatBoostAdded            `json:"boost_added"`
 	ForumTopicCreated         *ForumTopicCreated         `json:"forum_topic_created"`
 	ForumTopicEdited          *ForumTopicEdited          `json:"forum_topic_edited"`
 	ForumTopicClosed          *ForumTopicClosed          `json:"forum_topic_closed"`
@@ -376,6 +379,11 @@ func (m MaybeInaccessibleMessage) Chat() *Chat {
 
 func (m MaybeInaccessibleMessage) IsInaccessible() bool {
 	return m.Message == nil
+}
+
+// ChatBoostAdded represents a service message about a user boosting a chat.
+type ChatBoostAdded struct {
+	BoostCount int `json:"boost_count"`
 }
 
 // ParseMode type.
