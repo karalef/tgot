@@ -69,3 +69,59 @@ type PreCheckoutQuery struct {
 	ShippingOptionID string     `json:"shipping_option_id,omitempty"`
 	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
 }
+
+// StarTransactions contains a list of Telegram Star transactions.
+type StarTransactions struct {
+	Transactions []StarTransaction `json:"transactions"`
+}
+
+// StarTransaction describes a Telegram Star transaction.
+type StarTransaction struct {
+	ID       string              `json:"id"`
+	Amount   uint                `json:"amount"`
+	Date     int64               `json:"date"`
+	Source   *TransactionPartner `json:"source"`
+	Receiver *TransactionPartner `json:"receiver"`
+}
+
+// TransactionPartnerType represents the type of a transaction partner.
+type TransactionPartnerType string
+
+// all available transaction partner types.
+const (
+	TransactionPartnerTypeUser        TransactionPartnerType = "user"
+	TransactionPartnerTypeFragment    TransactionPartnerType = "fragment"
+	TransactionPartnerTypeTelegramAds TransactionPartnerType = "telegram_ads"
+	TransactionPartnerTypeOther       TransactionPartnerType = "other"
+)
+
+// TransactionPartner describes the source of a transaction, or its recipient for outgoing transactions.
+type TransactionPartner struct {
+	Type TransactionPartnerType `json:"type"`
+
+	// user
+	User           *User  `json:"user,omitempty"`
+	InvoicePayload string `json:"invoice_payload,omitempty"`
+
+	// fragment
+	WithdrawalState *RevenueWithdrawalState `json:"withdrawal_state,omitempty"`
+}
+
+// RevenueWithdrawalStateType represents the type of a revenue withdrawal state.
+type RevenueWithdrawalStateType string
+
+// all available revenue withdrawal state types.
+const (
+	RevenueWithdrawalStateTypePending   RevenueWithdrawalStateType = "pending"
+	RevenueWithdrawalStateTypeSucceeded RevenueWithdrawalStateType = "succeeded"
+	RevenueWithdrawalStateTypeFailed    RevenueWithdrawalStateType = "failed"
+)
+
+// RevenueWithdrawalState describes the state of a revenue withdrawal operation.
+type RevenueWithdrawalState struct {
+	Type RevenueWithdrawalStateType `json:"type"`
+
+	// succeeded
+	Date int64  `json:"date"`
+	URL  string `json:"url"`
+}

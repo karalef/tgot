@@ -69,12 +69,13 @@ func (c MessageContext) msgMethod(meth string, d *api.Data) (*tg.Message, error)
 
 // LiveLocation contains parameters for editing the live location.
 type LiveLocation struct {
-	Long               float32
-	Lat                float32
-	LivePeriod         int64
-	HorizontalAccuracy *float32
-	Heading            int
-	AlertRadius        int
+	Long                 float32
+	Lat                  float32
+	LivePeriod           int64
+	HorizontalAccuracy   *float32
+	Heading              int
+	AlertRadius          int
+	BusinessConnectionID string
 }
 
 // EditLiveLocation edits live location messages.
@@ -88,6 +89,7 @@ func (c MessageContext) EditLiveLocation(l LiveLocation, replyMarkup ...tg.Inlin
 	}
 	d.SetInt("heading", l.Heading)
 	d.SetInt("proximity_alert_radius", l.AlertRadius)
+	d.Set("business_connection_id", l.BusinessConnectionID)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -95,8 +97,8 @@ func (c MessageContext) EditLiveLocation(l LiveLocation, replyMarkup ...tg.Inlin
 }
 
 // StopLiveLocation stops updating a live location message before live_period expires.
-func (c MessageContext) StopLiveLocation(replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
-	d := api.NewData()
+func (c MessageContext) StopLiveLocation(businessConnectionID string, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+	d := api.NewData().Set("business_connection_id", businessConnectionID)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -105,10 +107,11 @@ func (c MessageContext) StopLiveLocation(replyMarkup ...tg.InlineKeyboardMarkup)
 
 // EditText contains parameters for editing message text.
 type EditText struct {
-	Text               string
-	ParseMode          tg.ParseMode
-	Entities           []tg.MessageEntity
-	LinkPreviewOptions tg.LinkPreviewOptions
+	Text                 string
+	ParseMode            tg.ParseMode
+	Entities             []tg.MessageEntity
+	LinkPreviewOptions   tg.LinkPreviewOptions
+	BusinessConnectionID string
 }
 
 // EditText edits text and game messages.
@@ -118,17 +121,26 @@ func (c MessageContext) EditText(t EditText, replyMarkup ...tg.InlineKeyboardMar
 	d.Set("parse_mode", string(t.ParseMode))
 	d.SetJSON("entities", t.Entities)
 	d.SetJSON("link_preview_options", t.LinkPreviewOptions)
+	d.Set("business_connection_id", t.BusinessConnectionID)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
 	return c.msgMethod("editMessageText", d)
 }
 
+// EditCaption contains parameters for editing message caption.
+type EditCaption struct {
+	Caption               CaptionData
+	ShowCaptionAboveMedia bool
+	BusinessConnectionID  string
+}
+
 // EditCaption edits captions of messages.
-func (c MessageContext) EditCaption(cap CaptionData, showCaptionAboveMedia bool, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditCaption(cap EditCaption, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
-	cap.embed(d)
-	d.SetBool("show_caption_above_media", showCaptionAboveMedia)
+	cap.Caption.embed(d)
+	d.SetBool("show_caption_above_media", cap.ShowCaptionAboveMedia)
+	d.Set("business_connection_id", cap.BusinessConnectionID)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -136,10 +148,11 @@ func (c MessageContext) EditCaption(cap CaptionData, showCaptionAboveMedia bool,
 }
 
 // EditMedia edits animation, audio, document, photo, or video messages.
-func (c MessageContext) EditMedia(m tg.MediaInputter, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditMedia(m tg.MediaInputter, businessConnectionID string, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData()
 	prepareInputMedia(d, m)
 	d.SetJSON("media", m)
+	d.Set("business_connection_id", businessConnectionID)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -147,8 +160,9 @@ func (c MessageContext) EditMedia(m tg.MediaInputter, replyMarkup ...tg.InlineKe
 }
 
 // EditReplyMarkup edits only the reply markup of messages.
-func (c MessageContext) EditReplyMarkup(replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
+func (c MessageContext) EditReplyMarkup(businessConnectionID string, replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData().SetJSON("reply_markup", replyMarkup)
+	d.Set("business_connection_id", businessConnectionID)
 	return c.msgMethod("editMessageReplyMarkup", d)
 }
 

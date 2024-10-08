@@ -403,16 +403,39 @@ type BackgroundTypeType string
 
 // all available background types.
 const (
-	BackgroundTypeFill BackgroundTypeType = "fill"
+	BackgroundTypeFill      BackgroundTypeType = "fill"
+	BackgroundTypeWallpaper BackgroundTypeType = "wallpaper"
+	BackgroundTypePattern   BackgroundTypeType = "pattern"
+	BackgroundTypeChatTheme BackgroundTypeType = "chat_theme"
 )
 
 // BackgroundType describes the type of a background.
 type BackgroundType struct {
 	Type BackgroundTypeType `json:"type"`
 
-	// fill
-	Fill             *BackgroundFill `json:"fill"`
-	DarkThemeDimming uint8           `json:"dark_theme_dimming"`
+	// fill | pattern
+	Fill *BackgroundFill `json:"fill"`
+
+	// fill | wallpaper
+	DarkThemeDimming uint8 `json:"dark_theme_dimming"`
+
+	// wallpaper | patern
+	Document *Document `json:"document"`
+
+	// wallpaper
+	IsBlured bool `json:"is_blured"`
+
+	// wallpaper | patern
+	IsMoving bool `json:"is_moving"`
+
+	// patern
+	Intensity uint8 `json:"intensity"`
+
+	// patern
+	IsInverted bool `json:"is_inverted"`
+
+	// chat_theme
+	ThemeName string `json:"theme_name"`
 }
 
 // BackgroundFill represents the fill type of a background.

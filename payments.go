@@ -42,6 +42,12 @@ func (c Context) RefundStartPayment(userID int64, chargeID string) error {
 	return c.method("refundStarPayment", d)
 }
 
+// GetStarTransactions returns the bot's Telegram Star transactions in chronological order.
+func (c Context) GetStarTransactions(offset uint, limit uint8) (*tg.StarTransactions, error) {
+	d := api.NewData().SetInt("offset", int(offset)).SetInt("limit", int(limit))
+	return method[*tg.StarTransactions](c, "getStarTransactions", d)
+}
+
 // ShippingContext type.
 type ShippingContext = QueryContext[ShippingAnswer]
 

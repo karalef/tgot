@@ -245,9 +245,10 @@ func (c ChatContext) SendChatAction(act tg.ChatAction, businessConnID string) er
 }
 
 // StopPoll stops a poll which was sent by the bot.
-func (c ChatContext) StopPoll(msgID int, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Poll, error) {
+func (c ChatContext) StopPoll(msgID int, businessConnectionID string, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Poll, error) {
 	d := api.NewData()
 	d.SetInt("message_id", msgID)
+	d.Set("business_connection_id", businessConnectionID)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
