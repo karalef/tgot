@@ -99,11 +99,19 @@ const (
 type TransactionPartner struct {
 	Type TransactionPartnerType `json:"type"`
 
-	// user
-	User           *User  `json:"user,omitempty"`
-	InvoicePayload string `json:"invoice_payload,omitempty"`
+	*TransactionPartnerUser
+	*TransactionPartnerFragment
+}
 
-	// fragment
+// TransactionPartnerUser describes a transaction with a user.
+type TransactionPartnerUser struct {
+	User           *User       `json:"user"`
+	InvoicePayload string      `json:"invoice_payload,omitempty"`
+	PaidMedia      []PaidMedia `json:"paid_media,omitempty"`
+}
+
+// TransactionPartnerFragment describes a transaction with Fragment.
+type TransactionPartnerFragment struct {
 	WithdrawalState *RevenueWithdrawalState `json:"withdrawal_state,omitempty"`
 }
 

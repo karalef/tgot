@@ -230,9 +230,19 @@ type WriteAccessAllowed struct {
 	FromAttachmentMenu bool   `json:"from_attachment_menu"`
 }
 
+// ReactionTypeType represents the type of a reaction type.
+type ReactionTypeType string
+
+// all available reaction types.
+const (
+	ReactionTypeEmoji       ReactionTypeType = "emoji"
+	ReactionTypeCustomEmoji ReactionTypeType = "custom_emoji"
+	ReactionTypePaid        ReactionTypeType = "paid"
+)
+
 // ReactionType describes the type of a reaction.
 type ReactionType struct {
-	Type string `json:"type"`
+	Type ReactionTypeType `json:"type"`
 
 	// ReactionTypeEmoji is the reaction is based on an emoji.
 	Emoji string `json:"emoji"`

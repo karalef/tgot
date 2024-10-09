@@ -397,6 +397,32 @@ func (c ChatContext) RevokeInviteLink(link string) (*tg.ChatInviteLink, error) {
 	return chatMethod[*tg.ChatInviteLink](c, "revokeChatInviteLink", d)
 }
 
+// SubscriptionInviteLink contains parameters for creating subscription invite links.
+type SubscriptionInviteLink struct {
+	Name   string
+	Period uint
+	Price  uint
+}
+
+func (i SubscriptionInviteLink) data() *api.Data {
+	d := api.NewData()
+	d.Set("name", i.Name)
+	d.SetInt("period", int(i.Period))
+	d.SetInt("price", int(i.Price))
+	return d
+}
+
+// CreateSubscriptionInviteLink creates a subscription invite link for a channel chat.
+func (c ChatContext) CreateSubscriptionInviteLink(i SubscriptionInviteLink) (*tg.ChatInviteLink, error) {
+	return chatMethod[*tg.ChatInviteLink](c, "createChatSubscriptionInviteLink", i.data())
+}
+
+// EditSubscriptionInviteLink edits a subscription invite link created by the bot.
+func (c ChatContext) EditSubscriptionInviteLink(link, name string) (*tg.ChatInviteLink, error) {
+	d := api.NewData().Set("invite_link", link).Set("name", name)
+	return chatMethod[*tg.ChatInviteLink](c, "editChatSubscriptionInviteLink", d)
+}
+
 // ApproveJoinRequest approves a chat join request.
 func (c ChatContext) ApproveJoinRequest(userID int64) error {
 	d := api.NewData().SetInt64("user_id", userID)
