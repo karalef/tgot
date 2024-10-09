@@ -66,6 +66,7 @@ type Message struct {
 	PinnedMessage             *MaybeInaccessibleMessage  `json:"pinned_message"`
 	Invoice                   *Invoice                   `json:"invoice"`
 	SuccessfulPayment         *SuccessfulPayment         `json:"successful_payment"`
+	RefundedPayment           *RefundedPayment           `json:"refunded_payment"`
 	UsersShared               *UsersShared               `json:"users_shared"`
 	ChatShared                *ChatShared                `json:"chat_shared"`
 	ConnectedWebsite          string                     `json:"connected_website"`

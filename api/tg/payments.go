@@ -125,3 +125,12 @@ type RevenueWithdrawalState struct {
 	Date int64  `json:"date"`
 	URL  string `json:"url"`
 }
+
+// RefundedPayment contains basic information about a refunded payment.
+type RefundedPayment struct {
+	Currency                string `json:"currency"`
+	TotalAmount             uint   `json:"total_amount"`
+	InvoicePayload          string `json:"invoice_payload"`
+	TelegramPaymentChargeID string `json:"telegram_payment_charge_id"`
+	ProviderPaymentChargeID string `json:"provider_payment_charge_id"`
+}
