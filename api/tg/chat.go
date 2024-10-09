@@ -38,6 +38,7 @@ type ChatFullInfo struct {
 	InviteLink                     string                `json:"invite_link"`
 	PinnedMessage                  *Message              `json:"pinned_message"`
 	Permissions                    *ChatPermissions      `json:"permissions"`
+	CanSendPaidMedia               bool                  `json:"can_send_paid_media"`
 	SlowModeDelay                  int                   `json:"slow_mode_delay"`
 	UnrestrictBoostCount           int                   `json:"unrestrict_boost_count"`
 	AutoDeleteTime                 int                   `json:"message_auto_delete_time"`

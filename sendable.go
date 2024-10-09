@@ -267,6 +267,44 @@ func prepareInputMedia(d *api.Data, media ...tg.MediaInputter) {
 	}
 }
 
+// PaidMedia contains information about the paid media to be sent.
+type PaidMedia struct {
+	StarCount uint
+	Media     []tg.PaidMediaInputter
+	Payload   string
+	CaptionData
+	ShowCaptionAboveMedia bool
+}
+
+func (p PaidMedia) sendData(d *api.Data) string {
+	preparePaidInputMedia(d, p.Media...)
+	d.SetInt("star_count", int(p.StarCount))
+	d.Set("payload", p.Payload)
+	p.CaptionData.embed(d)
+	d.SetBool("show_caption_above_media", p.ShowCaptionAboveMedia)
+	return "sendPaidMedia"
+}
+
+func preparePaidInputMedia(d *api.Data, media ...tg.PaidMediaInputter) {
+	if len(media) == 0 {
+		return
+	}
+	for i := range media {
+		var med, thumb tg.Inputtable
+		switch m := media[i].(type) {
+		case *tg.InputPaidMedia[tg.InputPaidMediaPhoto]:
+			med = m.Media
+		case *tg.InputPaidMedia[tg.InputPaidMediaVideo]:
+			med, thumb = m.Media, m.Data.Thumbnail
+		}
+		if med == nil {
+			continue
+		}
+		d.AddAttach(med)
+		d.AddAttach(thumb)
+	}
+}
+
 var _ Sendable = Location{}
 
 // Location contains information about the location to be sent.

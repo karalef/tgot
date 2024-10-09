@@ -164,3 +164,44 @@ type InputMediaDocument struct {
 func (InputMediaDocument) inputMediaType() string {
 	return "document"
 }
+
+// PaidMediaInputter is an interface for InputPaidMedia.
+type PaidMediaInputter interface {
+	inputPaidMedia()
+}
+
+// InputPaidMediaData represents any available input paid media object.
+type InputPaidMediaData interface {
+	inputPaidMediaType() string
+}
+
+// InputPaidMedia describes the paid media to be sent.
+type InputPaidMedia[T InputPaidMediaData] struct {
+	Media Inputtable `json:"media"`
+	Data  T          `json:"-"`
+}
+
+func (*InputPaidMedia[T]) inputPaidMedia() {}
+
+func (i InputPaidMedia[T]) MarshalJSON() ([]byte, error) {
+	return internal.MergeJSON(i.Data, struct {
+		Type  string     `json:"type"`
+		Media Inputtable `json:"media"`
+	}{i.Data.inputPaidMediaType(), i.Media})
+}
+
+// InputPaidMediaPhoto is the paid media to send is a photo.
+type InputPaidMediaPhoto struct{}
+
+func (InputPaidMediaPhoto) inputPaidMediaType() string { return "photo" }
+
+// InputPaidMediaVideo is the paid media to send is a video.
+type InputPaidMediaVideo struct {
+	Thumbnail         *InputFile `json:"thumbnail,omitempty"`
+	Width             uint       `json:"width,omitempty"`
+	Height            uint       `json:"height,omitempty"`
+	Duration          uint       `json:"duration,omitempty"`
+	SupportsStreaming bool       `json:"supports_streaming,omitempty"`
+}
+
+func (InputPaidMediaVideo) inputPaidMediaType() string { return "video" }

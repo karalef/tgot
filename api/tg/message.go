@@ -35,6 +35,7 @@ type Message struct {
 	Animation                 *Animation                 `json:"animation"`
 	Audio                     *Audio                     `json:"audio"`
 	Document                  *Document                  `json:"document"`
+	PaidMedia                 *PaidMediaInfo             `json:"paid_media"`
 	Photo                     []PhotoSize                `json:"photo"`
 	Sticker                   *Sticker                   `json:"sticker"`
 	Story                     *Story                     `json:"story"`
@@ -249,6 +250,7 @@ type ExternalReplyInfo struct {
 	Animation          *Animation          `json:"animation"`
 	Audio              *Audio              `json:"audio"`
 	Document           *Document           `json:"document"`
+	PaidMedia          *PaidMedia          `json:"paid_media"`
 	Photo              []PhotoSize         `json:"photo"`
 	Sticker            *Sticker            `json:"sticker"`
 	Story              *Story              `json:"story"`
