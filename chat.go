@@ -434,15 +434,17 @@ func (c ChatContext) SetDescription(description string) error {
 }
 
 // PinMessage adds a message to the list of pinned messages in a chat.
-func (c ChatContext) PinMessage(msgID int, notify bool) error {
+func (c ChatContext) PinMessage(msgID int, businessConnID string, notify bool) error {
 	d := api.NewData().SetInt("message_id", msgID)
+	d.Set("business_connection_id", businessConnID)
 	d.SetBool("disable_notification", !notify)
 	return c.method("pinChatMessage", d)
 }
 
 // UnpinMessage removes a message from the list of pinned messages in a chat.
-func (c ChatContext) UnpinMessage(msgID int) error {
+func (c ChatContext) UnpinMessage(msgID int, businessConnID string) error {
 	d := api.NewData().SetInt("message_id", msgID)
+	d.Set("business_connection_id", businessConnID)
 	return c.method("unpinChatMessage", d)
 }
 
