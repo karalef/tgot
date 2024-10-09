@@ -105,9 +105,10 @@ type TransactionPartner struct {
 
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
-	User           *User       `json:"user"`
-	InvoicePayload string      `json:"invoice_payload,omitempty"`
-	PaidMedia      []PaidMedia `json:"paid_media,omitempty"`
+	User             *User       `json:"user"`
+	InvoicePayload   string      `json:"invoice_payload,omitempty"`
+	PaidMedia        []PaidMedia `json:"paid_media,omitempty"`
+	PaidMediaPayload string      `json:"paid_media_payload"`
 }
 
 // TransactionPartnerFragment describes a transaction with Fragment.

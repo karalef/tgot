@@ -52,6 +52,7 @@ type Update struct {
 	InlineChosen            *InlineChosen                `json:"chosen_inline_result"`
 	ShippingQuery           *ShippingQuery               `json:"shipping_query"`
 	PreCheckoutQuery        *PreCheckoutQuery            `json:"pre_checkout_query"`
+	PurchasedPaidMedia      *PaidMediaPurchased          `json:"purchased_paid_media"`
 	Poll                    *Poll                        `json:"poll"`
 	PollAnswer              *PollAnswer                  `json:"poll_answer"`
 	MyChatMember            *ChatMemberUpdated           `json:"my_chat_member"`
@@ -285,4 +286,10 @@ type BusinessMessagesDeleted struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	Chat                 Chat   `json:"chat"`
 	MessageIDs           []int  `json:"message_ids"`
+}
+
+// PaidMediaPurchased contains information about a paid media purchase.
+type PaidMediaPurchased struct {
+	From             User   `json:"from"`
+	PaidMediaPayload string `json:"paid_media_payload"`
 }
