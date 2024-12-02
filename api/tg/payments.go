@@ -77,6 +77,7 @@ const (
 	TransactionPartnerTypeUser        TransactionPartnerType = "user"
 	TransactionPartnerTypeFragment    TransactionPartnerType = "fragment"
 	TransactionPartnerTypeTelegramAds TransactionPartnerType = "telegram_ads"
+	TransactionPartnerTypeTelegramApi TransactionPartnerType = "telegram_api"
 	TransactionPartnerTypeOther       TransactionPartnerType = "other"
 )
 
@@ -84,6 +85,7 @@ var transactionPartnerTypes = oneof.Map[TransactionPartnerType]{
 	TransactionPartnerTypeUser:        TransactionPartnerUser{},
 	TransactionPartnerTypeFragment:    TransactionPartnerFragment{},
 	TransactionPartnerTypeTelegramAds: TransactionParnterTelegramAds{},
+	TransactionPartnerTypeTelegramApi: TransactionPartnerTelegramApi{},
 	TransactionPartnerTypeOther:       TransactionPartnerOther{},
 }
 
@@ -120,6 +122,13 @@ type TransactionParnterTelegramAds struct{}
 
 func (TransactionParnterTelegramAds) Type() TransactionPartnerType {
 	return TransactionPartnerTypeTelegramAds
+}
+
+// TransactionPartnerTelegramApi describes a transaction with payment for paid broadcasting.
+type TransactionPartnerTelegramApi struct{}
+
+func (TransactionPartnerTelegramApi) Type() TransactionPartnerType {
+	return TransactionPartnerTypeTelegramApi
 }
 
 // TransactionPartnerOther describes a transaction with an unknown source or recipient.

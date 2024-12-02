@@ -121,8 +121,14 @@ type InlineKeyboardButton struct {
 	SwitchInline        string                       `json:"switch_inline_query,omitempty"`
 	SwitchInlineCurrent string                       `json:"switch_inline_query_current_chat,omitempty"`
 	SwitchInlineChosen  *SwitchInlineQueryChosenChat `json:"switch_inline_query_chosen_chat,omitempty"`
+	CopyText            *CopyTextButton              `json:"copy_text,omitempty"`
 	CallbackGame        *CallbackGame                `json:"callback_game,omitempty"`
 	Pay                 bool                         `json:"pay,omitempty"`
+}
+
+// CopyTextButton represents an inline keyboard button that copies specified text to the clipboard.
+type CopyTextButton struct {
+	Text string `json:"text"`
 }
 
 // SwitchInlineQueryChosenChat represents an inline button that switches the current user to inline mode in a chosen chat, with an optional default inline query.

@@ -20,6 +20,7 @@ type CaptionData struct {
 type SendOptions struct {
 	MessageEffectID     string             `tg:"message_effect_id"`
 	DisableNotification bool               `tg:"disable_notification"`
+	AllowPaidBroadcast  bool               `tg:"allow_paid_broadcast"`
 	ProtectContent      bool               `tg:"protect_content"`
 	ReplyParameters     tg.ReplyParameters `tg:"reply_parameters"`
 }
