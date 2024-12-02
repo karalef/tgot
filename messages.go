@@ -26,6 +26,11 @@ func CallbackMsgID(q *tg.CallbackQuery) MessageID {
 	}
 }
 
+// MsgID creates a message id.
+func MsgID(chatid int64, msgid int) MessageID {
+	return MessageID{chatID: NewChatID(chatid), msgID: msgid}
+}
+
 // MessageID contains inline message id or chat id with message id.
 type MessageID struct {
 	chatID ChatID

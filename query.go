@@ -7,11 +7,13 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-type answerable interface {
+// Answerable represents any object that is used as an answer to a query.
+type Answerable interface {
 	answerData(data *api.Data, queryID string) (method string)
 }
 
-func makeQuery[T answerable](ctx BaseContext, queryID string, from tg.User) Query[T] {
+// WithQuery creates a new Query context.
+func WithQuery[T Answerable](ctx BaseContext, queryID string, from tg.User) Query[T] {
 	return &queryContext[T]{
 		context: ctx.ctx().with(nil),
 		once:    new(sync.Once),
@@ -22,13 +24,13 @@ func makeQuery[T answerable](ctx BaseContext, queryID string, from tg.User) Quer
 
 // Query is the context for all queries that require an answer.
 // The answer method can be used only once.
-type Query[T answerable] interface {
+type Query[T Answerable] interface {
 	Context[Query[T]]
 	Answer(T) error
 	Sender() *User
 }
 
-type queryContext[T answerable] struct {
+type queryContext[T Answerable] struct {
 	*context
 	once    *sync.Once
 	user    tg.User
