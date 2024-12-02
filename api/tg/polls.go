@@ -23,8 +23,8 @@ type PollType string
 
 // all available poll types.
 const (
-	PollQuiz    PollType = "quiz"
-	PollRegular PollType = "regular"
+	PollTypeQuiz    PollType = "quiz"
+	PollTypeRegular PollType = "regular"
 )
 
 // PollOption contains information about one answer option in a poll.
@@ -32,14 +32,6 @@ type PollOption struct {
 	Text         string          `json:"text"`
 	TextEntities []MessageEntity `json:"text_entities"`
 	VoterCount   int             `json:"voter_count"`
-}
-
-// PollAnswer represents an answer of a user in a non-anonymous poll.
-type PollAnswer struct {
-	PollID    string `json:"poll_id"`
-	VoterChat *Chat  `json:"voter_chat"`
-	User      *User  `json:"user"`
-	Options   []int  `json:"option_ids"`
 }
 
 // InputPollOption contains information about one answer option in a poll to be sent.

@@ -1,5 +1,9 @@
 package tg
 
+import (
+	"github.com/karalef/tgot/api/internal/oneof"
+)
+
 // LabeledPrice represents a portion of the price for goods or services.
 type LabeledPrice struct {
 	Label  string `json:"label"`
@@ -51,25 +55,6 @@ type SuccessfulPayment struct {
 	ProviderPaymentChargeID string     `json:"provider_payment_charge_id"`
 }
 
-// ShippingQuery contains information about an incoming shipping query.
-type ShippingQuery struct {
-	ID              string           `json:"id"`
-	From            *User            `json:"from"`
-	InvoicePayload  string           `json:"invoice_payload"`
-	ShippingAddress *ShippingAddress `json:"shipping_address"`
-}
-
-// PreCheckoutQuery contains information about an incoming pre-checkout query.
-type PreCheckoutQuery struct {
-	ID               string     `json:"id"`
-	From             *User      `json:"from"`
-	Curency          string     `json:"currency"`
-	TotalAmount      int        `json:"total_amount"`
-	InvoicePayload   string     `json:"invoice_payload"`
-	ShippingOptionID string     `json:"shipping_option_id,omitempty"`
-	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
-}
-
 // StarTransactions contains a list of Telegram Star transactions.
 type StarTransactions struct {
 	Transactions []StarTransaction `json:"transactions"`
@@ -95,13 +80,21 @@ const (
 	TransactionPartnerTypeOther       TransactionPartnerType = "other"
 )
 
-// TransactionPartner describes the source of a transaction, or its recipient for outgoing transactions.
-type TransactionPartner struct {
-	Type TransactionPartnerType `json:"type"`
-
-	*TransactionPartnerUser
-	*TransactionPartnerFragment
+var transactionPartnerTypes = oneof.Map[TransactionPartnerType]{
+	TransactionPartnerTypeUser:        TransactionPartnerUser{},
+	TransactionPartnerTypeFragment:    TransactionPartnerFragment{},
+	TransactionPartnerTypeTelegramAds: TransactionParnterTelegramAds{},
+	TransactionPartnerTypeOther:       TransactionPartnerOther{},
 }
+
+type oneOfTrsansactionPartner struct{}
+
+func (oneOfTrsansactionPartner) New(t TransactionPartnerType) (oneof.Value[TransactionPartnerType], bool) {
+	return transactionPartnerTypes.New(t)
+}
+
+// TransactionPartner describes the source of a transaction, or its recipient for outgoing transactions.
+type TransactionPartner = oneof.Object[TransactionPartnerType, oneOfTrsansactionPartner]
 
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
@@ -111,10 +104,28 @@ type TransactionPartnerUser struct {
 	PaidMediaPayload string      `json:"paid_media_payload"`
 }
 
+func (TransactionPartnerUser) Type() TransactionPartnerType { return TransactionPartnerTypeUser }
+
 // TransactionPartnerFragment describes a transaction with Fragment.
 type TransactionPartnerFragment struct {
-	WithdrawalState *RevenueWithdrawalState `json:"withdrawal_state,omitempty"`
+	WithdrawalState RevenueWithdrawalState `json:"withdrawal_state,omitempty"`
 }
+
+func (TransactionPartnerFragment) Type() TransactionPartnerType {
+	return TransactionPartnerTypeFragment
+}
+
+// TransactionParnterTelegramAds describes a withdrawal transaction to the Telegram Ads platform.
+type TransactionParnterTelegramAds struct{}
+
+func (TransactionParnterTelegramAds) Type() TransactionPartnerType {
+	return TransactionPartnerTypeTelegramAds
+}
+
+// TransactionPartnerOther describes a transaction with an unknown source or recipient.
+type TransactionPartnerOther struct{}
+
+func (TransactionPartnerOther) Type() TransactionPartnerType { return TransactionPartnerTypeOther }
 
 // RevenueWithdrawalStateType represents the type of a revenue withdrawal state.
 type RevenueWithdrawalStateType string
@@ -126,13 +137,43 @@ const (
 	RevenueWithdrawalStateTypeFailed    RevenueWithdrawalStateType = "failed"
 )
 
-// RevenueWithdrawalState describes the state of a revenue withdrawal operation.
-type RevenueWithdrawalState struct {
-	Type RevenueWithdrawalStateType `json:"type"`
+var revenueWithdrawalStateTypes = oneof.Map[RevenueWithdrawalStateType]{
+	RevenueWithdrawalStateTypePending:   RevenueWithdrawalStatePending{},
+	RevenueWithdrawalStateTypeSucceeded: RevenueWithdrawalStateSucceeded{},
+	RevenueWithdrawalStateTypeFailed:    RevenueWithdrawalStateFailed{},
+}
 
-	// succeeded
+type oneOfRevenueWithdrawalState struct{}
+
+func (oneOfRevenueWithdrawalState) New(t RevenueWithdrawalStateType) (oneof.Value[RevenueWithdrawalStateType], bool) {
+	return revenueWithdrawalStateTypes.New(t)
+}
+
+// RevenueWithdrawalState describes the state of a revenue withdrawal operation.
+type RevenueWithdrawalState = oneof.Object[RevenueWithdrawalStateType, oneOfRevenueWithdrawalState]
+
+// RevenueWithdrawalStatePending means the withdrawal is in progress.
+type RevenueWithdrawalStatePending struct{}
+
+func (RevenueWithdrawalStatePending) Type() RevenueWithdrawalStateType {
+	return RevenueWithdrawalStateTypePending
+}
+
+// RevenueWithdrawalStateSucceeded means the withdrawal was successed.
+type RevenueWithdrawalStateSucceeded struct {
 	Date int64  `json:"date"`
 	URL  string `json:"url"`
+}
+
+func (RevenueWithdrawalStateSucceeded) Type() RevenueWithdrawalStateType {
+	return RevenueWithdrawalStateTypeSucceeded
+}
+
+// RevenueWithdrawalStateFailed means the withdrawal failed and the transaction was refunded.
+type RevenueWithdrawalStateFailed struct{}
+
+func (RevenueWithdrawalStateFailed) Type() RevenueWithdrawalStateType {
+	return RevenueWithdrawalStateTypeFailed
 }
 
 // RefundedPayment contains basic information about a refunded payment.

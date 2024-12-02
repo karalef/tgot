@@ -2,6 +2,14 @@ package internal
 
 import "encoding/json"
 
+// TypeStruct represent the struct with type field.
+type TypeStruct struct {
+	Type string `json:"type"`
+}
+
+// NewType returns a new TypeStruct.
+func NewType[Type ~string](typ Type) TypeStruct { return TypeStruct{Type: string(typ)} }
+
 // MergeJSON merges JSON objects.
 func MergeJSON(v ...interface{}) ([]byte, error) {
 	var data []byte

@@ -33,10 +33,12 @@ func New(token string, apiURL, fileURL string, client *http.Client) (*API, error
 		client = http.DefaultClient
 	}
 	return &API{
-		token:   token,
-		apiURL:  apiURL,
-		fileURL: fileURL,
-		client:  client,
+		token:      token,
+		apiURL:     apiURL,
+		fileURL:    fileURL,
+		botAPIURL:  apiURL + token + "/",
+		botFileURL: fileURL + token + "/",
+		client:     client,
 	}, nil
 }
 
@@ -47,36 +49,27 @@ func NewDefault(token string) (*API, error) {
 
 // API provides access to the Telegram Bot API.
 type API struct {
-	token   string
-	apiURL  string
-	fileURL string
-	client  *http.Client
+	token      string
+	apiURL     string
+	fileURL    string
+	botAPIURL  string
+	botFileURL string
+	client     *http.Client
 }
 
-// Request performs a request to the Bot API with background context,
-// but doesn't parse the result.
-func (a *API) Request(method string, d *Data) error {
-	_, err := Request[Empty](a, method, d)
-	return err
-}
+func (a API) methodURL(method string) string { return a.botAPIURL + method }
+func (a API) pathURL(filepath string) string { return a.botFileURL + filepath }
 
 // RequestContext performs a request to the Bot API but doesn't parse the result.
-func (a *API) RequestContext(ctx context.Context, method string, d *Data) error {
-	_, err := RequestContext[Empty](ctx, a, method, d)
+func (a *API) Request(ctx context.Context, method string, d *Data) error {
+	_, err := Request[Empty](ctx, a, method, d)
 	return err
 }
 
-// Request performs a request to the Bot API with background context.
-func Request[T any](a *API, method string, d *Data) (T, error) {
-	return RequestContext[T](context.Background(), a, method, d)
-}
-
-// RequestContext performs a request to the Bot API.
-func RequestContext[T any](ctx context.Context, a *API, method string, data *Data) (result T, err error) {
+// Request performs a request to the Bot API.
+func Request[T any](ctx context.Context, a *API, method string, data *Data) (result T, err error) {
 	ctype, reader := data.Data()
-
-	u := a.apiURL + a.token + "/" + method
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, reader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.methodURL(method), reader)
 	if err != nil {
 		return result, err
 	}
@@ -88,7 +81,7 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 	}
 	defer resp.Body.Close()
 
-	r, raw, err := DecodeJSON[tg.APIResponse[T]](resp.Body)
+	r, raw, err := DecodeJSON[tg.Response[T]](resp.Body)
 	if err != nil {
 		return result, &JSONError{
 			baseError: makeError(method, data, err),
@@ -96,21 +89,16 @@ func RequestContext[T any](ctx context.Context, a *API, method string, data *Dat
 			Response:  raw,
 		}
 	}
-	if r.APIError != nil {
-		err = &Error{makeError(method, data, r.APIError)}
+	if r.Error != nil {
+		err = &Error{makeError(method, data, r.Error)}
 	}
 
 	return r.Result, err
 }
 
-// DownloadFile downloads a file from the server with background context.
-func (a *API) DownloadFile(path string) (io.ReadCloser, error) {
-	return a.DownloadFileContext(context.Background(), path)
-}
-
-// DownloadFileContext downloads a file from the server.
-func (a *API) DownloadFileContext(ctx context.Context, path string) (io.ReadCloser, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.fileURL+a.token+"/"+path, nil)
+// DownloadFile downloads a file from the server.
+func (a *API) DownloadFile(ctx context.Context, path string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.pathURL(path), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,4 +130,4 @@ func DecodeJSON[T any](r io.Reader) (*T, []byte, error) {
 type Empty struct{}
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (e *Empty) UnmarshalJSON([]byte) error { return nil }
+func (Empty) UnmarshalJSON([]byte) error { return nil }

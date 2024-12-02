@@ -8,7 +8,7 @@ import (
 )
 
 // NewRouter makes new initialized queries router.
-func NewRouter[Ctx tgot.BaseContext[Ctx], Key comparable, Data any]() *Router[Ctx, Key, Data] {
+func NewRouter[Ctx tgot.Context[Ctx], Key comparable, Data any]() *Router[Ctx, Key, Data] {
 	return &Router[Ctx, Key, Data]{
 		handlers: make(map[Key]handler[Ctx, Key, Data]),
 	}
@@ -24,42 +24,42 @@ type BaseHandler[Key comparable] interface {
 	// Called when the handler times out.
 	// The current handler will be automatically unregistered so do not
 	// call Unregister from this function as this will cause a goroutine leaking.
-	Cancel(tgot.Context, Key)
+	Cancel(tgot.BaseContext, Key)
 }
 
 // Handler is a handler.
-type Handler[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] interface {
+type Handler[Ctx tgot.Context[Ctx], Key comparable, Data any] interface {
 	BaseHandler[Key]
 
 	Handle(Ctx, Key, Data)
 }
 
-type handler[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] struct {
+type handler[Ctx tgot.Context[Ctx], Key comparable, Data any] struct {
 	Handler[Ctx, Key, Data]
 	oneTime bool
 }
 
-// Router routes queries.
-type Router[Ctx tgot.BaseContext[Ctx], Key comparable, Data any] struct {
+// Router routes queries by registered keys.
+type Router[Ctx tgot.Context[Ctx], Key comparable, Data any] struct {
 	handlers map[Key]handler[Ctx, Key, Data]
 	mut      sync.Mutex
 }
 
-func (r *Router[Ctx, Key, Data]) gc(ctx tgot.Context) {
+func (r *Router[Ctx, Key, Data]) gc(ctx Ctx) {
 	t := time.Now()
 	for key, h := range r.handlers {
 		if t.Before(h.Timeout()) {
 			continue
 		}
 		r.unregister(key)
-		h.Cancel(ctx.Child(h.Name()), key)
+		h.Cancel(ctx.WithName(h.Name()), key)
 	}
 }
 
 // Route routes update.
 func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	r.mut.Lock()
-	r.gc(ctx.Ctx())
+	r.gc(ctx)
 	h, ok := r.handlers[key]
 	if !ok {
 		r.mut.Unlock()
@@ -70,7 +70,7 @@ func (r *Router[Ctx, Key, Data]) Route(ctx Ctx, key Key, data Data) {
 	}
 	r.mut.Unlock()
 
-	h.Handle(ctx.Child(h.Name()), key, data)
+	h.Handle(ctx.WithName(h.Name()), key, data)
 }
 
 func (r *Router[Ctx, Key, Data]) reg(key Key, h handler[Ctx, Key, Data]) {

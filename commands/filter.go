@@ -5,8 +5,8 @@ import (
 	"github.com/karalef/tgot/api/tg"
 )
 
-// MessageHandler handles message and if it is a command calls the command handler.
-type MessageHandler struct {
+// Filter handles message and if it is a command calls the command handler.
+type Filter struct {
 	// if empty then any commands with a mention will be
 	// considered as not for the current bot.
 	Username string
@@ -15,20 +15,20 @@ type MessageHandler struct {
 	// otherwise the message will be ignored.
 	PassNotForMe bool
 
-	// if true and the PassNotForMe is true then Message will be called
+	// if true and the PassNotForMe is true then Command will be called
 	// for commands not for the current bot, otherwise the message will be passed to Message.
 	PassToCommand bool
 
 	// is called when the message is not a command.
-	Message func(tgot.ChatContext, *tg.Message)
+	Message func(*tgot.Message, *tg.Message)
 
 	// Command is called when the message is a command for the current bot.
-	// The ctx is a child of original context with name 'Commands'.
-	Command func(ctx tgot.ChatContext, msg *tg.Message, cmd string, args []string)
+	// The ctx is a child of original context with name 'commands'.
+	Command func(m *tgot.Message, msg *tg.Message, cmd string, args []string)
 }
 
 // Handle handles message.
-func (h *MessageHandler) Handle(ctx tgot.ChatContext, msg *tg.Message) {
+func (h *Filter) Handle(ctx *tgot.Message, msg *tg.Message) {
 	cmd, mention, args := ParseMsg(msg)
 	if cmd == "" || h.Command == nil {
 		if h.Message != nil {
@@ -47,5 +47,5 @@ func (h *MessageHandler) Handle(ctx tgot.ChatContext, msg *tg.Message) {
 			return
 		}
 	}
-	h.Command(ctx.Child("Commands"), msg, cmd, args)
+	h.Command(ctx.WithName("commands"), msg, cmd, args)
 }

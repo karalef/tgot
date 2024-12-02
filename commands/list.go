@@ -21,10 +21,10 @@ func (list List) Setup(b *tgot.Bot) error {
 }
 
 // Command runs a command if it exists.
-func (list List) Command(ctx tgot.ChatContext, msg *tg.Message, cmd string, args []string) {
+func (list List) Command(m *tgot.Message, msg *tg.Message, cmd string, args []string) {
 	c := list.GetCmd(cmd)
 	if c != nil {
-		c.Run(ctx.Child(c.Name()), msg, args)
+		c.Run(m.WithName(c.Name()), msg, args)
 	}
 }
 

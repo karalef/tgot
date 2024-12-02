@@ -11,13 +11,13 @@ import (
 type Command interface {
 	Name() string
 	Description() string
-	Run(tgot.ChatContext, *tg.Message, []string)
+	Run(*tgot.Message, *tg.Message, []string)
 
 	// Is returns true if this command matches the given string.
 	Is(string) bool
 
 	// Help generates help message.
-	Help() tgot.Message
+	Help() tgot.Text
 }
 
 var _ Command = SimpleCommand{}
@@ -26,7 +26,7 @@ var _ Command = SimpleCommand{}
 type SimpleCommand struct {
 	Command string
 	Aliases []string
-	Func    func(tgot.ChatContext, *tg.Message, []string) error
+	Func    func(*tgot.Message, *tg.Message, []string) error
 
 	Args     []Arg
 	Desc     string
@@ -47,9 +47,9 @@ func (c SimpleCommand) Name() string { return c.Command }
 func (c SimpleCommand) Description() string { return c.Desc }
 
 // Run runs command.
-func (c SimpleCommand) Run(ctx tgot.ChatContext, msg *tg.Message, args []string) {
+func (c SimpleCommand) Run(m *tgot.Message, msg *tg.Message, args []string) {
 	if c.Func != nil {
-		c.Func(ctx, msg, args)
+		c.Func(m, msg, args)
 	}
 }
 
@@ -67,7 +67,7 @@ func (c SimpleCommand) Is(cmd string) bool {
 }
 
 // Help generates help message.
-func (c SimpleCommand) Help() tgot.Message {
+func (c SimpleCommand) Help() tgot.Text {
 	sb := strings.Builder{}
 	entities := make([]tg.MessageEntity, 2, 3)
 
@@ -121,7 +121,7 @@ func (c SimpleCommand) Help() tgot.Message {
 		sb.WriteString(c.FullDesc)
 	}
 
-	return tgot.Message{
+	return tgot.Text{
 		Text:     sb.String(),
 		Entities: entities,
 	}
@@ -138,12 +138,13 @@ func MakeHelp(list *List) SimpleCommand {
 			},
 		},
 	}
-	h.Func = func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	h.Func = func(m *tgot.Message, msg *tg.Message, args []string) error {
+		chat := tgot.WithChatID(m, m.ID().ChatID())
 		if len(args) > 0 {
 			if cmd := list.GetCmd(args[0]); cmd != nil {
-				return ctx.ReplyE(tgot.ReplyTo(msg.ID), cmd.Help())
+				return chat.ReplyE(tgot.ReplyTo(msg.ID), cmd.Help())
 			}
-			return ctx.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewMessage("command not found"))
+			return chat.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewText("command not found"))
 		}
 		var sb strings.Builder
 		sb.WriteString("Commands list\n")
@@ -153,7 +154,7 @@ func MakeHelp(list *List) SimpleCommand {
 			sb.WriteByte(Prefix)
 			sb.WriteString(c.Name() + " - " + c.Description())
 		}
-		return ctx.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewMessage(sb.String()))
+		return chat.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewText(sb.String()))
 	}
 	return h
 }

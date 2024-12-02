@@ -1,7 +1,6 @@
 package updates
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 
@@ -35,7 +34,7 @@ func writeErr(w http.ResponseWriter, code int, err string) {
 
 func (wh *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeErr(w, http.StatusBadRequest, "wrong http method (POST is required)")
+		writeErr(w, http.StatusMethodNotAllowed, "wrong http method (POST is required)")
 		return
 	}
 
@@ -45,14 +44,13 @@ func (wh *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var upd tg.Update
-	err := json.NewDecoder(r.Body).Decode(&upd)
+	upd, _, err := api.DecodeJSON[tg.Update](r.Body)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	meth, data, err := wh.Handler(&upd)
+	meth, data, err := wh.Handler(upd)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return

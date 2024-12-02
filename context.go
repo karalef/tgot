@@ -1,150 +1,113 @@
 package tgot
 
 import (
-	"io"
-	"runtime"
+	stdcontext "context"
 
 	"github.com/karalef/tgot/api"
-	"github.com/karalef/tgot/api/tg"
 )
 
-type baseContext interface {
-	Ctx() Context
-	Name() string
+// Context represents any context.
+type Context[T BaseContext] interface {
+	BaseContext
+
+	// Base copies the context without data.
+	Base() Empty
+
+	// WithName copies the context with nested name.
+	WithName(name string) T
 }
 
-// BaseContext can infer any context type.
-type BaseContext[c baseContext] interface {
-	baseContext
-	Child(string) c
+// BaseContext represents base context.
+type BaseContext interface {
+	stdcontext.Context
+
+	// Path returns context path.
+	Path() string
+
+	// Bot returns bot instance.
+	Bot() *Bot
+
+	ctx() *context
 }
 
-// MakeContext creates new context.
-//
-// The context must be used in a separate goroutine because in case of fatal
-// errors the bot will be closed and the goroutine will be terminated.
-func (b *Bot) MakeContext(name string) Context {
-	return Context{bot: b, name: name}
+// Empty represents empty context.
+type Empty interface {
+	Context[Empty]
 }
 
-// Context type.
-type Context struct {
+// NewContext creates new context.
+func (b *Bot) NewContext(ctx stdcontext.Context, name string) Empty {
+	return newContext(ctx, name, b, nil)
+}
+
+func newContext(c stdcontext.Context, path string, bot *Bot, data *api.Data) *context {
+	if data != nil {
+		cp := data.Copy()
+		data = cp
+	}
+	return &context{c, bot, path, data}
+}
+
+func nestPath(path string, name string) string {
+	if path == "" {
+		return name
+	}
+	if name == "" {
+		return path
+	}
+	return path + "::" + name
+}
+
+var _ Empty = &context{}
+
+type context struct {
+	stdcontext.Context
 	bot  *Bot
-	name string
+	path string
+	data *api.Data
 }
 
-// Ctx returns Context.
-func (c Context) Ctx() Context { return c }
+func (c *context) ctx() *context              { return c }
+func (c *context) Bot() *Bot                  { return c.bot }
+func (c *context) Path() string               { return c.path }
+func (c *context) Base() Empty                { return c.with(nil) }
+func (c *context) WithName(name string) Empty { return c.child(name) }
 
-// Name returns context name.
-func (c Context) Name() string { return c.name }
-
-// Child creates sub context.
-func (c Context) Child(name string) Context {
-	c.name += "::" + name
-	return c
-}
-
-// GetMe returns basic information about the bot.
-func (c Context) GetMe() (*tg.User, error) {
-	return method[*tg.User](c, "getMe")
-}
-
-// GetUserPhotos returns a list of profile pictures for a user.
-func (c Context) GetUserPhotos(userID int64) (*tg.UserProfilePhotos, error) {
-	d := api.NewData().SetInt64("user_id", userID)
-	return method[*tg.UserProfilePhotos](c, "getUserProfilePhotos", d)
-}
-
-// GetFile returns basic information about a file
-// and prepares it for downloading.
-func (c Context) GetFile(fileID string) (*tg.File, error) {
-	d := api.NewData().Set("file_id", fileID)
-	return method[*tg.File](c, "getFile", d)
-}
-
-// DownloadReader downloads file as io.ReadCloser from Telegram servers.
-func (c Context) DownloadReader(f *tg.File) (io.ReadCloser, error) {
-	return c.bot.api.DownloadFile(f.FilePath)
-}
-
-// Download downloads file from Telegram servers.
-func (c Context) Download(f *tg.File) ([]byte, error) {
-	rc, err := c.DownloadReader(f)
-	if err != nil {
-		return nil, err
+func (c *context) with(d *api.Data) *context {
+	if d == nil && c.data == nil {
+		return c
 	}
-	defer rc.Close()
-	return io.ReadAll(rc)
+	return newContext(c.Context, c.path, c.bot, d)
 }
-
-// DownloadReaderFile downloads file as io.ReadCloser from Telegram servers
-// by file id.
-func (c Context) DownloadReaderFile(fid string) (io.ReadCloser, error) {
-	f, err := c.GetFile(fid)
-	if err != nil {
-		return nil, err
+func (c *context) add(d *api.Data) *context {
+	if d == nil {
+		return c
 	}
-	return c.DownloadReader(f)
+	return newContext(c.Context, c.path, c.bot, c.data.WriteTo(d))
 }
-
-// DownloadFile downloads file from Telegram servers by file id.
-func (c Context) DownloadFile(fid string) ([]byte, error) {
-	f, err := c.GetFile(fid)
-	if err != nil {
-		return nil, err
+func (c *context) child(name string) *context {
+	if name == "" {
+		return c
 	}
-	return c.Download(f)
+	return newContext(c.Context, nestPath(c.path, name), c.bot, c.data)
 }
 
-func (c Context) method(meth string, d ...*api.Data) error {
+func (c *context) method(meth string, d ...*api.Data) error {
 	_, err := method[api.Empty](c, meth, d...)
 	return err
 }
 
-func method[T any](c Context, method string, d ...*api.Data) (T, error) {
+func method[T any](c BaseContext, method string, d ...*api.Data) (T, error) {
 	var data *api.Data
 	if len(d) > 0 {
 		data = d[0]
 	}
-	result, err := api.Request[T](c.bot.api, method, data)
-	if err != nil {
-		return result, c.bot.onError(c, result, err)
+	ctxData := c.ctx().data
+	if data == nil {
+		data = ctxData
+	} else {
+		ctxData.WriteTo(data)
 	}
 
-	return result, err
-}
-
-// OnErrorDefault represents default error handler.
-//
-// It:
-//
-// - panics if the JSON response cannot be parsed;
-//
-// - panics if the method is not found;
-//
-// - cancels the current call (using runtime.Goexit) and
-// changes the state of the bot to an error if 401 (Not Authorized) or
-// or 500 (Internal Server Error) status is returned;
-//
-// - returns the err in any other case.
-func OnErrorDefault(c Context, result any, err error) error {
-	if e, ok := err.(*api.JSONError); ok {
-		panic("incorrect Telegram JSON response (" + e.Method + "): " + e.Error())
-	}
-
-	tgErr, ok := err.(*api.Error)
-	if !ok {
-		return err
-	}
-
-	switch tgErr.Err.Code {
-	case 404: // Not Found
-		panic("Telegram method is not found but is present in the current implementation: " + tgErr.Method)
-	case 401, 500: // Not Authorized, Internal Server Error
-		c.bot.SetError(err)
-		runtime.Goexit()
-	}
-
-	return err
+	return api.Request[T](c, c.Bot().API(), method, data)
 }

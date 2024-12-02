@@ -11,28 +11,37 @@ type answerable interface {
 	answerData(data *api.Data, queryID string) (method string)
 }
 
-func makeQueryContext[T answerable](ctx Context, queryID string) QueryContext[T] {
-	return QueryContext[T]{
-		Context: ctx,
-		queryID: queryID,
+func makeQuery[T answerable](ctx BaseContext, queryID string, from tg.User) Query[T] {
+	return &queryContext[T]{
+		context: ctx.ctx().with(nil),
 		once:    new(sync.Once),
+		user:    from,
+		queryID: queryID,
 	}
 }
 
-// QueryContext is the common context for all queries that require an answer.
-type QueryContext[T answerable] struct {
-	Context
+// Query is the context for all queries that require an answer.
+// The answer method can be used only once.
+type Query[T answerable] interface {
+	Context[Query[T]]
+	Answer(T) error
+	Sender() *User
+}
+
+type queryContext[T answerable] struct {
+	*context
+	once    *sync.Once
+	user    tg.User
 	queryID string
-
-	once *sync.Once
 }
 
-func (c QueryContext[T]) Child(name string) QueryContext[T] {
-	c.Context = c.Context.Child(name)
-	return c
+func (c *queryContext[T]) WithName(name string) Query[T] {
+	return &queryContext[T]{context: c.context.child(name), once: c.once, queryID: c.queryID}
 }
 
-func (c QueryContext[T]) Answer(answer T) (err error) {
+func (c *queryContext[T]) Sender() *User { return WithUser(c, c.user.ID) }
+
+func (c *queryContext[T]) Answer(answer T) (err error) {
 	c.once.Do(func() {
 		data := api.NewData()
 		err = c.method(answer.answerData(data, c.queryID), data)
@@ -40,46 +49,62 @@ func (c QueryContext[T]) Answer(answer T) (err error) {
 	return
 }
 
-// InlineContext type.
-type InlineContext = QueryContext[InlineAnswer]
-
 // InlineAnswer represents an answer to inline query.
 type InlineAnswer struct {
-	Results    []tg.InlineQueryResulter
-	CacheTime  *int
-	IsPersonal bool
-	NextOffset string
-	Button     *tg.InlineQueryResultsButton
+	Results    []tg.InlineQueryResulter     `tg:"results"`
+	CacheTime  *int                         `tg:"cache_time,force"`
+	IsPersonal bool                         `tg:"is_personal"`
+	NextOffset string                       `tg:"next_offset"`
+	Button     *tg.InlineQueryResultsButton `tg:"button"`
 }
 
 func (a InlineAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("inline_query_id", queryID)
-	d.SetJSON("results", a.Results)
-	if a.CacheTime != nil {
-		d.SetInt("cache_time", *a.CacheTime, true)
-	}
-	d.SetBool("is_personal", a.IsPersonal)
-	d.Set("next_offset", a.NextOffset)
-	d.SetJSON("button", a.Button)
+	d.Set("inline_query_id", queryID).SetObject(a)
 	return "answerInlineQuery"
 }
 
-// CallbackContext type.
-type CallbackContext = QueryContext[CallbackAnswer]
-
 // CallbackAnswer represents an answer to callback query.
 type CallbackAnswer struct {
-	Text      string
-	ShowAlert bool
-	URL       string
-	CacheTime int
+	Text      string `tg:"text"`
+	ShowAlert bool   `tg:"show_alert"`
+	URL       string `tg:"url"`
+	CacheTime int    `tg:"cache_time"`
 }
 
 func (a CallbackAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("callback_query_id", queryID)
-	d.Set("text", a.Text)
-	d.SetBool("show_alert", a.ShowAlert)
-	d.Set("url", a.URL)
-	d.SetInt("cache_time", a.CacheTime)
+	d.Set("callback_query_id", queryID).SetObject(a)
 	return "answerCallbackQuery"
+}
+
+// ShippingAnswer represents an answer to shipping query.
+type ShippingAnswer struct {
+	OK              bool                `tg:"ok"`
+	ShippingOptions []tg.ShippingOption `tg:"shipping_options"`
+	ErrorMessage    string              `tg:"error_message"`
+}
+
+func (a ShippingAnswer) answerData(d *api.Data, queryID string) string {
+	d.Set("shipping_query_id", queryID).SetObject(a)
+	return "answerShippingQuery"
+}
+
+// PreCheckoutAnswer represents an answer to pre-checkout query.
+type PreCheckoutAnswer struct {
+	OK           bool   `tg:"ok"`
+	ErrorMessage string `tg:"error_message"`
+}
+
+func (a PreCheckoutAnswer) answerData(d *api.Data, queryID string) string {
+	d.Set("pre_checkout_query_id", queryID).SetObject(a)
+	return "answerPreCheckoutQuery"
+}
+
+// WebAppAnswer represents an answer to WebApp query.
+type WebAppAnswer struct {
+	Result tg.InlineQueryResulter `tg:"result"`
+}
+
+func (a WebAppAnswer) answerData(d *api.Data, queryID string) string {
+	d.Set("web_app_query_id", queryID).SetObject(a)
+	return "answerWebAppQuery"
 }

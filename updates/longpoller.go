@@ -12,13 +12,9 @@ import (
 
 // NewLongPoller creates a LongPoller instance.
 //
-// timeout must be >0.
-// limit must be in the range of 1-100.
-func NewLongPoller(timeout, limit, offset int) *LongPoller {
-	if timeout < 1 {
-		timeout = 30
-	}
-	if limit < 0 || limit > 100 {
+// limit must be in the range of 1-100 (else it will be set to server's default).
+func NewLongPoller(timeout, limit uint, offset int) *LongPoller {
+	if limit > 100 {
 		limit = 0
 	}
 	lp := LongPoller{
@@ -30,15 +26,14 @@ func NewLongPoller(timeout, limit, offset int) *LongPoller {
 }
 
 // StartLongPolling creates and runs long poller.
-func StartLongPolling(b *tgot.Bot, timeout, limit, offset int) error {
+func StartLongPolling(b *tgot.Bot, timeout, limit uint, offset int) error {
 	return NewLongPoller(timeout, limit, offset).Run(b)
 }
 
 // LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
 type LongPoller struct {
-	timeout int
-	limit   int
-	offset  int
+	timeout, limit uint
+	offset         int
 
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
@@ -57,6 +52,7 @@ func (lp *LongPoller) Run(b *tgot.Bot) error {
 }
 
 // RunContext starts long polling.
+// The passed context controlls only the long poller but not the handlers.
 func (lp *LongPoller) RunContext(ctx context.Context, b *tgot.Bot) error {
 	if b == nil {
 		panic("LongPoller: nil bot")
@@ -66,13 +62,13 @@ func (lp *LongPoller) RunContext(ctx context.Context, b *tgot.Bot) error {
 	defer lp.wg.Wait()
 
 	d := api.NewData()
-	d.SetInt("limit", lp.limit)
-	d.SetInt("timeout", lp.timeout)
+	d.SetUint("limit", lp.limit)
+	d.SetUint("timeout", lp.timeout)
 	d.SetJSON("allowed", b.Allowed())
 
 	for a := b.API(); ; {
 		d.SetInt("offset", lp.offset)
-		upds, err := api.RequestContext[[]tg.Update](ctx, a, "getUpdates", d)
+		upds, err := api.Request[[]tg.Update](ctx, a, "getUpdates", d)
 		switch {
 		case err == nil:
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):

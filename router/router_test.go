@@ -8,6 +8,6 @@ import (
 )
 
 func TestRouter(t *testing.T) {
-	r := NewRouter[tgot.CallbackContext, tgot.MsgID, *tg.CallbackQuery]()
-	r.Register(tgot.MsgID{}, nil)
+	r := NewRouter[tgot.Query[tgot.CallbackAnswer], tgot.MessageID, *tg.CallbackQuery]()
+	r.Register(tgot.MessageID{}, nil)
 }

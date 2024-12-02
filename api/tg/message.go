@@ -2,6 +2,8 @@ package tg
 
 import (
 	"time"
+
+	"github.com/karalef/tgot/api/internal/oneof"
 )
 
 // Message represents a message.
@@ -140,6 +142,85 @@ const (
 	EntityExpandableBlockQuote EntityType = "expandable_blockquote"
 )
 
+// Contact represents a phone contact.
+type Contact struct {
+	PhoneNumber string `json:"phone_number"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	UserID      int64  `json:"user_id"`
+	Vcard       string `json:"vcard"`
+}
+
+// DiceEmoji represenst dice emoji.
+type DiceEmoji string
+
+// all available animated emojis.
+const (
+	DiceCube DiceEmoji = "🎲"
+	DiceDart DiceEmoji = "🎯"
+	DiceBall DiceEmoji = "🏀"
+	DiceGoal DiceEmoji = "⚽"
+	DiceSlot DiceEmoji = "🎰"
+	DiceBowl DiceEmoji = "🎳"
+)
+
+// Dice represents an animated emoji that displays a random value.
+type Dice struct {
+	Emoji DiceEmoji `json:"emoji"`
+	Value int       `json:"value"`
+}
+
+// Indefinite live period.
+const LivePeriodIndefinite = 0x7FFFFFFF
+
+// Location represents a point on the map.
+type Location struct {
+	Long               float32  `json:"longitude"`
+	Lat                float32  `json:"latitude"`
+	HorizontalAccuracy *float32 `json:"horizontal_accuracy,omitempty"`
+	LivePeriod         int      `json:"live_period,omitempty"`
+	Heading            int      `json:"heading,omitempty"`
+	AlertRadius        int      `json:"proximity_alert_radius,omitempty"`
+}
+
+// Venue represents a venue.
+type Venue struct {
+	Location        Location `json:"location"`
+	Title           string   `json:"title"`
+	Address         string   `json:"address"`
+	FoursquareID    string   `json:"foursquare_id"`
+	FoursquareType  string   `json:"foursquare_type"`
+	GooglePlaceID   string   `json:"google_place_id"`
+	GooglePlaceType string   `json:"google_place_type"`
+}
+
+// LinkPreviewOptions describes the options used for link preview generation.
+type LinkPreviewOptions struct {
+	IsDisabled       bool   `json:"is_disabled,omitempty"`
+	URL              string `json:"url,omitempty"`
+	PreferSmallMedia bool   `json:"prefer_small_media,omitempty"`
+	PreferLargeMedia bool   `json:"prefer_large_media,omitempty"`
+	ShowAboveText    bool   `json:"show_above_text,omitempty"`
+}
+
+// ReplyParameters describes reply parameters for the message that is being sent.
+type ReplyParameters interface {
+	replyParameters()
+}
+
+// ReplyParametersData describes reply parameters for the message that is being sent.
+type ReplyParametersData[ID ChatID] struct {
+	MessageID                int             `json:"message_id"`
+	ChatID                   ID              `json:"chat_id,omitempty"`
+	AllowSendingWithoutReply bool            `json:"allow_sending_without_reply,omitempty"`
+	Quote                    string          `json:"quote,omitempty"`
+	QuoteParseMode           ParseMode       `json:"quote_parse_mode,omitempty"`
+	QuoteEntities            []MessageEntity `json:"quote_entities,omitempty"`
+	QuotePosition            int             `json:"quote_position,omitempty"`
+}
+
+func (ReplyParametersData[ID]) replyParameters() {}
+
 // ProximityAlert represents the content of a service message,
 // sent whenever a user in the chat triggers a proximity alert
 // set by another user.
@@ -235,20 +316,49 @@ type ReactionTypeType string
 
 // all available reaction types.
 const (
-	ReactionTypeEmoji       ReactionTypeType = "emoji"
-	ReactionTypeCustomEmoji ReactionTypeType = "custom_emoji"
-	ReactionTypePaid        ReactionTypeType = "paid"
+	ReactionTypeTypeEmoji       ReactionTypeType = "emoji"
+	ReactionTypeTypeCustomEmoji ReactionTypeType = "custom_emoji"
+	ReactionTypeTypePaid        ReactionTypeType = "paid"
 )
 
+var reactionTypes = oneof.Map[ReactionTypeType]{
+	ReactionTypeTypeEmoji:       ReactionTypeEmoji{},
+	ReactionTypeTypeCustomEmoji: ReactionTypeCustomEmoji{},
+	ReactionTypeTypePaid:        ReactionTypePaid{},
+}
+
+type oneOfReactionType struct{}
+
+func (oneOfReactionType) New(t ReactionTypeType) (oneof.Value[ReactionTypeType], bool) {
+	return reactionTypes.New(t)
+}
+
 // ReactionType describes the type of a reaction.
-type ReactionType struct {
-	Type ReactionTypeType `json:"type"`
+type ReactionType = oneof.Object[ReactionTypeType, oneOfReactionType]
 
-	// ReactionTypeEmoji is the reaction is based on an emoji.
+// ReactionTypeEmoji means the reaction is based on an emoji.
+type ReactionTypeEmoji struct {
 	Emoji string `json:"emoji"`
+}
 
-	// ReactionTypeCustomEmoji is the reaction is based on a custom emoji.
+func (ReactionTypeEmoji) Type() ReactionTypeType { return ReactionTypeTypeEmoji }
+
+// ReactionTypeCustomEmoji means the reaction is based on a custom emoji.
+type ReactionTypeCustomEmoji struct {
 	CustomEmojiID string `json:"custom_emoji_id"`
+}
+
+func (ReactionTypeCustomEmoji) Type() ReactionTypeType { return ReactionTypeTypeCustomEmoji }
+
+// ReactionTypePaid means the reaction is paid.
+type ReactionTypePaid struct{}
+
+func (ReactionTypePaid) Type() ReactionTypeType { return ReactionTypeTypePaid }
+
+// Story represents a story.
+type Story struct {
+	Chat Chat `json:"chat"`
+	ID   int  `json:"id"`
 }
 
 // ExternalReplyInfo contains information about a message that is being replied to,
@@ -335,33 +445,62 @@ type GiveawayCompleted struct {
 type MessageOriginType string
 
 const (
-	MessageOriginUser       MessageOriginType = "user"
-	MessageOriginHiddenUser MessageOriginType = "hidden_user"
-	MessageOriginChat       MessageOriginType = "chat"
-	MessageOriginChannel    MessageOriginType = "channel"
+	MessageOriginTypeUser       MessageOriginType = "user"
+	MessageOriginTypeHiddenUser MessageOriginType = "hidden_user"
+	MessageOriginTypeChat       MessageOriginType = "chat"
+	MessageOriginTypeChannel    MessageOriginType = "channel"
 )
 
+var messageOriginTypes = oneof.Map[MessageOriginType]{
+	MessageOriginTypeUser:       MessageOriginUser{},
+	MessageOriginTypeHiddenUser: MessageOriginHiddenUser{},
+	MessageOriginTypeChat:       MessageOriginChat{},
+	MessageOriginTypeChannel:    MessageOriginChannel{},
+}
+
+type oneOfMessageOrigin struct{}
+
+func (oneOfMessageOrigin) New(t MessageOriginType) (oneof.Value[MessageOriginType], bool) {
+	return messageOriginTypes.New(t)
+}
+
 // MessageOrigin describes the origin of a message.
-type MessageOrigin struct {
-	Type MessageOriginType `json:"type"`
-	Date int64             `json:"date"`
+type MessageOrigin = oneof.Object[MessageOriginType, oneOfMessageOrigin]
 
-	// user
-	SenderUser *User `json:"sender_user"`
+// MessageOriginUser means the message was originally sent by a known user.
+type MessageOriginUser struct {
+	Date       int64 `json:"date"`
+	SenderUser User  `json:"sender_user"`
+}
 
-	// hidden_user
+func (MessageOriginUser) Type() MessageOriginType { return MessageOriginTypeUser }
+
+// MessageOriginHiddenUser means the message was originally sent by an unknown user.
+type MessageOriginHiddenUser struct {
+	Date           int64  `json:"date"`
 	SenderUserName string `json:"sender_user_name"`
+}
 
-	// chat
-	SenderChat *Chat `json:"sender_chat"`
+func (MessageOriginHiddenUser) Type() MessageOriginType { return MessageOriginTypeHiddenUser }
 
-	// channel
-	Chat      *Chat `json:"chat"`
-	MessageID int   `json:"message_id"`
-
-	// chat & channel
+// MessageOriginChat means the message was originally sent on behalf of a chat to a group chat.
+type MessageOriginChat struct {
+	Date            int64  `json:"date"`
+	SenderChat      Chat   `json:"sender_chat"`
 	AuthorSignature string `json:"author_signature"`
 }
+
+func (MessageOriginChat) Type() MessageOriginType { return MessageOriginTypeChat }
+
+// MessageOriginChannel means the message was originally sent to a channel chat.
+type MessageOriginChannel struct {
+	Date            int64  `json:"date"`
+	Chat            Chat   `json:"chat"`
+	MessageID       int    `json:"message_id"`
+	AuthorSignature string `json:"author_signature"`
+}
+
+func (MessageOriginChannel) Type() MessageOriginType { return MessageOriginTypeChannel }
 
 // InaccessibleMessage describes a message that was deleted or is otherwise inaccessible to the bot.
 type InaccessibleMessage struct {
@@ -408,7 +547,7 @@ type ChatBoostAdded struct {
 
 // ChatBackground represents a chat background.
 type ChatBackground struct {
-	Type BackgroundType
+	Type BackgroundType `json:"type"`
 }
 
 // BackgroundType represents the type of background.
@@ -416,65 +555,115 @@ type BackgroundTypeType string
 
 // all available background types.
 const (
-	BackgroundTypeFill      BackgroundTypeType = "fill"
-	BackgroundTypeWallpaper BackgroundTypeType = "wallpaper"
-	BackgroundTypePattern   BackgroundTypeType = "pattern"
-	BackgroundTypeChatTheme BackgroundTypeType = "chat_theme"
+	BackgroundTypeTypeFill      BackgroundTypeType = "fill"
+	BackgroundTypeTypeWallpaper BackgroundTypeType = "wallpaper"
+	BackgroundTypeTypePattern   BackgroundTypeType = "pattern"
+	BackgroundTypeTypeChatTheme BackgroundTypeType = "chat_theme"
 )
 
+var backgroundTypes = oneof.Map[BackgroundTypeType]{
+	BackgroundTypeTypeFill:      BackgroundTypeFill{},
+	BackgroundTypeTypeWallpaper: BackgroundTypeWallpaper{},
+	BackgroundTypeTypePattern:   BackgroundTypePattern{},
+	BackgroundTypeTypeChatTheme: BackgroundTypeChatTheme{},
+}
+
+type oneOfBackgroundType struct{}
+
+func (oneOfBackgroundType) New(t BackgroundTypeType) (oneof.Value[BackgroundTypeType], bool) {
+	return backgroundTypes.New(t)
+}
+
 // BackgroundType describes the type of a background.
-type BackgroundType struct {
-	Type BackgroundTypeType `json:"type"`
+type BackgroundType = oneof.Object[BackgroundTypeType, oneOfBackgroundType]
 
-	// fill | pattern
-	Fill *BackgroundFill `json:"fill"`
+// BackgroundTypeFill means the background is automatically filled based on the selected colors.
+type BackgroundTypeFill struct {
+	Fill             BackgroundFill `json:"fill"`
+	DarkThemeDimming uint8          `json:"dark_theme_dimming"`
+}
 
-	// fill | wallpaper
-	DarkThemeDimming uint8 `json:"dark_theme_dimming"`
+func (BackgroundTypeFill) Type() BackgroundTypeType { return BackgroundTypeTypeFill }
 
-	// wallpaper | patern
-	Document *Document `json:"document"`
+// BackgroundTypeWallpaper means the background is a wallpaper in the JPEG format.
+type BackgroundTypeWallpaper struct {
+	Document         *Document `json:"document"`
+	DarkThemeDimming uint8     `json:"dark_theme_dimming"`
+	IsBlured         bool      `json:"is_blured"`
+	IsMoving         bool      `json:"is_moving"`
+}
 
-	// wallpaper
-	IsBlured bool `json:"is_blured"`
+func (BackgroundTypeWallpaper) Type() BackgroundTypeType { return BackgroundTypeTypeWallpaper }
 
-	// wallpaper | patern
-	IsMoving bool `json:"is_moving"`
+// BackgroundTypePattern means the background is a PNG or TGV (gzipped subset of
+// SVG with MIME type “application/x-tgwallpattern”) pattern to be combined with
+// the background fill chosen by the user.
+type BackgroundTypePattern struct {
+	Document   *Document      `json:"document"`
+	Fill       BackgroundFill `json:"fill"`
+	Intensity  uint8          `json:"intensity"`
+	IsInverted bool           `json:"is_inverted"`
+	IsMoving   bool           `json:"is_moving"`
+}
 
-	// patern
-	Intensity uint8 `json:"intensity"`
+func (BackgroundTypePattern) Type() BackgroundTypeType { return BackgroundTypeTypePattern }
 
-	// patern
-	IsInverted bool `json:"is_inverted"`
-
-	// chat_theme
+// BackgroundTypeChatTheme means the background is taken directly from a built-in chat theme.
+type BackgroundTypeChatTheme struct {
 	ThemeName string `json:"theme_name"`
 }
+
+func (BackgroundTypeChatTheme) Type() BackgroundTypeType { return BackgroundTypeTypeChatTheme }
 
 // BackgroundFill represents the fill type of a background.
 type BackgroundFillType string
 
 // all available background fill types.
 const (
-	BackgroundFillSolid            BackgroundFillType = "solid"
-	BackgroundFillGradient         BackgroundFillType = "gradient"
-	BackgroundFillFreeformGradient BackgroundFillType = "freeform_gradient"
+	BackgroundFillTypeSolid            BackgroundFillType = "solid"
+	BackgroundFillTypeGradient         BackgroundFillType = "gradient"
+	BackgroundFillTypeFreeformGradient BackgroundFillType = "freeform_gradient"
 )
 
+var backgroundFillTypes = oneof.Map[BackgroundFillType]{
+	BackgroundFillTypeSolid:            BackgroundFillSolid{},
+	BackgroundFillTypeGradient:         BackgroundFillGradient{},
+	BackgroundFillTypeFreeformGradient: BackgroundFillFreeformGradient{},
+}
+
+type oneOfBackgroundFillType struct{}
+
+func (oneOfBackgroundFillType) New(t BackgroundFillType) (oneof.Value[BackgroundFillType], bool) {
+	return backgroundFillTypes.New(t)
+}
+
 // BackgroundFill describes the way a background is filled based on the selected colors.
-type BackgroundFill struct {
-	Type BackgroundFillType `json:"type"`
+type BackgroundFill = oneof.Object[BackgroundFillType, oneOfBackgroundFillType]
 
-	// solid
+// BackgroundFillSolid means the background is filled using the selected color.
+type BackgroundFillSolid struct {
 	Color uint32 `json:"color"` // rgb24
+}
 
-	// gradient
+func (BackgroundFillSolid) Type() BackgroundFillType { return BackgroundFillTypeSolid }
+
+// BackgroundFillGradient means the background is a gradient fill.
+type BackgroundFillGradient struct {
 	TopColor      uint32 `json:"top_color"`      // rgb24
 	BottomColor   uint32 `json:"bottom_color"`   // rgb24
 	RotationAngle uint16 `json:"rotation_angle"` // degrees
+}
 
-	// freeform_gradient
+func (BackgroundFillGradient) Type() BackgroundFillType { return BackgroundFillTypeGradient }
+
+// BackgroundFillFreeformGradient means the background is a freeform gradient that rotates
+// after every message in the chat.
+type BackgroundFillFreeformGradient struct {
 	Colors []uint32 `json:"colors"` // rgb24
+}
+
+func (BackgroundFillFreeformGradient) Type() BackgroundFillType {
+	return BackgroundFillTypeFreeformGradient
 }
 
 // ParseMode type.

@@ -2,28 +2,6 @@ package tg
 
 import "github.com/karalef/tgot/api/internal"
 
-// InlineQuery is an incoming inline query. When the user sends
-// an empty query, your bot could return some default or
-// trending results.
-type InlineQuery struct {
-	ID       string    `json:"id"`
-	From     *User     `json:"from"`
-	Query    string    `json:"query"` // up to 256 characters
-	Offset   string    `json:"offset"`
-	ChatType ChatType  `json:"chat_type"`
-	Location *Location `json:"location"`
-}
-
-// InlineChosen represents a result of an inline query that was chosen
-// by the user and sent to their chat partner.
-type InlineChosen struct {
-	ResultID        string    `json:"result_id"`
-	From            *User     `json:"from"`
-	Location        *Location `json:"location"`
-	InlineMessageID string    `json:"inline_message_id"`
-	Query           string    `json:"query"`
-}
-
 // InlineQueryResulter is an interface for InlineQueryResult.
 type InlineQueryResulter interface {
 	inlineQueryResult()
