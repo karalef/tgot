@@ -12,8 +12,8 @@ import (
 // If the method is not empty, the request to the api will be written in response to the webhook.
 type WHHandler func(*tg.Update) (method string, data *api.Data, err error)
 
-// WrapHandler wraps Handler with WHHandler.
-func WrapHandler(h Handler) WHHandler {
+// WrapWebhook wraps Handler with WHHandler.
+func WrapWebhook(h Handler) WHHandler {
 	return func(upd *tg.Update) (string, *api.Data, error) {
 		return "", nil, h(upd)
 	}
@@ -22,8 +22,8 @@ func WrapHandler(h Handler) WHHandler {
 // WebhookHandler is a handler for telegram webhook requests.
 // It implements std http.Handler.
 type WebhookHandler struct {
-	SecretToken string
 	Handler     WHHandler
+	SecretToken string
 }
 
 func writeErr(w http.ResponseWriter, code int, err string) {

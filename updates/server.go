@@ -2,6 +2,7 @@ package updates
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,9 +14,12 @@ import (
 
 // NewWebhookServer creates new server for telegram webhooks.
 // Ports currently supported for webhooks: 443, 80, 88, 8443.
-func NewWebhookServer(addr string, cfg ServerConfig) *Server {
-	if cfg.URL == "" || cfg.CertFile != "" && cfg.KeyFile == "" {
-		return nil
+func NewWebhookServer(addr string, cfg ServerConfig) (*Server, error) {
+	if cfg.URL == "" {
+		return nil, errors.New("invalid server URL")
+	}
+	if cfg.CertFile != "" && cfg.KeyFile == "" {
+		return nil, errors.New("certificate file without key file")
 	}
 	mux := http.NewServeMux()
 	return &Server{
@@ -25,12 +29,16 @@ func NewWebhookServer(addr string, cfg ServerConfig) *Server {
 		},
 		Mux: mux,
 		cfg: cfg,
-	}
+	}, nil
 }
 
 // StartWebhookServer creates and runs webhook server.
 func StartWebhookServer(b *tgot.Bot, addr string, cfg ServerConfig) error {
-	return NewWebhookServer(addr, cfg).Run(b)
+	server, err := NewWebhookServer(addr, cfg)
+	if err != nil {
+		return err
+	}
+	return server.Run(b)
 }
 
 // Server is a server that handles telegram webhooks.
@@ -67,13 +75,13 @@ type ServerConfig struct {
 }
 
 // Close shuts down the server without interrupting any active connections.
-func (s *Server) Close() {
-	s.Serv.Shutdown(context.Background())
+func (s *Server) Close(ctx context.Context) error {
+	return s.Serv.Shutdown(ctx)
 }
 
 // Run starts webhook server.
 func (s *Server) Run(b *tgot.Bot) error {
-	return s.RunWH(b, WrapHandler(b.Handle))
+	return s.RunWH(b, WrapWebhook(b.Handle))
 }
 
 // RunWH starts webhook server.
@@ -116,7 +124,6 @@ func (s *Server) RunWH(b *tgot.Bot, h WHHandler) error {
 		SecretToken: s.cfg.SecretToken,
 		Handler:     h,
 	})
-
 	if !tls {
 		err = s.Serv.ListenAndServe()
 	} else {

@@ -1,13 +1,13 @@
 package tgot
 
 import (
-	stdcontext "context"
-	"errors"
 	"io"
 	"sync/atomic"
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
+
+	stdcontext "context"
 )
 
 // NewWithToken creates new bit with specified token and default http client.
@@ -16,18 +16,19 @@ func NewWithToken(token string, handler Handler) (*Bot, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(stdcontext.Background(), a, handler)
+	return New(a, handler)
 }
 
 // New creates new bot.
-func New(ctx stdcontext.Context, api *api.API, handler Handler) (*Bot, error) {
+func New(api *api.API, handler Handler) (*Bot, error) {
 	if api == nil {
-		return nil, errors.New("nil api")
+		panic("nil api")
 	}
 	b := &Bot{
 		api: api,
 		h:   handler,
 	}
+	b.ctx = newContext(stdcontext.Background(), "bot", b, nil)
 	_, err := b.GetMe()
 	if err != nil {
 		return nil, err
@@ -38,12 +39,12 @@ func New(ctx stdcontext.Context, api *api.API, handler Handler) (*Bot, error) {
 
 // Bot type.
 type Bot struct {
+	h Handler
+
 	ctx *context
 	api *api.API
 	err atomic.Pointer[error]
 	me  tg.User
-
-	h Handler
 }
 
 // Handler represents updates handler.
