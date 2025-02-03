@@ -3,7 +3,6 @@ package passport
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -16,68 +15,76 @@ import (
 	"github.com/karalef/tgot/api/tgpassport"
 )
 
-func decrypt(secret, hash, encrypted []byte) ([]byte, error) {
+func decrypt(secret, hash, data []byte) ([]byte, error) {
 	if len(secret) == 0 {
 		return nil, errors.New("empty secret")
 	}
 	if len(hash) != sha256.Size {
 		return nil, errors.New("hash size does not match sha256")
 	}
-	if len(encrypted) == 0 || len(encrypted)%16 != 0 {
+	if len(data) == 0 || len(data)%16 != 0 {
 		return nil, errors.New("data length is not divisible by 16")
 	}
 
 	// find key and iv
-	h := sha512.Sum512(append(secret, hash...))
-	key, iv := h[0:32], h[32:48]
+	dig := sha512.Sum512(append(secret, hash...))
+	key, iv := dig[0:32], dig[32:48]
 
 	// decrypt data
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	paddedData := make([]byte, len(encrypted))
-	cipher.NewCBCDecrypter(block, iv).CryptBlocks(paddedData, encrypted)
+	cipher.NewCBCDecrypter(block, iv).CryptBlocks(data, data)
 
 	// verify data
-	if dataHash := sha256.Sum256(paddedData); string(dataHash[:]) != string(hash) {
+	if dig := sha256.Sum256(data); string(dig[:]) != string(hash) {
 		return nil, errors.New("hash does not match")
 	}
-	padding := paddedData[0]
+	padding := data[0]
 	if padding < 32 {
 		return nil, errors.New("invalid data padding")
 	}
 
-	// remove padding
-	return paddedData[padding:], err
+	return data[padding:], err
 }
 
-func fromBase64(s string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(s)
+func fromBase64(s, name string) ([]byte, error) {
+	if len(s) == 0 {
+		return nil, errors.New("empty " + name)
+	}
+	dec, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil, invalidBase64(name)
+	}
+	return dec, nil
+}
+
+type invalidBase64 string
+
+func (e invalidBase64) Error() string {
+	return "invalid encoding of " + string(e) + " (must be base64)"
 }
 
 // DecryptCredentials decrypts telegram encrypted passport credentials.
 func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, nonce string) (*tgpassport.Credentials, error) {
-	secret, err := fromBase64(ecreds.Secret)
-	if err != nil {
-		return nil, invalidBase64("secret")
-	}
-	if len(secret) == 0 {
-		return nil, errors.New("empty secret")
-	}
-
-	secret, err = rsa.DecryptOAEP(sha1.New(), rand.Reader, priv, secret, nil)
+	secret, err := fromBase64(ecreds.Secret, "secret")
 	if err != nil {
 		return nil, err
 	}
 
-	dataHash, err := fromBase64(ecreds.Hash)
+	secret, err = rsa.DecryptOAEP(sha1.New(), nil, priv, secret, nil)
 	if err != nil {
-		return nil, invalidBase64("hash")
+		return nil, err
 	}
-	data, err := fromBase64(ecreds.Hash)
+
+	dataHash, err := fromBase64(ecreds.Hash, "hash")
 	if err != nil {
-		return nil, invalidBase64("data")
+		return nil, err
+	}
+	data, err := fromBase64(ecreds.Data, "data")
+	if err != nil {
+		return nil, err
 	}
 	data, err = decrypt(secret, dataHash, data)
 	if err != nil {
@@ -85,8 +92,7 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 	}
 
 	var creds tgpassport.Credentials
-	err = json.Unmarshal(data, &creds)
-	if err != nil {
+	if err = json.Unmarshal(data, &creds); err != nil {
 		return nil, err
 	}
 	if creds.Nonce != nonce {
@@ -97,9 +103,9 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 
 // DecryptData decrypts base64-encoded encrypted data.
 func DecryptData[T tgpassport.DataType](creds tgpassport.DataCredentials, data string) (*T, error) {
-	encryptedData, err := fromBase64(data)
+	encryptedData, err := fromBase64(data, "data")
 	if err != nil {
-		return nil, invalidBase64("data")
+		return nil, err
 	}
 	dataJSON, err := decrypt([]byte(creds.Secret), []byte(creds.DataHash), encryptedData)
 	if err != nil {
@@ -116,10 +122,4 @@ func DecryptData[T tgpassport.DataType](creds tgpassport.DataCredentials, data s
 // DecryptFile decrypts encrypted file data.
 func DecryptFile(creds tgpassport.FileCredentials, fileData []byte) ([]byte, error) {
 	return decrypt([]byte(creds.Secret), []byte(creds.FileHash), fileData)
-}
-
-type invalidBase64 string
-
-func (e invalidBase64) Error() string {
-	return "invalid encoding of " + string(e) + " (must be base64)"
 }
