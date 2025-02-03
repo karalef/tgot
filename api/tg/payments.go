@@ -81,22 +81,20 @@ const (
 	TransactionPartnerTypeOther       TransactionPartnerType = "other"
 )
 
-var transactionPartnerTypes = oneof.Map[TransactionPartnerType]{
-	TransactionPartnerTypeUser:        TransactionPartnerUser{},
-	TransactionPartnerTypeFragment:    TransactionPartnerFragment{},
-	TransactionPartnerTypeTelegramAds: TransactionParnterTelegramAds{},
-	TransactionPartnerTypeTelegramApi: TransactionPartnerTelegramApi{},
-	TransactionPartnerTypeOther:       TransactionPartnerOther{},
-}
+var transactionPartnerTypes = oneof.NewMap[TransactionPartnerType](
+	TransactionPartnerUser{},
+	TransactionPartnerFragment{},
+	TransactionPartnerTelegramAds{},
+	TransactionPartnerTelegramApi{},
+	TransactionPartnerOther{},
+)
 
-type oneOfTrsansactionPartner struct{}
-
-func (oneOfTrsansactionPartner) New(t TransactionPartnerType) (oneof.Value[TransactionPartnerType], bool) {
-	return transactionPartnerTypes.New(t)
+func (TransactionPartnerType) TypeFor(t TransactionPartnerType) oneof.Type {
+	return transactionPartnerTypes.TypeFor(t)
 }
 
 // TransactionPartner describes the source of a transaction, or its recipient for outgoing transactions.
-type TransactionPartner = oneof.Object[TransactionPartnerType, oneOfTrsansactionPartner]
+type TransactionPartner = oneof.Object[TransactionPartnerType, oneof.IDTypeType]
 
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
@@ -117,10 +115,10 @@ func (TransactionPartnerFragment) Type() TransactionPartnerType {
 	return TransactionPartnerTypeFragment
 }
 
-// TransactionParnterTelegramAds describes a withdrawal transaction to the Telegram Ads platform.
-type TransactionParnterTelegramAds struct{}
+// TransactionPartnerTelegramAds describes a withdrawal transaction to the Telegram Ads platform.
+type TransactionPartnerTelegramAds struct{}
 
-func (TransactionParnterTelegramAds) Type() TransactionPartnerType {
+func (TransactionPartnerTelegramAds) Type() TransactionPartnerType {
 	return TransactionPartnerTypeTelegramAds
 }
 
@@ -146,20 +144,18 @@ const (
 	RevenueWithdrawalStateTypeFailed    RevenueWithdrawalStateType = "failed"
 )
 
-var revenueWithdrawalStateTypes = oneof.Map[RevenueWithdrawalStateType]{
-	RevenueWithdrawalStateTypePending:   RevenueWithdrawalStatePending{},
-	RevenueWithdrawalStateTypeSucceeded: RevenueWithdrawalStateSucceeded{},
-	RevenueWithdrawalStateTypeFailed:    RevenueWithdrawalStateFailed{},
-}
+var revenueWithdrawalStateTypes = oneof.NewMap[RevenueWithdrawalStateType](
+	RevenueWithdrawalStatePending{},
+	RevenueWithdrawalStateSucceeded{},
+	RevenueWithdrawalStateFailed{},
+)
 
-type oneOfRevenueWithdrawalState struct{}
-
-func (oneOfRevenueWithdrawalState) New(t RevenueWithdrawalStateType) (oneof.Value[RevenueWithdrawalStateType], bool) {
-	return revenueWithdrawalStateTypes.New(t)
+func (RevenueWithdrawalStateType) TypeFor(t RevenueWithdrawalStateType) oneof.Type {
+	return revenueWithdrawalStateTypes.TypeFor(t)
 }
 
 // RevenueWithdrawalState describes the state of a revenue withdrawal operation.
-type RevenueWithdrawalState = oneof.Object[RevenueWithdrawalStateType, oneOfRevenueWithdrawalState]
+type RevenueWithdrawalState = oneof.Object[RevenueWithdrawalStateType, oneof.IDTypeType]
 
 // RevenueWithdrawalStatePending means the withdrawal is in progress.
 type RevenueWithdrawalStatePending struct{}

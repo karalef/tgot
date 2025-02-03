@@ -1,6 +1,7 @@
 package tg
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/karalef/tgot/api/internal/oneof"
@@ -321,20 +322,18 @@ const (
 	ReactionTypeTypePaid        ReactionTypeType = "paid"
 )
 
-var reactionTypes = oneof.Map[ReactionTypeType]{
-	ReactionTypeTypeEmoji:       ReactionTypeEmoji{},
-	ReactionTypeTypeCustomEmoji: ReactionTypeCustomEmoji{},
-	ReactionTypeTypePaid:        ReactionTypePaid{},
-}
+var reactionTypes = oneof.NewMap[ReactionTypeType](
+	ReactionTypeEmoji{},
+	ReactionTypeCustomEmoji{},
+	ReactionTypePaid{},
+)
 
-type oneOfReactionType struct{}
-
-func (oneOfReactionType) New(t ReactionTypeType) (oneof.Value[ReactionTypeType], bool) {
-	return reactionTypes.New(t)
+func (ReactionTypeType) TypeFor(t ReactionTypeType) oneof.Type {
+	return reactionTypes.TypeFor(t)
 }
 
 // ReactionType describes the type of a reaction.
-type ReactionType = oneof.Object[ReactionTypeType, oneOfReactionType]
+type ReactionType = oneof.Object[ReactionTypeType, oneof.IDTypeType]
 
 // ReactionTypeEmoji means the reaction is based on an emoji.
 type ReactionTypeEmoji struct {
@@ -451,21 +450,19 @@ const (
 	MessageOriginTypeChannel    MessageOriginType = "channel"
 )
 
-var messageOriginTypes = oneof.Map[MessageOriginType]{
-	MessageOriginTypeUser:       MessageOriginUser{},
-	MessageOriginTypeHiddenUser: MessageOriginHiddenUser{},
-	MessageOriginTypeChat:       MessageOriginChat{},
-	MessageOriginTypeChannel:    MessageOriginChannel{},
-}
+var messageOriginTypes = oneof.NewMap[MessageOriginType](
+	MessageOriginUser{},
+	MessageOriginHiddenUser{},
+	MessageOriginChat{},
+	MessageOriginChannel{},
+)
 
-type oneOfMessageOrigin struct{}
-
-func (oneOfMessageOrigin) New(t MessageOriginType) (oneof.Value[MessageOriginType], bool) {
-	return messageOriginTypes.New(t)
+func (MessageOriginType) TypeFor(t MessageOriginType) oneof.Type {
+	return messageOriginTypes.TypeFor(t)
 }
 
 // MessageOrigin describes the origin of a message.
-type MessageOrigin = oneof.Object[MessageOriginType, oneOfMessageOrigin]
+type MessageOrigin = oneof.Object[MessageOriginType, oneof.IDTypeType]
 
 // MessageOriginUser means the message was originally sent by a known user.
 type MessageOriginUser struct {
@@ -536,8 +533,17 @@ func (m MaybeInaccessibleMessage) Chat() *Chat {
 	return m.Message.Chat
 }
 
-func (m MaybeInaccessibleMessage) IsInaccessible() bool {
-	return m.Message == nil
+func (m *MaybeInaccessibleMessage) UnmarshalJSON(b []byte) error {
+	var inac InaccessibleMessage
+	if err := json.Unmarshal(b, &inac); err != nil {
+		return err
+	}
+	if inac.Date == 0 {
+		m.InaccessibleMessage = &inac
+		return nil
+	}
+	m.Message = new(Message)
+	return json.Unmarshal(b, m.Message)
 }
 
 // ChatBoostAdded represents a service message about a user boosting a chat.
@@ -561,21 +567,19 @@ const (
 	BackgroundTypeTypeChatTheme BackgroundTypeType = "chat_theme"
 )
 
-var backgroundTypes = oneof.Map[BackgroundTypeType]{
-	BackgroundTypeTypeFill:      BackgroundTypeFill{},
-	BackgroundTypeTypeWallpaper: BackgroundTypeWallpaper{},
-	BackgroundTypeTypePattern:   BackgroundTypePattern{},
-	BackgroundTypeTypeChatTheme: BackgroundTypeChatTheme{},
-}
+var backgroundTypes = oneof.NewMap[BackgroundTypeType](
+	BackgroundTypeFill{},
+	BackgroundTypeWallpaper{},
+	BackgroundTypePattern{},
+	BackgroundTypeChatTheme{},
+)
 
-type oneOfBackgroundType struct{}
-
-func (oneOfBackgroundType) New(t BackgroundTypeType) (oneof.Value[BackgroundTypeType], bool) {
-	return backgroundTypes.New(t)
+func (BackgroundTypeType) TypeFor(t BackgroundTypeType) oneof.Type {
+	return backgroundTypes.TypeFor(t)
 }
 
 // BackgroundType describes the type of a background.
-type BackgroundType = oneof.Object[BackgroundTypeType, oneOfBackgroundType]
+type BackgroundType = oneof.Object[BackgroundTypeType, oneof.IDTypeType]
 
 // BackgroundTypeFill means the background is automatically filled based on the selected colors.
 type BackgroundTypeFill struct {
@@ -625,20 +629,18 @@ const (
 	BackgroundFillTypeFreeformGradient BackgroundFillType = "freeform_gradient"
 )
 
-var backgroundFillTypes = oneof.Map[BackgroundFillType]{
-	BackgroundFillTypeSolid:            BackgroundFillSolid{},
-	BackgroundFillTypeGradient:         BackgroundFillGradient{},
-	BackgroundFillTypeFreeformGradient: BackgroundFillFreeformGradient{},
-}
+var backgroundFillTypes = oneof.NewMap[BackgroundFillType](
+	BackgroundFillSolid{},
+	BackgroundFillGradient{},
+	BackgroundFillFreeformGradient{},
+)
 
-type oneOfBackgroundFillType struct{}
-
-func (oneOfBackgroundFillType) New(t BackgroundFillType) (oneof.Value[BackgroundFillType], bool) {
-	return backgroundFillTypes.New(t)
+func (BackgroundFillType) TypeFor(t BackgroundFillType) oneof.Type {
+	return backgroundFillTypes.TypeFor(t)
 }
 
 // BackgroundFill describes the way a background is filled based on the selected colors.
-type BackgroundFill = oneof.Object[BackgroundFillType, oneOfBackgroundFillType]
+type BackgroundFill = oneof.Object[BackgroundFillType, oneof.IDTypeType]
 
 // BackgroundFillSolid means the background is filled using the selected color.
 type BackgroundFillSolid struct {

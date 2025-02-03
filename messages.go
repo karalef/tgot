@@ -17,7 +17,7 @@ func InlineMsgID(i *tg.InlineChosen) MessageID {
 
 // CallbackMsgID creates a message id of any callback message type.
 func CallbackMsgID(q *tg.CallbackQuery) MessageID {
-	if q.Message == nil || q.Message.IsInaccessible() {
+	if q.Message == nil || q.Message.Message == nil {
 		return MessageID{inline: q.InlineMessageID}
 	}
 	return MessageID{

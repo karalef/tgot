@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/karalef/tgot/api/internal"
 	"github.com/karalef/tgot/api/internal/oneof"
 )
 
@@ -341,63 +340,40 @@ const (
 	ChatBoostSourceTypeGiveaway ChatBoostSourceType = "giveaway"
 )
 
+var chatBoostSourceTypes = oneof.NewMap[ChatBoostSourceType](
+	ChatBoostSourcePremium{},
+	ChatBoostSourceGiftCode{},
+	ChatBoostSourceGiveaway{},
+)
+
+func (ChatBoostSourceType) TypeFor(t ChatBoostSourceType) oneof.Type {
+	return chatBoostSourceTypes.TypeFor(t)
+}
+
+type typeIDSource struct {
+	Source string `json:"source"`
+}
+
+func (i typeIDSource) SetTypeID(id string) oneof.IDType { i.Source = id; return i }
+func (i typeIDSource) GetTypeID() string                { return i.Source }
+
 // ChatBoostSource describes the source of a chat boost.
 type ChatBoostSource struct {
 	User   User
-	Source ChatBoostSourcer
-}
-
-func (s ChatBoostSource) Type() ChatBoostSourceType { return s.Source.ChatBoostSourceType() }
-
-type chatBoostSource struct {
-	Source ChatBoostSourceType `json:"source"`
-	User   User                `json:"user"`
-}
-
-func (s ChatBoostSource) MarshalJSON() ([]byte, error) {
-	return internal.MergeJSON(chatBoostSource{s.Source.ChatBoostSourceType(), s.User}, s.Source)
-}
-
-func (s ChatBoostSource) UnmarshalJSON(p []byte) error {
-	var src chatBoostSource
-	if err := json.Unmarshal(p, &src); err != nil {
-		return err
-	}
-
-	switch src.Source {
-	case ChatBoostSourceTypePremium:
-		s.Source = ChatBoostSourcePremium{}
-	case ChatBoostSourceTypeGiftCode:
-		s.Source = ChatBoostSourceGiftCode{}
-	case ChatBoostSourceTypeGiveaway:
-		s.Source = ChatBoostSourceGiveaway{}
-	default:
-		return errors.New("invalid Source type for ChatBoostSource")
-	}
-
-	s.User = src.User
-	return json.Unmarshal(p, &s.Source)
-}
-
-type ChatBoostSourcer interface {
-	ChatBoostSourceType() ChatBoostSourceType
+	Source oneof.Object[ChatBoostSourceType, typeIDSource]
 }
 
 // ChatBoostSourcePremium means the boost was obtained by subscribing to Telegram Premium or
 // by gifting a Telegram Premium subscription to another user.
 type ChatBoostSourcePremium struct{}
 
-func (ChatBoostSourcePremium) ChatBoostSourceType() ChatBoostSourceType {
-	return ChatBoostSourceTypePremium
-}
+func (ChatBoostSourcePremium) Type() ChatBoostSourceType { return ChatBoostSourceTypePremium }
 
 // ChatBoostSourceGiftCode means the boost was obtained by the creation of Telegram Premium
 // gift codes to boost a chat.
 type ChatBoostSourceGiftCode struct{}
 
-func (ChatBoostSourceGiftCode) ChatBoostSourceType() ChatBoostSourceType {
-	return ChatBoostSourceTypeGiftCode
-}
+func (ChatBoostSourceGiftCode) Type() ChatBoostSourceType { return ChatBoostSourceTypeGiftCode }
 
 // ChatBoostSourceGiveaway means the boost was obtained by the creation of a Telegram Premium or a Telegram Star giveaway.
 type ChatBoostSourceGiveaway struct {
@@ -406,9 +382,7 @@ type ChatBoostSourceGiveaway struct {
 	IsClaimed         bool `json:"is_unclaimed"`
 }
 
-func (ChatBoostSourceGiveaway) ChatBoostSourceType() ChatBoostSourceType {
-	return ChatBoostSourceTypeGiveaway
-}
+func (ChatBoostSourceGiveaway) Type() ChatBoostSourceType { return ChatBoostSourceTypeGiveaway }
 
 // ChatID represents chat id.
 type ChatID interface {

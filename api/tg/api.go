@@ -121,20 +121,18 @@ const (
 	MenuButtonTypeDefault  MenuButtonType = "default"
 )
 
-var menuButtonTypes = oneof.Map[MenuButtonType]{
-	MenuButtonTypeCommands: MenuButtonCommands{},
-	MenuButtonTypeWebApp:   MenuButtonWebApp{},
-	MenuButtonTypeDefault:  MenuButtonDefault{},
-}
+var menuButtonTypes = oneof.NewMap[MenuButtonType](
+	MenuButtonCommands{},
+	MenuButtonWebApp{},
+	MenuButtonDefault{},
+)
 
-type oneOfMenuButton struct{}
-
-func (oneOfMenuButton) New(t MenuButtonType) (oneof.Value[MenuButtonType], bool) {
-	return menuButtonTypes.New(t)
+func (MenuButtonType) TypeFor(t MenuButtonType) oneof.Type {
+	return menuButtonTypes.TypeFor(t)
 }
 
 // MenuButton describes the bot's menu button in a private chat.
-type MenuButton = oneof.Object[MenuButtonType, oneOfMenuButton]
+type MenuButton = oneof.Object[MenuButtonType, oneof.IDTypeType]
 
 // MenuButtonCommands represents a menu button, which opens the bot's list of commands.
 type MenuButtonCommands struct{}

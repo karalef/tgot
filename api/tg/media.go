@@ -12,20 +12,18 @@ const (
 	PaidMediaTypeVideo   PaidMediaType = "video"
 )
 
-var paidMediaTypes = oneof.Map[PaidMediaType]{
-	PaidMediaTypePreview: PaidMediaPreview{},
-	PaidMediaTypePhoto:   PaidMediaPhoto{},
-	PaidMediaTypeVideo:   PaidMediaVideo{},
-}
+var paidMediaTypes = oneof.NewMap[PaidMediaType](
+	PaidMediaPreview{},
+	PaidMediaPhoto{},
+	PaidMediaVideo{},
+)
 
-type oneOfPaidMedia struct{}
-
-func (oneOfPaidMedia) New(t PaidMediaType) (oneof.Value[PaidMediaType], bool) {
-	return paidMediaTypes.New(t)
+func (PaidMediaType) TypeFor(t PaidMediaType) oneof.Type {
+	return paidMediaTypes.TypeFor(t)
 }
 
 // PaidMedia describes paid media.
-type PaidMedia = oneof.Object[PaidMediaType, oneOfPaidMedia]
+type PaidMedia = oneof.Object[PaidMediaType, oneof.IDTypeType]
 
 // PaidMediaPreview represents the paid media that isn't available before the payment.
 type PaidMediaPreview struct {
