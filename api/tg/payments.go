@@ -65,11 +65,22 @@ type StarTransactions struct {
 
 // StarTransaction describes a Telegram Star transaction.
 type StarTransaction struct {
-	ID       string              `json:"id"`
-	Amount   uint                `json:"amount"`
-	Date     int64               `json:"date"`
-	Source   *TransactionPartner `json:"source"`
-	Receiver *TransactionPartner `json:"receiver"`
+	ID             string              `json:"id"`
+	Amount         uint                `json:"amount"`
+	NanostarAmount uint                `json:"nanostar_amount"`
+	Date           int64               `json:"date"`
+	Source         *TransactionPartner `json:"source"`
+	Receiver       *TransactionPartner `json:"receiver"`
+}
+
+// AffiliateInfo contains information about the affiliate that received a
+// commission via this transaction.
+type AffiliateInfo struct {
+	User             *User `json:"affiliate_user,omitempty"`
+	Chat             *Chat `json:"affiliate_chat,omitempty"`
+	ComissionPerMile uint  `json:"commission_per_mille"`
+	Amount           uint  `json:"amount"`
+	NanostarAmount   uint  `json:"nanostar_amount,omitempty"`
 }
 
 // TransactionPartnerType represents the type of a transaction partner.
@@ -77,15 +88,17 @@ type TransactionPartnerType string
 
 // all available transaction partner types.
 const (
-	TransactionPartnerTypeUser        TransactionPartnerType = "user"
-	TransactionPartnerTypeFragment    TransactionPartnerType = "fragment"
-	TransactionPartnerTypeTelegramAds TransactionPartnerType = "telegram_ads"
-	TransactionPartnerTypeTelegramApi TransactionPartnerType = "telegram_api"
-	TransactionPartnerTypeOther       TransactionPartnerType = "other"
+	TransactionPartnerTypeUser             TransactionPartnerType = "user"
+	TransactionPartnerTypeAffiliateProgram TransactionPartnerType = "affiliate_program"
+	TransactionPartnerTypeFragment         TransactionPartnerType = "fragment"
+	TransactionPartnerTypeTelegramAds      TransactionPartnerType = "telegram_ads"
+	TransactionPartnerTypeTelegramApi      TransactionPartnerType = "telegram_api"
+	TransactionPartnerTypeOther            TransactionPartnerType = "other"
 )
 
 var transactionPartnerTypes = oneof.NewMap[TransactionPartnerType](
 	TransactionPartnerUser{},
+	TransactionPartnerAffiliateProgram{},
 	TransactionPartnerFragment{},
 	TransactionPartnerTelegramAds{},
 	TransactionPartnerTelegramApi{},
@@ -101,15 +114,27 @@ type TransactionPartner = oneof.Object[TransactionPartnerType, oneof.IDTypeType]
 
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
-	User               *User       `json:"user"`
-	InvoicePayload     string      `json:"invoice_payload,omitempty"`
-	SubscriptionPeriod uint        `json:"subscription_period,omitempty"`
-	PaidMedia          []PaidMedia `json:"paid_media,omitempty"`
-	PaidMediaPayload   string      `json:"paid_media_payload"`
-	Gift               Gift        `json:"gift"`
+	User               *User          `json:"user"`
+	Affiliate          *AffiliateInfo `json:"affiliate,omitempty"`
+	InvoicePayload     string         `json:"invoice_payload,omitempty"`
+	SubscriptionPeriod uint           `json:"subscription_period,omitempty"`
+	PaidMedia          []PaidMedia    `json:"paid_media,omitempty"`
+	PaidMediaPayload   string         `json:"paid_media_payload,omitempty"`
+	Gift               Gift           `json:"gift,omitempty"`
 }
 
 func (TransactionPartnerUser) Type() TransactionPartnerType { return TransactionPartnerTypeUser }
+
+// TransactionPartnerAffiliateProgram describes the affiliate program that
+// issued the affiliate commission received via this transaction.
+type TransactionPartnerAffiliateProgram struct {
+	SponsorUser      *User `json:"sponsor_user,omitempty"`
+	ComissionPerMile uint  `json:"commission_per_mille"`
+}
+
+func (TransactionPartnerAffiliateProgram) Type() TransactionPartnerType {
+	return TransactionPartnerTypeAffiliateProgram
+}
 
 // TransactionPartnerFragment describes a transaction with Fragment.
 type TransactionPartnerFragment struct {
