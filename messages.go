@@ -201,6 +201,7 @@ type Copy struct {
 	CaptionData
 	ReplyMarkup           tg.ReplyMarkup `tg:"reply_markup"`
 	ShowCaptionAboveMedia bool           `tg:"show_caption_above_media"`
+	VideoStart            int64          `tg:"video_start_timestamp"`
 }
 
 // Copy copies messages of any kind.
@@ -216,8 +217,9 @@ func (c Message) Copy(from ChatID, cp Copy, opts ...SendOptions) (*tg.MessageID,
 
 // Forward contains parameters for forwarding the message.
 type Forward struct {
-	DisableNotification bool `tg:"disable_notification"`
-	ProtectContent      bool `tg:"protect_content"`
+	DisableNotification bool  `tg:"disable_notification"`
+	ProtectContent      bool  `tg:"protect_content"`
+	VideoStart          int64 `tg:"video_start_timestamp"`
 }
 
 // Forward forwards messages of any kind.

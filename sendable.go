@@ -92,13 +92,15 @@ type Video struct {
 	Video     tg.Inputtable `tg:"video"`
 	Thumbnail tg.Inputtable `tg:"thumbnail"`
 	CaptionData
-	Duration              int            `tg:"duration"`
-	Width                 int            `tg:"width"`
-	Height                int            `tg:"height"`
-	HasSpoiler            bool           `tg:"has_spoiler"`
-	SupportsStreaming     bool           `tg:"supports_streaming"`
-	ReplyMarkup           tg.ReplyMarkup `tg:"reply_markup"`
-	ShowCaptionAboveMedia bool           `tg:"show_caption_above_media"`
+	Duration              int             `tg:"duration"`
+	Width                 int             `tg:"width"`
+	Height                int             `tg:"height"`
+	Cover                 []tg.Inputtable `tg:"cover"`
+	Start                 int64           `tg:"start_timestamp"`
+	HasSpoiler            bool            `tg:"has_spoiler"`
+	SupportsStreaming     bool            `tg:"supports_streaming"`
+	ReplyMarkup           tg.ReplyMarkup  `tg:"reply_markup"`
+	ShowCaptionAboveMedia bool            `tg:"show_caption_above_media"`
 }
 
 func (Video) sendMethod() string { return "sendVideo" }

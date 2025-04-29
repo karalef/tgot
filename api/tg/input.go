@@ -135,6 +135,8 @@ func (*InputMediaPhoto) Thumb() Inputtable      { return nil }
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
 	Thumbnail             *InputFile `json:"thumbnail,omitempty"`
+	Cover                 *InputFile `json:"cover,omitempty"`
+	Start                 int64      `json:"start_timestamp"`
 	Width                 int        `json:"width,omitempty"`
 	Height                int        `json:"height,omitempty"`
 	Duration              int        `json:"duration,omitempty"`
@@ -211,6 +213,8 @@ func (*InputPaidMediaPhoto) Thumb() Inputtable          { return nil }
 // InputPaidMediaVideo is the paid media to send is a video.
 type InputPaidMediaVideo struct {
 	Thumbnail         *InputFile `json:"thumbnail,omitempty"`
+	Cover             *InputFile `json:"cover,omitempty"`
+	Start             int64      `json:"start_timestamp"`
 	Width             uint       `json:"width,omitempty"`
 	Height            uint       `json:"height,omitempty"`
 	Duration          uint       `json:"duration,omitempty"`

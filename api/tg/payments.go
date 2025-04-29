@@ -89,6 +89,7 @@ type TransactionPartnerType string
 // all available transaction partner types.
 const (
 	TransactionPartnerTypeUser             TransactionPartnerType = "user"
+	TransactionPartnerTypeChat             TransactionPartnerType = "chat"
 	TransactionPartnerTypeAffiliateProgram TransactionPartnerType = "affiliate_program"
 	TransactionPartnerTypeFragment         TransactionPartnerType = "fragment"
 	TransactionPartnerTypeTelegramAds      TransactionPartnerType = "telegram_ads"
@@ -98,6 +99,7 @@ const (
 
 var transactionPartnerTypes = oneof.NewMap[TransactionPartnerType](
 	TransactionPartnerUser{},
+	TransactionPartnerChat{},
 	TransactionPartnerAffiliateProgram{},
 	TransactionPartnerFragment{},
 	TransactionPartnerTelegramAds{},
@@ -114,16 +116,26 @@ type TransactionPartner = oneof.Object[TransactionPartnerType, oneof.IDTypeType]
 
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
-	User               *User          `json:"user"`
+	User               User           `json:"user"`
 	Affiliate          *AffiliateInfo `json:"affiliate,omitempty"`
 	InvoicePayload     string         `json:"invoice_payload,omitempty"`
 	SubscriptionPeriod uint           `json:"subscription_period,omitempty"`
 	PaidMedia          []PaidMedia    `json:"paid_media,omitempty"`
 	PaidMediaPayload   string         `json:"paid_media_payload,omitempty"`
-	Gift               Gift           `json:"gift,omitempty"`
+	Gift               *Gift          `json:"gift,omitempty"`
 }
 
 func (TransactionPartnerUser) Type() TransactionPartnerType { return TransactionPartnerTypeUser }
+
+// TransactionPartnerChat describes a transaction with a chat.
+type TransactionPartnerChat struct {
+	Chat Chat  `json:"chat"`
+	Gift *Gift `json:"gift,omitempty"`
+}
+
+func (TransactionPartnerChat) Type() TransactionPartnerType {
+	return TransactionPartnerTypeChat
+}
 
 // TransactionPartnerAffiliateProgram describes the affiliate program that
 // issued the affiliate commission received via this transaction.

@@ -55,12 +55,14 @@ type Document struct {
 type Video struct {
 	FileData
 
-	Width     int        `json:"width"`
-	Height    int        `json:"height"`
-	Duration  int        `json:"duration"`
-	Thumbnail *PhotoSize `json:"thumbnail"`
-	FileName  string     `json:"file_name"`
-	MimeType  string     `json:"mime_type"`
+	Width     int         `json:"width"`
+	Height    int         `json:"height"`
+	Duration  int         `json:"duration"`
+	Thumbnail *PhotoSize  `json:"thumbnail"`
+	Cover     []PhotoSize `json:"cover"`
+	Start     int64       `json:"start_timestamp"`
+	FileName  string      `json:"file_name"`
+	MimeType  string      `json:"mime_type"`
 }
 
 // VideoNote represents a video message.
