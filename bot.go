@@ -301,9 +301,22 @@ func (b *Bot) GetWebhookInfo() (*tg.WebhookInfo, error) {
 	return method[*tg.WebhookInfo](b.ctx, "getWebhookInfo", nil)
 }
 
+// InvoiceLink is used to create invoice link.
+type InvoiceLink struct {
+	BusinessConnectionID          string `tg:"business_connection_id"`
+	SubscriptionPeriod            uint   `tg:"subscription_period"`
+	tg.InputInvoiceMessageContent `tg:",json"`
+}
+
 // CreateInvoiceLink creates a link for an invoice.
-func (b *Bot) CreateInvoiceLink(l tg.InputInvoiceMessageContent) (string, error) {
-	return method[string](b.ctx, "createInvoiceLink", api.NewDataFrom(l, "json"))
+func (b *Bot) CreateInvoiceLink(l InvoiceLink) (string, error) {
+	return method[string](b.ctx, "createInvoiceLink", api.NewDataFrom(l))
+}
+
+// GetAvailableGifts returns the list of gifts that can be sent by the bot to
+// users and channel chats.
+func (b *Bot) GetAvailableGifts() (*tg.Gifts, error) {
+	return method[*tg.Gifts](b.ctx, "getAvailableGifts")
 }
 
 // LogOut method.

@@ -447,3 +447,10 @@ type InlineQueryResultVoice struct {
 func (InlineQueryResultVoice) inlineQueryResultType() string {
 	return "voice"
 }
+
+// PreparedInlineMessage describes an inline message to be sent by a user of a
+// Mini App.
+type PreparedInlineMessage struct {
+	ID      string `json:"id"`
+	Expires int64  `json:"expiration_date"`
+}

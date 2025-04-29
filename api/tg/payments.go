@@ -46,13 +46,16 @@ type ShippingOption struct {
 
 // SuccessfulPayment contains basic information about a successful payment.
 type SuccessfulPayment struct {
-	Curency                 string     `json:"currency"`
-	TotalAmount             int        `json:"total_amount"`
-	InvoicePayload          string     `json:"invoice_payload"`
-	ShippingOptionID        string     `json:"shipping_option_id,omitempty"`
-	OrderInfo               *OrderInfo `json:"order_info,omitempty"`
-	TelegramPaymentChargeID string     `json:"telegram_payment_charge_id"`
-	ProviderPaymentChargeID string     `json:"provider_payment_charge_id"`
+	Curency                    string     `json:"currency"`
+	TotalAmount                int        `json:"total_amount"`
+	InvoicePayload             string     `json:"invoice_payload"`
+	SubscriptionExpirationDate int64      `json:"subscription_expiration_date"`
+	IsRecurring                bool       `json:"is_recurring"`
+	IsFirstRecurring           bool       `json:"is_first_recurring"`
+	ShippingOptionID           string     `json:"shipping_option_id,omitempty"`
+	OrderInfo                  *OrderInfo `json:"order_info,omitempty"`
+	TelegramPaymentChargeID    string     `json:"telegram_payment_charge_id"`
+	ProviderPaymentChargeID    string     `json:"provider_payment_charge_id"`
 }
 
 // StarTransactions contains a list of Telegram Star transactions.
@@ -98,10 +101,12 @@ type TransactionPartner = oneof.Object[TransactionPartnerType, oneof.IDTypeType]
 
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
-	User             *User       `json:"user"`
-	InvoicePayload   string      `json:"invoice_payload,omitempty"`
-	PaidMedia        []PaidMedia `json:"paid_media,omitempty"`
-	PaidMediaPayload string      `json:"paid_media_payload"`
+	User               *User       `json:"user"`
+	InvoicePayload     string      `json:"invoice_payload,omitempty"`
+	SubscriptionPeriod uint        `json:"subscription_period,omitempty"`
+	PaidMedia          []PaidMedia `json:"paid_media,omitempty"`
+	PaidMediaPayload   string      `json:"paid_media_payload"`
+	Gift               Gift        `json:"gift"`
 }
 
 func (TransactionPartnerUser) Type() TransactionPartnerType { return TransactionPartnerTypeUser }
@@ -188,4 +193,19 @@ type RefundedPayment struct {
 	InvoicePayload          string `json:"invoice_payload"`
 	TelegramPaymentChargeID string `json:"telegram_payment_charge_id"`
 	ProviderPaymentChargeID string `json:"provider_payment_charge_id"`
+}
+
+// Gift represents a gift that can be sent by the bot.
+type Gift struct {
+	ID               string  `json:"id"`
+	Sticker          Sticker `json:"sticker"`
+	StarCount        uint    `json:"star_count"`
+	UpgradeStarCount uint    `json:"upgrade_star_count"`
+	Total            uint    `json:"total_count"`
+	Remaining        uint    `json:"remaining_count"`
+}
+
+// Gifts represent a list of gifts.
+type Gifts struct {
+	Gifts []Gift `json:"gifts"`
 }

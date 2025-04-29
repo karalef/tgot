@@ -39,10 +39,26 @@ func (u *User) GetPhotos() (*tg.UserProfilePhotos, error) {
 	return method[*tg.UserProfilePhotos](u, "getUserProfilePhotos")
 }
 
+// SetEmojiStatus changes the emoji status for a given user that previously
+// allowed the bot to manage their emoji status via the Mini App method
+// [requestEmojiStatusAccess].
+func (u *User) SetEmojiStatus(id string, expires int64) error {
+	d := api.NewData().Set("emoji_status_custom_emoji_id", id)
+	d.SetInt64("emoji_status_expiration_date", expires)
+	return u.method("setUserEmojiStatus")
+}
+
 // RefundStarPayment refunds a successful payment in Telegram Stars.
 func (u *User) RefundStarPayment(chargeID string) error {
 	d := api.NewData().Set("telegram_payment_charge_id", chargeID)
 	return u.method("refundStarPayment", d)
+}
+
+// EditUserStarSubscription cancels or re-enables extension of a subscription paid in Telegram Stars.
+func (u *User) EditUserStarSubscription(chargeID string, isCancelled bool) error {
+	d := api.NewData().Set("telegram_payment_charge_id", chargeID)
+	d.SetBool("is_canceled", isCancelled)
+	return u.method("editUserStarSubscription", d)
 }
 
 // UploadStickerFile uploads a .PNG file with a sticker for later use
@@ -50,6 +66,20 @@ func (u *User) RefundStarPayment(chargeID string) error {
 func (u *User) UploadStickerFile(sticker *tg.InputFile, format tg.StickerFormat) (*tg.File, error) {
 	d := api.NewData().AddFile("sticker", sticker).Set("sticker_format", string(format))
 	return method[*tg.File](u, "uploadStickerFile", d)
+}
+
+// PreparedInlineMessage is used to save prepared inline message.
+type PreparedInlineMessage struct {
+	Result            tg.InlineQueryResulter `tg:"result"`
+	AllowUserChats    bool                   `tg:"allow_user_chats"`
+	AllowBotChats     bool                   `tg:"allow_bot_chats"`
+	AllowGroupChats   bool                   `tg:"allow_group_chats"`
+	AllowChannelChats bool                   `tg:"allow_channel_chats"`
+}
+
+// SavePreparedInlineMessage stores a message that can be sent by a user of a Mini App.
+func (u *User) SavePreparedInlineMessage(p PreparedInlineMessage) (*tg.PreparedInlineMessage, error) {
+	return method[*tg.PreparedInlineMessage](u, "savePreparedInlineMessage", api.NewDataFrom(p))
 }
 
 // WithChatMember returns ChatMember with provided chat id and user id.
