@@ -416,3 +416,15 @@ func (c *Chat) DeleteForumTopic() error {
 func (c *Chat) UnpinAllForumTopicMessages() error {
 	return c.method("unpinAllForumTopicMessages")
 }
+
+// Verify verifies a chat on behalf of the organization which is represented by
+// the bot.
+func (c *Chat) Verify(desc string) error {
+	return c.method("verifyChat", api.NewData().Set("custom_description", desc))
+}
+
+// RemoveVerification removes verification from a chat that is currently
+// verified on behalf of the organization represented by the bot.
+func (c *Chat) RemoveVerification() error {
+	return c.method("removeChatVerification")
+}

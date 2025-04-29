@@ -82,6 +82,18 @@ func (u *User) SavePreparedInlineMessage(p PreparedInlineMessage) (*tg.PreparedI
 	return method[*tg.PreparedInlineMessage](u, "savePreparedInlineMessage", api.NewDataFrom(p))
 }
 
+// Verify verifies a user on behalf of the organization which is represented by
+// the bot.
+func (u *User) Verify(desc string) error {
+	return u.method("verifyUser", api.NewData().Set("custom_description", desc))
+}
+
+// RemoveVerification removes verification from a user who is currently
+// verified on behalf of the organization represented by the bot.
+func (u *User) RemoveVerification() error {
+	return u.method("removeUserVerification")
+}
+
 // WithChatMember returns ChatMember with provided chat id and user id.
 // It copies the context but resets the context parameters.
 func WithChatMember(ctx BaseContext, chatID ChatID, userID int64) *ChatMember {
