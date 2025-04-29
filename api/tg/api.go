@@ -169,10 +169,10 @@ type BotShortDescription struct {
 
 // BusinessConnection describes the connection of the bot with a business account.
 type BusinessConnection struct {
-	ID         string `json:"id"`
-	User       User   `json:"user"`
-	UserChatID int64  `json:"user_chat_id"`
-	Date       int64  `json:"date"`
-	CanReply   bool   `json:"can_reply"`
-	IsEnabled  bool   `json:"is_enabled"`
+	ID         string            `json:"id"`
+	User       User              `json:"user"`
+	UserChatID int64             `json:"user_chat_id"`
+	Date       int64             `json:"date"`
+	Rights     BusinessBotRights `json:"rights"`
+	IsEnabled  bool              `json:"is_enabled"`
 }

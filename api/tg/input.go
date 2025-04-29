@@ -223,3 +223,87 @@ type InputPaidMediaVideo struct {
 
 func (*InputPaidMediaVideo) inputPaidMediaType() string { return "video" }
 func (v *InputPaidMediaVideo) Thumb() Inputtable        { return v.Thumbnail }
+
+// InputProfilePhotoData represents any available input profile photo object.
+type InputProfilePhotoData interface {
+	Media() *InputFile
+	inputProfilePhotoType() string
+}
+
+var (
+	_ Inputter              = InputProfilePhoto{}
+	_ InputProfilePhotoData = InputProfilePhotoStatic{}
+	_ InputProfilePhotoData = InputProfilePhotoAnimated{}
+)
+
+// InputProfilePhoto describes a profile photo to set.
+type InputProfilePhoto struct {
+	Data InputProfilePhotoData
+}
+
+func (i InputProfilePhoto) GetMedia() (Inputtable, Inputtable) { return i.Data.Media(), nil }
+func (i InputProfilePhoto) MarshalJSON() ([]byte, error) {
+	return internal.MergeJSON(i.Data, struct {
+		Type string `json:"type"`
+	}{i.Data.inputProfilePhotoType()})
+}
+
+// InputProfilePhotoStatic is a static profile photo in the .JPG format.
+type InputProfilePhotoStatic struct {
+	Photo *InputFile `json:"photo"`
+}
+
+func (InputProfilePhotoStatic) inputProfilePhotoType() string { return "static" }
+func (i InputProfilePhotoStatic) Media() *InputFile           { return i.Photo }
+
+// InputProfilePhotoAnimated is an animated profile photo in the MPEG4 format.
+type InputProfilePhotoAnimated struct {
+	Animation *InputFile `json:"animation"`
+	MainFrame float64    `json:"main_frame_timestamp,omitempty"`
+}
+
+func (InputProfilePhotoAnimated) inputProfilePhotoType() string { return "animated" }
+func (i InputProfilePhotoAnimated) Media() *InputFile           { return i.Animation }
+
+// InputStoryContentData represents any available input story content object.
+type InputStoryContentData interface {
+	Media() *InputFile
+	inputStoryContentType() string
+}
+
+var (
+	_ Inputter              = InputProfilePhoto{}
+	_ InputStoryContentData = InputStoryContentPhoto{}
+	_ InputStoryContentData = InputStoryContentVideo{}
+)
+
+// InputStoryContent describes the content of a story to post.
+type InputStoryContent struct {
+	Data InputStoryContentData
+}
+
+func (i InputStoryContent) GetMedia() (Inputtable, Inputtable) { return i.Data.Media(), nil }
+func (i InputStoryContent) MarshalJSON() ([]byte, error) {
+	return internal.MergeJSON(i.Data, struct {
+		Type string `json:"type"`
+	}{i.Data.inputStoryContentType()})
+}
+
+// InputStoryContentPhoto describes a photo to post as a story.
+type InputStoryContentPhoto struct {
+	Photo *InputFile `json:"photo"`
+}
+
+func (InputStoryContentPhoto) inputStoryContentType() string { return "photo" }
+func (i InputStoryContentPhoto) Media() *InputFile           { return i.Photo }
+
+// InputStoryContentVideo describes a video to post as a story.
+type InputStoryContentVideo struct {
+	Video       *InputFile `json:"video"`
+	Duration    float64    `json:"duration,omitempty"`
+	CoverFrame  int64      `json:"cover_frame_timestamp,omitempty"`
+	IsAnimation bool       `json:"is_animation"`
+}
+
+func (InputStoryContentVideo) inputStoryContentType() string { return "video" }
+func (i InputStoryContentVideo) Media() *InputFile           { return i.Video }

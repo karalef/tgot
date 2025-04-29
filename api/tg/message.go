@@ -31,6 +31,7 @@ type Message struct {
 	IsFromOffline             bool                       `json:"is_from_offline"`
 	MediaGroupID              string                     `json:"media_group_id"`
 	AuthorSignature           string                     `json:"author_signature"`
+	PaidStarCount             uint                       `json:"paid_star_count"`
 	Text                      string                     `json:"text"`
 	Entities                  []MessageEntity            `json:"entities"`
 	LinkPreviewOptions        *LinkPreviewOptions        `json:"link_preview_options"`
@@ -72,6 +73,8 @@ type Message struct {
 	RefundedPayment           *RefundedPayment           `json:"refunded_payment"`
 	UsersShared               *UsersShared               `json:"users_shared"`
 	ChatShared                *ChatShared                `json:"chat_shared"`
+	Gift                      *GiftInfo                  `json:"gift"`
+	UniqueGift                *UniqueGiftInfo            `json:"unique_gift"`
 	ConnectedWebsite          string                     `json:"connected_website"`
 	PassportData              *PassportData              `json:"passport_data"`
 	ProximityAlert            *ProximityAlert            `json:"proximity_alert_triggered"`
@@ -87,6 +90,7 @@ type Message struct {
 	Giveaway                  *Giveaway                  `json:"giveaway"`
 	GiveawayWinners           *GiveawayWinners           `json:"giveaway_winners"`
 	GiveawayCompleted         *GiveawayCompleted         `json:"giveaway_completed"`
+	PaidMediaPriceChanged     *PaidMediaPriceChanged     `json:"paid_message_price_changed"`
 	VideoChatScheduled        *VideoChatScheduled        `json:"video_chat_scheduled"`
 	VideoChatStarted          *VideoChatStarted          `json:"video_chat_started"`
 	VideoChatEnded            *VideoChatEnded            `json:"video_chat_ended"`
@@ -677,3 +681,9 @@ const (
 	MarkdownV2 ParseMode = "MarkdownV2"
 	HTML       ParseMode = "HTML"
 )
+
+// PaidMediaPriceChanged describes a service message about a change in the price
+// of paid messages within a chat.
+type PaidMediaPriceChanged struct {
+	Count uint `json:"paid_message_star_count"`
+}

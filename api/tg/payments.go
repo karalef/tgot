@@ -114,15 +114,29 @@ func (TransactionPartnerType) TypeFor(t TransactionPartnerType) oneof.Type {
 // TransactionPartner describes the source of a transaction, or its recipient for outgoing transactions.
 type TransactionPartner = oneof.Object[TransactionPartnerType, oneof.IDTypeType]
 
+// TransactionType represents transaction type in TransactionPartnerUser.
+type TransactionType string
+
+// all available trnsaction types.
+const (
+	TransactionTypeInvoice          TransactionType = "invoice_payment"
+	TransactionTypePaidMedia        TransactionType = "paid_media_payment"
+	TransactionTypeGift             TransactionType = "gift_purchase"
+	TransactionTypePremium          TransactionType = "premium_purchase"
+	TransactionTypeBusinessTransfer TransactionType = "business_account_transfer"
+)
+
 // TransactionPartnerUser describes a transaction with a user.
 type TransactionPartnerUser struct {
-	User               User           `json:"user"`
-	Affiliate          *AffiliateInfo `json:"affiliate,omitempty"`
-	InvoicePayload     string         `json:"invoice_payload,omitempty"`
-	SubscriptionPeriod uint           `json:"subscription_period,omitempty"`
-	PaidMedia          []PaidMedia    `json:"paid_media,omitempty"`
-	PaidMediaPayload   string         `json:"paid_media_payload,omitempty"`
-	Gift               *Gift          `json:"gift,omitempty"`
+	TransactionType    TransactionType `json:"transaction_type"`
+	User               User            `json:"user"`
+	Affiliate          *AffiliateInfo  `json:"affiliate,omitempty"`
+	InvoicePayload     string          `json:"invoice_payload,omitempty"`
+	SubscriptionPeriod uint            `json:"subscription_period,omitempty"`
+	PaidMedia          []PaidMedia     `json:"paid_media,omitempty"`
+	PaidMediaPayload   string          `json:"paid_media_payload,omitempty"`
+	Gift               *Gift           `json:"gift,omitempty"`
+	PremiumDuration    uint            `json:"premium_subscription_duration"`
 }
 
 func (TransactionPartnerUser) Type() TransactionPartnerType { return TransactionPartnerTypeUser }
@@ -230,19 +244,4 @@ type RefundedPayment struct {
 	InvoicePayload          string `json:"invoice_payload"`
 	TelegramPaymentChargeID string `json:"telegram_payment_charge_id"`
 	ProviderPaymentChargeID string `json:"provider_payment_charge_id"`
-}
-
-// Gift represents a gift that can be sent by the bot.
-type Gift struct {
-	ID               string  `json:"id"`
-	Sticker          Sticker `json:"sticker"`
-	StarCount        uint    `json:"star_count"`
-	UpgradeStarCount uint    `json:"upgrade_star_count"`
-	Total            uint    `json:"total_count"`
-	Remaining        uint    `json:"remaining_count"`
-}
-
-// Gifts represent a list of gifts.
-type Gifts struct {
-	Gifts []Gift `json:"gifts"`
 }

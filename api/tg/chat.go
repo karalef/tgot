@@ -62,6 +62,7 @@ type ChatFullInfo struct {
 	InviteLink                     string                `json:"invite_link"`
 	PinnedMessage                  *Message              `json:"pinned_message"`
 	Permissions                    *ChatPermissions      `json:"permissions"`
+	AcceptedGiftTypes              AcceptedGiftTypes     `json:"accepted_gift_types"`
 	CanSendPaidMedia               bool                  `json:"can_send_paid_media"`
 	SlowModeDelay                  int                   `json:"slow_mode_delay"`
 	UnrestrictBoostCount           int                   `json:"unrestrict_boost_count"`
@@ -141,6 +142,24 @@ type ChatAdministratorRights struct {
 	CanEditMessages     bool `json:"can_edit_messages,omitempty"`
 	CanPinMessages      bool `json:"can_pin_messages,omitempty"`
 	CanManageTopics     bool `json:"can_manage_topics,omitempty"`
+}
+
+// BusinessBotRights represents the rights of a business bot.
+type BusinessBotRights struct {
+	CanReply                   bool `json:"can_reply,omitempty"`
+	CanReadMessages            bool `json:"can_read_messages,omitempty"`
+	CanDeleteSentMessages      bool `json:"can_delete_sent_messages,omitempty"`
+	CanDeleteAllMessages       bool `json:"can_delete_all_messages,omitempty"`
+	CanEditName                bool `json:"can_edit_name,omitempty"`
+	CanEditBio                 bool `json:"can_edit_bio,omitempty"`
+	CanEditProfilePhoto        bool `json:"can_edit_profile_photo,omitempty"`
+	CanEditUsername            bool `json:"can_edit_username,omitempty"`
+	CanChangeGiftSettings      bool `json:"can_change_gift_settings,omitempty"`
+	CanViewGiftsAndStars       bool `json:"can_view_gifts_and_stars,omitempty"`
+	CanConvertGiftsToStars     bool `json:"can_convert_gifts_to_stars,omitempty"`
+	CanTransferAndUpgradeGifts bool `json:"can_transfer_and_upgrade_gifts,omitempty"`
+	CanTransferStars           bool `json:"can_transfer_stars,omitempty"`
+	CanManageStories           bool `json:"can_manage_stories,omitempty"`
 }
 
 // ChatLocation represents a location to which a chat is connected.

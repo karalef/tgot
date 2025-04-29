@@ -91,3 +91,96 @@ const (
 	MaskPositionPointMouth    MaskPositionPoint = "mouth"
 	MaskPositionPointChin     MaskPositionPoint = "chin"
 )
+
+// StoryArea describes a clickable area on a story media.
+type StoryArea struct {
+	Type     StoryAreaType     `json:"type"`
+	Position StoryAreaPosition `json:"position"`
+}
+
+// StoryAreaPosition describes the position of a clickable area within a story.
+type StoryAreaPosition struct {
+	XPercentage            float64 `json:"x_percentage"`
+	YPercentage            float64 `json:"y_percentage"`
+	WidthPercentage        float64 `json:"width_percentage"`
+	HeightPercentage       float64 `json:"height_percentage"`
+	RotationAngle          float64 `json:"rotation_angle"`
+	CornerRadiusPercentage float64 `json:"corner_radius_percentage"`
+}
+
+// LocationAddress describes the physical address of a location.
+type LocationAddress struct {
+	CountryCode string `json:"country_code"` // two-letter ISO 3166-1 alpha-2 country code
+	State       string `json:"state,omitempty"`
+	City        string `json:"city,omitempty"`
+	Street      string `json:"street,omitempty"`
+}
+
+// StoryAreaTypeID represents the ID of story area type.
+type StoryAreaTypeID string
+
+// all available story types.
+const (
+	StoryAreaTypeIDLocation          StoryAreaTypeID = "location"
+	StoryAreaTypeIDSuggestedReaction StoryAreaTypeID = "suggested_reaction"
+	StoryAreaTypeIDLink              StoryAreaTypeID = "link"
+	StoryAreaTypeIDWeather           StoryAreaTypeID = "weather"
+	StoryAreaTypeIDUniqueGift        StoryAreaTypeID = "unique_gift"
+)
+
+var storyAreaTypes = oneof.NewMap[StoryAreaTypeID](
+	StoryAreaTypeLocation{},
+	StoryAreaTypeSuggestedReaction{},
+	StoryAreaTypeLink{},
+	StoryAreaTypeWeather{},
+	StoryAreaTypeUniqueGift{},
+)
+
+func (StoryAreaTypeID) TypeFor(t StoryAreaTypeID) oneof.Type {
+	return storyAreaTypes.TypeFor(t)
+}
+
+// StoryAreaType describes the type of a clickable area on a story.
+type StoryAreaType = oneof.Object[StoryAreaTypeID, oneof.IDTypeType]
+
+// StoryAreaTypeLocation describes a story area pointing to a location.
+type StoryAreaTypeLocation struct {
+	Latitude  float32          `json:"latitude"`
+	Longitude float32          `json:"longitude"`
+	Address   *LocationAddress `json:"address"`
+}
+
+func (StoryAreaTypeLocation) Type() StoryAreaTypeID { return StoryAreaTypeIDLocation }
+
+// StoryAreaTypeSuggestedReaction describes a story area pointing to a suggested
+// reaction.
+type StoryAreaTypeSuggestedReaction struct {
+	RectionType ReactionType `json:"reaction_type"`
+	IsDark      bool         `json:"is_dark"`
+	IsFlipped   bool         `json:"is_flipped"`
+}
+
+func (StoryAreaTypeSuggestedReaction) Type() StoryAreaTypeID { return StoryAreaTypeIDLocation }
+
+// StoryAreaTypeLink describes a story area pointing to an HTTP or tg:// link.
+type StoryAreaTypeLink struct {
+	URL string `json:"url"`
+}
+
+func (StoryAreaTypeLink) Type() StoryAreaTypeID { return StoryAreaTypeIDLink }
+
+// StoryAreaTypeWeather describes a story area containing weather information.
+type StoryAreaTypeWeather struct {
+	Temperature     float64 `json:"temperature"`
+	Emoji           string  `json:"emoji"`
+	BackgroundColor uint    `json:"background_color"`
+}
+
+func (StoryAreaTypeWeather) Type() StoryAreaTypeID { return StoryAreaTypeIDWeather }
+
+// StoryAreaTypeUniqueGift describes a story area pointing to a unique gift.
+type StoryAreaTypeUniqueGift struct {
+	Name string `json:"name"`
+}
+
+func (StoryAreaTypeUniqueGift) Type() StoryAreaTypeID { return StoryAreaTypeIDUniqueGift }

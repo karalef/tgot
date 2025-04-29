@@ -94,6 +94,20 @@ func (u *User) RemoveVerification() error {
 	return u.method("removeUserVerification")
 }
 
+// Premium is used in [User.GiftPremium] method.
+type Premium struct {
+	MonthCount uint               `tg:"month_count"` // 3/6/12
+	StarCount  uint               `tg:"star_count"`  // 1000/1500/2500
+	Text       string             `tg:"text"`
+	ParseMode  tg.ParseMode       `tg:"text_parse_mode"`
+	Entities   []tg.MessageEntity `tg:"text_entities"`
+}
+
+// GiftPremium gifts a Telegram Premium subscription to the given user.
+func (u *User) GiftPremium(p Premium) error {
+	return u.method("giftPremiumSubscription", api.NewDataFrom(p))
+}
+
 // WithChatMember returns ChatMember with provided chat id and user id.
 // It copies the context but resets the context parameters.
 func WithChatMember(ctx BaseContext, chatID ChatID, userID int64) *ChatMember {
