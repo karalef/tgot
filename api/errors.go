@@ -19,8 +19,8 @@ func makeError[T error](method string, d *Data, err T) baseError[T] {
 		for k, v := range d.Params {
 			e.Params[k] = v
 		}
-		e.Files = make(map[string]string, len(d.Files))
-		for field, f := range d.Files {
+		e.Files = make(map[string]string, len(d.Upload))
+		for field, f := range d.Upload {
 			s, _ := f.FileData()
 			e.Files[field] = s
 		}

@@ -51,7 +51,7 @@ func (b *Business) SetBio(bio string) error {
 // SetProfilePhoto changes the profile photo of a managed business account.
 func (b *Business) SetProfilePhoto(photo tg.InputProfilePhoto, public bool) error {
 	d := api.NewData().SetBool("is_public", public)
-	d.SetJSON("photo", photo).AddAttach(photo.Data.Media())
+	d.SetInput("photo", photo)
 	return b.method("setBusinessAccountProfilePhoto", d)
 }
 

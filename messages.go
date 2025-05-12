@@ -103,8 +103,7 @@ func (m *Message) Reply(s Sendable) error {
 
 // EditLiveLocation edits live location messages.
 func (c Message) EditLiveLocation(ll tg.Location, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
-	d := api.NewData()
-	api.MarshalTo(d, ll, "json")
+	d := api.NewData().AddObject(ll, "json")
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -154,13 +153,7 @@ func (c Message) EditCaption(cap EditCaption, replyMarkup ...tg.InlineKeyboardMa
 
 // EditMedia edits animation, audio, document, photo, or video messages.
 func (c Message) EditMedia(m tg.InputMedia, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
-	d := api.NewData()
-	med, thumb := m.GetMedia()
-	if med != nil {
-		d.AddAttach(med)
-		d.AddAttach(thumb)
-	}
-	d.SetJSON("media", m)
+	d := api.NewData().SetInput("media", m)
 	if len(replyMarkup) > 0 {
 		d.SetJSON("reply_markup", replyMarkup[0])
 	}
@@ -210,7 +203,7 @@ func (c Message) Copy(from ChatID, cp Copy, opts ...SendOptions) (*tg.MessageID,
 	d := api.NewDataFrom(cp)
 	from.setChatID(d, "from_chat_id")
 	if len(opts) > 0 {
-		d.SetObject(opts[0])
+		d.AddObject(opts[0])
 	}
 	return method[*tg.MessageID](c, "copyMessage", d)
 }

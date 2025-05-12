@@ -1,36 +1,39 @@
-package payments
+package api
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"net/http"
 )
 
-// DataURL is the url that provides data about currencies.
-const DataURL = "https://core.telegram.org/bots/payments/currencies.json"
+// CurrenciesDataURL is the url that provides data about currencies.
+const CurrenciesDataURL = "https://core.telegram.org/bots/payments/currencies.json"
 
 // GetCurrenciesData returns information about currencies supported by the telegram api.
-func GetCurrenciesData(ctx context.Context, client *http.Client) (map[string]Currency, error) {
+func (a *API) GetCurrenciesData(ctx context.Context) (map[string]Currency, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if client == nil {
-		client = http.DefaultClient
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, DataURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, CurrenciesDataURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.Do(req)
+	resp, err := a.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var r map[string]Currency
-	return r, json.NewDecoder(resp.Body).Decode(&r)
+	r, raw, err := DecodeJSON[map[string]Currency](resp.Body)
+	if err != nil {
+		return nil, &JSONError{
+			baseError: makeError("/bots/payments/currencies.json", nil, err),
+			Status:    resp.StatusCode,
+			Response:  raw,
+		}
+	}
+	return *r, nil
 }
 
 // Currency represents single currency data.

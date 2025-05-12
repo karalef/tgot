@@ -64,7 +64,7 @@ func (u *User) EditUserStarSubscription(chargeID string, isCancelled bool) error
 // UploadStickerFile uploads a .PNG file with a sticker for later use
 // in createNewStickerSet and addStickerToSet methods.
 func (u *User) UploadStickerFile(sticker *tg.InputFile, format tg.StickerFormat) (*tg.File, error) {
-	d := api.NewData().AddFile("sticker", sticker).Set("sticker_format", string(format))
+	d := api.NewData().SetFile("sticker", sticker).Set("sticker_format", string(format))
 	return method[*tg.File](u, "uploadStickerFile", d)
 }
 
@@ -106,6 +106,14 @@ type Premium struct {
 // GiftPremium gifts a Telegram Premium subscription to the given user.
 func (u *User) GiftPremium(p Premium) error {
 	return u.method("giftPremiumSubscription", api.NewDataFrom(p))
+}
+
+// SetPassportDataErrors informs a user that some of the Telegram Passport
+// elements they provided contains errors.The user will not be able to re-submit
+// their Passport to you until the errors are fixed.
+func (u *User) SetPassportDataErrors(errs []tg.PassportElementError) error {
+	return u.method("setPassportDataErrors",
+		api.NewData().SetJSON("errors", errs))
 }
 
 // WithChatMember returns ChatMember with provided chat id and user id.
@@ -177,8 +185,7 @@ func (m *ChatMember) Restrict(r RestrictChatMember) error {
 
 // Promote promotes or demotes a user in a supergroup or a channel.
 func (m *ChatMember) Promote(rights tg.ChatAdministratorRights) error {
-	d := api.NewData()
-	api.MarshalTo(d, rights, "json")
+	d := api.NewData().AddObject(rights, "json")
 	return m.method("promoteChatMember", d)
 }
 

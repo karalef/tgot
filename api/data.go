@@ -18,15 +18,13 @@ import (
 func NewData() *Data {
 	return &Data{
 		Params: make(map[string]string),
-		Files:  make(map[string]*tg.InputFile),
+		Upload: make(map[string]*tg.InputFile),
 	}
 }
 
 // NewDataFrom creates new Data object from v.
 func NewDataFrom(v any, structTagName ...string) *Data {
-	d := NewData()
-	MarshalTo(d, v, structTagName...)
-	return d
+	return NewData().AddObject(v, structTagName...)
 }
 
 // Data contains query parameters and files data.
@@ -34,20 +32,19 @@ type Data struct {
 	// contains query parameters and files that does not need to be uploaded.
 	Params map[string]string
 
-	// key is a multipart field name.
-	Files map[string]*tg.InputFile
+	// contains files that will be uploaded, where key is a multipart field.
+	Upload map[string]*tg.InputFile
 
 	attachCounter int
 }
 
 // Copy copies Data's params.
 func (d *Data) Copy() *Data {
-	p := d.Params
-	d = NewData()
-	for k, v := range p {
-		d.Params[k] = v
+	cp := NewData()
+	for k, v := range d.Params {
+		cp.Params[k] = v
 	}
-	return d
+	return cp
 }
 
 // WriteTo copies Data's params to dst and returns dst.
@@ -63,10 +60,10 @@ func (d *Data) WriteTo(dst *Data) *Data {
 
 // Data encodes the values into “URL encoded” form or multipart/form-data.
 func (d *Data) Data() (string, io.Reader) {
-	if d == nil || len(d.Params) == 0 && len(d.Files) == 0 {
+	if d == nil || len(d.Params) == 0 && len(d.Upload) == 0 {
 		return "", nil
 	}
-	if len(d.Files) > 0 {
+	if len(d.Upload) > 0 {
 		return d.writeMultipart()
 	}
 
@@ -141,30 +138,32 @@ func (d *Data) SetJSON(key string, v any) *Data {
 	return d
 }
 
-// SetObject sets the any marshalable struct as key value.
-func (d *Data) SetObject(v any, structTagName ...string) *Data {
-	MarshalTo(d, v, structTagName...)
-	return d
-}
-
-// AddFile adds file.
-func (d *Data) AddFile(field string, file tg.Inputtable) *Data {
+// SetFile sets the key to file.
+func (d *Data) SetFile(key string, file tg.Inputtable) *Data {
 	if isNil(file) {
 		return d
 	}
 
 	if inp, ok := file.(*tg.InputFile); ok {
-		return d.addFile(field, inp)
+		return d.addFile(key, inp)
 	}
 
 	urlid, _ := file.FileData()
-	d.Params[field] = urlid
+	d.Params[key] = urlid
 	return d
 }
 
 func (d *Data) addFile(field string, file *tg.InputFile) *Data {
-	d.Files[field] = file
+	d.Upload[field] = file
 	return d
+}
+
+// SetInput sets the key to JSON value and adds the attachments if needed.
+func (d *Data) SetInput(key string, v tg.Inputter) *Data {
+	for _, inp := range v.GetInput() {
+		d.AddAttach(inp)
+	}
+	return d.SetJSON(key, v)
 }
 
 // AddAttach links a file to the multipart field and adds it.
@@ -194,7 +193,7 @@ func (d *Data) writeMultipart() (string, io.Reader) {
 			}
 		}
 
-		for field, file := range d.Files {
+		for field, file := range d.Upload {
 			name, reader := file.FileData()
 			part, err := mp.CreateFormFile(field, name)
 			if err != nil {
@@ -225,11 +224,20 @@ type Marshaler interface {
 	MarshalTg(dst *Data)
 }
 
-// MarshalTo marshals the object to dst.
-func MarshalTo(dst *Data, o any, structTagName ...string) {
+// AddObject sets the struct fields as parameters.
+// It uses the "tg" tag key with pattern `tg:"name,opt1,opt2,..."`.
+// The name can be omitted (`tg:",opt1"`: field name will be automatically
+// transformed to snake case) or replaced with '-' to ignore it.
+// The 'force' option acts the same as argument in Data.Set* methods.
+// The 'json' option allows to use structs with 'json' tags from tg package as
+// anonymous fields, which will be embedded as the same struct with 'tg' tags.
+// Supported struct field types: string, bool, int*, uint*, float*,
+// struct/interface and array/slice of them all (automatically detects types
+// which implement tg.Inputter or tg.Inputtable and adds attachments if needed).
+func (d *Data) AddObject(o any, structTagName ...string) *Data {
 	if c, ok := o.(Marshaler); ok {
-		c.MarshalTg(dst)
-		return
+		c.MarshalTg(d)
+		return d
 	}
 
 	structTag := structTagTg
@@ -239,7 +247,7 @@ func MarshalTo(dst *Data, o any, structTagName ...string) {
 
 	val := reflect.ValueOf(o)
 	if !val.IsValid() {
-		return
+		return d
 	}
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -254,98 +262,123 @@ func MarshalTo(dst *Data, o any, structTagName ...string) {
 		if !value.IsValid() {
 			continue
 		}
-		field := typ.Field(i)
-		if !field.IsExported() {
-			continue
-		}
-		isPointer := value.Kind() == reflect.Ptr
-		if isPointer {
+		if value.Kind() == reflect.Ptr {
 			if value.IsNil() {
 				continue
 			}
 			value = value.Elem()
 		}
-		tag := strings.Split(field.Tag.Get(structTag), ",")
-		var name string
-		if len(tag) > 0 {
-			name = tag[0]
-		}
-		if name == "-" || name == "_" {
+		field := typ.Field(i)
+		if !field.IsExported() {
 			continue
 		}
-
-		if field.Anonymous && name == "" {
-			useJSONTags := len(tag) > 1 && tag[1] == "json"
-			if useJSONTags {
-				MarshalTo(dst, value.Interface(), "json")
-			} else {
-				MarshalTo(dst, value.Interface(), structTag)
+		tag, ignore := parseTag(field.Tag.Get(structTag))
+		if ignore {
+			continue
+		}
+		if field.Anonymous && tag.name == "" {
+			anon := structTag
+			if tag.has("json") {
+				anon = "json"
 			}
+			d.AddObject(value.Interface(), anon)
 			continue
 		}
-		if name == "" {
-			name = camelToSnake(field.Name)
+		if tag.name == "" {
+			tag.name = camelToSnake(field.Name)
 		}
-		force := isPointer || (len(tag) > 1 && tag[1] == "force")
+		force := tag.has("force")
 		typ := value.Type()
 		switch typ.Kind() {
 		case reflect.String:
-			dst.Set(name, value.String(), force)
+			d.Set(tag.name, value.String(), force)
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			dst.SetInt64(name, value.Int(), force)
+			d.SetInt64(tag.name, value.Int(), force)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			dst.SetInt64(name, int64(value.Uint()), force)
+			d.SetUint64(tag.name, value.Uint(), force)
 		case reflect.Float32, reflect.Float64:
-			dst.SetFloat64(name, value.Float(), force)
+			d.SetFloat64(tag.name, value.Float(), force)
 		case reflect.Bool:
-			dst.SetBool(name, value.Bool(), force)
-		case reflect.Struct:
-			dst.SetJSON(name, value.Interface())
-		case reflect.Interface:
-			if typ.Implements(inputtableType) {
-				dst.AddFile(name, value.Interface().(tg.Inputtable))
-				break
-			} else if typ.Implements(inputterType) {
-				prepareMedia(dst, value.Interface().(tg.Inputter))
-			}
-			dst.SetJSON(name, value.Interface())
+			d.SetBool(tag.name, value.Bool(), force)
+		case reflect.Struct, reflect.Interface:
+			marshalType(d, typ, tag.name, value.Interface())
 		case reflect.Slice, reflect.Array:
-			if typ.Elem().Implements(inputtableType) {
-				for i := 0; i < value.Len(); i++ {
-					dst.AddFile(name, value.Index(i).Interface().(tg.Inputtable))
-				}
-				break
-			} else if typ.Elem().Implements(inputterType) {
-				for i := 0; i < value.Len(); i++ {
-					prepareMedia(dst, value.Index(i).Interface().(tg.Inputter))
-				}
-			}
-			dst.SetJSON(name, value.Interface())
+			marshalTypeArray(d, typ, tag.name, value)
 		default:
 			panic("unsupported type " + field.Type.String())
 		}
 	}
+	return d
+}
+
+func marshalType(dst *Data, typ reflect.Type, name string, val any) {
+	if typ.Implements(inputtableType) {
+		dst.SetFile(name, val.(tg.Inputtable))
+	} else if typ.Implements(inputterType) {
+		dst.SetInput(name, val.(tg.Inputter))
+	} else {
+		dst.SetJSON(name, val)
+	}
+}
+
+func marshalTypeArray(dst *Data, typ reflect.Type, name string, val reflect.Value) {
+	if typ.Elem().Implements(inputtableType) {
+		for i := 0; i < val.Len(); i++ {
+			dst.AddAttach(val.Index(i).Interface().(tg.Inputtable))
+		}
+	} else if typ.Elem().Implements(inputterType) {
+		for i := 0; i < val.Len(); i++ {
+			inp := val.Index(i).Interface().(tg.Inputter).GetInput()
+			for _, i := range inp {
+				dst.AddAttach(i)
+			}
+		}
+	}
+	dst.SetJSON(name, val.Interface())
 }
 
 func camelToSnake(s string) string {
-	var result []rune
+	result := make([]rune, 0, len(s)+3)
 	for i, v := range s {
 		if unicode.IsUpper(v) && i != 0 {
-			result = append(result, '_')
+			result = append(result, '_', unicode.ToLower(v))
+			continue
 		}
-		result = append(result, unicode.ToLower(v))
+		result = append(result, v)
 	}
 	return string(result)
 }
 
-var inputterType = reflect.TypeOf((*tg.Inputter)(nil)).Elem()
-var inputtableType = reflect.TypeOf((*tg.Inputtable)(nil)).Elem()
+var (
+	inputterType   = reflect.TypeOf((*tg.Inputter)(nil)).Elem()
+	inputtableType = reflect.TypeOf((*tg.Inputtable)(nil)).Elem()
+)
 
-func prepareMedia(d *Data, media tg.Inputter) {
-	med, thumb := media.GetMedia()
-	if med == nil {
-		return
+func parseTag(t string) (s structtag, i bool) {
+	tag := strings.Split(t, ",")
+	if len(tag) > 0 {
+		s.name = tag[0]
 	}
-	d.AddAttach(med)
-	d.AddAttach(thumb)
+	if s.name == "-" || s.name == "_" {
+		s.name = ""
+		i = true
+	}
+	if len(tag) > 0 {
+		s.opts = tag[1:]
+	}
+	return
+}
+
+type structtag struct {
+	name string
+	opts []string
+}
+
+func (t structtag) has(opt string) bool {
+	for i := range t.opts {
+		if t.opts[i] == opt {
+			return true
+		}
+	}
+	return false
 }

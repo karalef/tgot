@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/karalef/tgot/api/internal"
+	"github.com/karalef/tgot/api/internal/oneof"
 )
 
 // Inputtable is an interface for FileID, FileURL and InputFile.
@@ -63,6 +64,13 @@ func FileBytes(name string, data []byte) *InputFile {
 	return FileReader(name, bytes.NewReader(data))
 }
 
+// Inputter is an interface for any type that contains Inputtable.
+type Inputter interface {
+	GetInput() []Inputtable
+}
+
+var _ Inputter = InputSticker{}
+
 // InputSticker describes a sticker to be added to a sticker set.
 type InputSticker struct {
 	Sticker      Inputtable    `json:"sticker"`
@@ -71,6 +79,8 @@ type InputSticker struct {
 	MaskPosition *MaskPosition `json:"mask_position,omitempty"`
 	Keywords     []string      `json:"keywords,omitempty"`
 }
+
+func (i InputSticker) GetInput() []Inputtable { return []Inputtable{i.Sticker} }
 
 // StickerFormat is a Sticker format.
 type StickerFormat string
@@ -82,23 +92,20 @@ const (
 	StickerVideo    StickerFormat = "video"
 )
 
-// Inputter is an interface for any input.
-type Inputter interface {
-	GetMedia() (main, thumb Inputtable)
-}
-
-// Thumbnailer is an interface for any media data.
-type Thumbnailer interface {
-	Thumb() Inputtable
-}
-
 // InputMediaData represents any available input media object.
 type InputMediaData interface {
-	Thumbnailer
+	Inputter
 	inputMediaType() string
 }
 
-var _ Inputter = (*InputMedia)(nil)
+var (
+	_ Inputter       = (*InputMedia)(nil)
+	_ InputMediaData = (*InputMediaPhoto)(nil)
+	_ InputMediaData = (*InputMediaVideo)(nil)
+	_ InputMediaData = (*InputMediaAnimation)(nil)
+	_ InputMediaData = (*InputMediaAudio)(nil)
+	_ InputMediaData = (*InputMediaDocument)(nil)
+)
 
 // InputMedia represents the content of a media message to be sent.
 type InputMedia struct {
@@ -109,8 +116,8 @@ type InputMedia struct {
 	Data      InputMediaData  `json:"-"`
 }
 
-func (i InputMedia) GetMedia() (Inputtable, Inputtable) {
-	return i.Media, i.Data.Thumb()
+func (i InputMedia) GetInput() []Inputtable {
+	return append(i.Data.GetInput(), i.Media)
 }
 
 func (i InputMedia) MarshalJSON() ([]byte, error) {
@@ -130,7 +137,7 @@ type InputMediaPhoto struct {
 }
 
 func (*InputMediaPhoto) inputMediaType() string { return "photo" }
-func (*InputMediaPhoto) Thumb() Inputtable      { return nil }
+func (*InputMediaPhoto) GetInput() []Inputtable { return nil }
 
 // InputMediaVideo represents a video to be sent.
 type InputMediaVideo struct {
@@ -145,8 +152,8 @@ type InputMediaVideo struct {
 	ShowCaptionAboveMedia bool       `json:"show_caption_above_media,omitempty"`
 }
 
-func (*InputMediaVideo) inputMediaType() string { return "video" }
-func (v *InputMediaVideo) Thumb() Inputtable    { return v.Thumbnail }
+func (*InputMediaVideo) inputMediaType() string   { return "video" }
+func (v *InputMediaVideo) GetInput() []Inputtable { return []Inputtable{v.Thumbnail} }
 
 // InputMediaAnimation represents an animation file
 // (GIF or H.264/MPEG-4 AVC video without sound) to be sent.
@@ -159,8 +166,8 @@ type InputMediaAnimation struct {
 	ShowCaptionAboveMedia bool       `json:"show_caption_above_media,omitempty"`
 }
 
-func (*InputMediaAnimation) inputMediaType() string { return "animation" }
-func (a *InputMediaAnimation) Thumb() Inputtable    { return a.Thumbnail }
+func (*InputMediaAnimation) inputMediaType() string   { return "animation" }
+func (a *InputMediaAnimation) GetInput() []Inputtable { return []Inputtable{a.Thumbnail} }
 
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
@@ -170,8 +177,8 @@ type InputMediaAudio struct {
 	Title     string     `json:"title,omitempty"`
 }
 
-func (*InputMediaAudio) inputMediaType() string { return "audio" }
-func (a *InputMediaAudio) Thumb() Inputtable    { return a.Thumbnail }
+func (*InputMediaAudio) inputMediaType() string   { return "audio" }
+func (a *InputMediaAudio) GetInput() []Inputtable { return []Inputtable{a.Thumbnail} }
 
 // InputMediaDocument represents a general file to be sent.
 type InputMediaDocument struct {
@@ -179,16 +186,20 @@ type InputMediaDocument struct {
 	DisableTypeDetection bool       `json:"disable_content_type_detection,omitempty"`
 }
 
-func (*InputMediaDocument) inputMediaType() string { return "document" }
-func (d *InputMediaDocument) Thumb() Inputtable    { return d.Thumbnail }
+func (*InputMediaDocument) inputMediaType() string   { return "document" }
+func (d *InputMediaDocument) GetInput() []Inputtable { return []Inputtable{d.Thumbnail} }
 
 // InputPaidMediaData represents any available input paid media object.
 type InputPaidMediaData interface {
-	Thumbnailer
+	Inputter
 	inputPaidMediaType() string
 }
 
-var _ Inputter = InputPaidMedia{}
+var (
+	_ Inputter           = InputPaidMedia{}
+	_ InputPaidMediaData = (*InputPaidMediaPhoto)(nil)
+	_ InputPaidMediaData = (*InputPaidMediaVideo)(nil)
+)
 
 // InputPaidMedia describes the paid media to be sent.
 type InputPaidMedia struct {
@@ -196,7 +207,10 @@ type InputPaidMedia struct {
 	Data  InputPaidMediaData `json:"-"`
 }
 
-func (i InputPaidMedia) GetMedia() (Inputtable, Inputtable) { return i.Media, i.Data.Thumb() }
+func (i InputPaidMedia) GetInput() []Inputtable {
+	return append(i.Data.GetInput(), i.Media)
+}
+
 func (i InputPaidMedia) MarshalJSON() ([]byte, error) {
 	return internal.MergeJSON(i.Data, struct {
 		Type  string     `json:"type"`
@@ -208,7 +222,7 @@ func (i InputPaidMedia) MarshalJSON() ([]byte, error) {
 type InputPaidMediaPhoto struct{}
 
 func (*InputPaidMediaPhoto) inputPaidMediaType() string { return "photo" }
-func (*InputPaidMediaPhoto) Thumb() Inputtable          { return nil }
+func (*InputPaidMediaPhoto) GetInput() []Inputtable     { return nil }
 
 // InputPaidMediaVideo is the paid media to send is a video.
 type InputPaidMediaVideo struct {
@@ -222,7 +236,7 @@ type InputPaidMediaVideo struct {
 }
 
 func (*InputPaidMediaVideo) inputPaidMediaType() string { return "video" }
-func (v *InputPaidMediaVideo) Thumb() Inputtable        { return v.Thumbnail }
+func (v *InputPaidMediaVideo) GetInput() []Inputtable   { return []Inputtable{v.Thumbnail, v.Cover} }
 
 // InputProfilePhotoData represents any available input profile photo object.
 type InputProfilePhotoData interface {
@@ -241,11 +255,9 @@ type InputProfilePhoto struct {
 	Data InputProfilePhotoData
 }
 
-func (i InputProfilePhoto) GetMedia() (Inputtable, Inputtable) { return i.Data.Media(), nil }
+func (i InputProfilePhoto) GetInput() []Inputtable { return []Inputtable{i.Data.Media()} }
 func (i InputProfilePhoto) MarshalJSON() ([]byte, error) {
-	return internal.MergeJSON(i.Data, struct {
-		Type string `json:"type"`
-	}{i.Data.inputProfilePhotoType()})
+	return internal.MergeJSON(i.Data, oneof.IDTypeType{Type: i.Data.inputProfilePhotoType()})
 }
 
 // InputProfilePhotoStatic is a static profile photo in the .JPG format.
@@ -272,7 +284,7 @@ type InputStoryContentData interface {
 }
 
 var (
-	_ Inputter              = InputProfilePhoto{}
+	_ Inputter              = InputStoryContent{}
 	_ InputStoryContentData = InputStoryContentPhoto{}
 	_ InputStoryContentData = InputStoryContentVideo{}
 )
@@ -282,11 +294,9 @@ type InputStoryContent struct {
 	Data InputStoryContentData
 }
 
-func (i InputStoryContent) GetMedia() (Inputtable, Inputtable) { return i.Data.Media(), nil }
+func (i InputStoryContent) GetInput() []Inputtable { return []Inputtable{i.Data.Media()} }
 func (i InputStoryContent) MarshalJSON() ([]byte, error) {
-	return internal.MergeJSON(i.Data, struct {
-		Type string `json:"type"`
-	}{i.Data.inputStoryContentType()})
+	return internal.MergeJSON(i.Data, oneof.IDTypeType{Type: i.Data.inputStoryContentType()})
 }
 
 // InputStoryContentPhoto describes a photo to post as a story.

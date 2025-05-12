@@ -171,7 +171,7 @@ func (c *Chat) CopyMessages(from ChatID, cp CopyMany, opts ...SendOptions) ([]tg
 	d := api.NewDataFrom(cp)
 	from.setChatID(d, "from_chat_id")
 	if len(opts) > 0 {
-		d.SetObject(opts[0])
+		d.AddObject(opts[0])
 	}
 	return method[[]tg.MessageID](c.context, "copyMessages", d)
 }
@@ -183,7 +183,7 @@ func (c *Chat) Send(s Sendable, opts ...SendOptions) (*tg.Message, error) {
 	}
 	d := api.NewDataFrom(s)
 	if len(opts) > 0 {
-		d.SetObject(opts[0])
+		d.AddObject(opts[0])
 	}
 	return method[*tg.Message](c.context, s.sendMethod(), d)
 }
@@ -198,7 +198,7 @@ type MediaGroup struct {
 func (c *Chat) SendMediaGroup(mg MediaGroup, opts ...SendOptions) ([]tg.Message, error) {
 	d := api.NewDataFrom(mg)
 	if len(opts) > 0 {
-		d.SetObject(opts[0])
+		d.AddObject(opts[0])
 	}
 	return method[[]tg.Message](c.context, "sendMediaGroup", d)
 }
@@ -303,7 +303,7 @@ func (c *Chat) EditSubscriptionInviteLink(link, name string) (*tg.ChatInviteLink
 
 // SetPhoto sets a new profile photo for the chat.
 func (c *Chat) SetPhoto(photo *tg.InputFile) error {
-	d := api.NewData().AddFile("photo", photo)
+	d := api.NewData().SetFile("photo", photo)
 	return c.method("setChatPhoto", d)
 }
 

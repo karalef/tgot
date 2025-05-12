@@ -83,7 +83,7 @@ func (s StickerSet) Delete() error {
 func (s StickerSet) SetThumbnail(userID int64, thumb tg.Inputtable, format tg.StickerFormat) error {
 	d := api.NewData()
 	d.SetInt64("user_id", userID)
-	d.AddFile("thumbnail", thumb)
+	d.SetFile("thumbnail", thumb)
 	d.Set("format", string(format))
 	return s.ctx.method("setStickerSetThumbnail", d)
 }
@@ -91,14 +91,14 @@ func (s StickerSet) SetThumbnail(userID int64, thumb tg.Inputtable, format tg.St
 // Add adds a new sticker to a set created by the bot.
 func (s StickerSet) Add(userID int64, sticker tg.InputSticker) error {
 	d := api.NewData().SetInt64("user_id", userID)
-	d.AddAttach(sticker.Sticker).SetJSON("sticker", sticker)
+	d.SetInput("sticker", sticker)
 	return s.ctx.method("addStickerToSet", d)
 }
 
 // Replace replace an existing sticker in a sticker set with a new one.
 func (s StickerSet) Replace(old string, userID int64, sticker tg.InputSticker) error {
 	d := api.NewData().Set("old_sticker", old).SetInt64("user_id", userID)
-	d.AddAttach(sticker.Sticker).SetJSON("sticker", sticker)
+	d.SetInput("sticker", sticker)
 	return s.ctx.method("replaceStickerInSet", d)
 }
 

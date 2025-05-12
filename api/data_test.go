@@ -48,8 +48,7 @@ func TestMarshal(t *testing.T) {
 		},
 	}
 
-	d := api.NewData()
-	api.MarshalTo(d, testt)
+	d := api.NewDataFrom(testt)
 
 	t.Log("params")
 	for k, v := range d.Params {
@@ -57,7 +56,7 @@ func TestMarshal(t *testing.T) {
 	}
 	t.Log()
 	t.Log("files")
-	for k, v := range d.Files {
+	for k, v := range d.Upload {
 		t.Logf("%s: %s\n", k, v.Name)
 	}
 }

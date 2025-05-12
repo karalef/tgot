@@ -61,7 +61,7 @@ type InlineAnswer struct {
 }
 
 func (a InlineAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("inline_query_id", queryID).SetObject(a)
+	d.Set("inline_query_id", queryID).AddObject(a)
 	return "answerInlineQuery"
 }
 
@@ -74,7 +74,7 @@ type CallbackAnswer struct {
 }
 
 func (a CallbackAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("callback_query_id", queryID).SetObject(a)
+	d.Set("callback_query_id", queryID).AddObject(a)
 	return "answerCallbackQuery"
 }
 
@@ -86,7 +86,7 @@ type ShippingAnswer struct {
 }
 
 func (a ShippingAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("shipping_query_id", queryID).SetObject(a)
+	d.Set("shipping_query_id", queryID).AddObject(a)
 	return "answerShippingQuery"
 }
 
@@ -97,7 +97,7 @@ type PreCheckoutAnswer struct {
 }
 
 func (a PreCheckoutAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("pre_checkout_query_id", queryID).SetObject(a)
+	d.Set("pre_checkout_query_id", queryID).AddObject(a)
 	return "answerPreCheckoutQuery"
 }
 
@@ -107,6 +107,6 @@ type WebAppAnswer struct {
 }
 
 func (a WebAppAnswer) answerData(d *api.Data, queryID string) string {
-	d.Set("web_app_query_id", queryID).SetObject(a)
+	d.Set("web_app_query_id", queryID).AddObject(a)
 	return "answerWebAppQuery"
 }
