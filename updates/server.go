@@ -32,15 +32,6 @@ func NewWebhookServer(addr string, cfg ServerConfig) (*Server, error) {
 	}, nil
 }
 
-// StartWebhookServer creates and runs webhook server.
-func StartWebhookServer(b *tgot.Bot, addr string, cfg ServerConfig) error {
-	server, err := NewWebhookServer(addr, cfg)
-	if err != nil {
-		return err
-	}
-	return server.Run(b)
-}
-
 // Server is a server that handles telegram webhooks.
 // It uses std HTTP server implementation.
 //
@@ -100,7 +91,7 @@ func (s *Server) RunWH(b *tgot.Bot, h WHHandler) error {
 		cert = tg.FileBytes(filepath.Base(s.cfg.CertFile), certfile)
 	}
 
-	ok, err := b.SetWebhook(tgot.WebhookData{
+	err := b.SetWebhook(tgot.WebhookData{
 		URL:            s.cfg.URL,
 		Certificate:    cert,
 		IPAddress:      s.cfg.IPAddress,
@@ -109,14 +100,14 @@ func (s *Server) RunWH(b *tgot.Bot, h WHHandler) error {
 		DropPending:    s.cfg.DropPending,
 		SecretToken:    s.cfg.SecretToken,
 	})
-	if !ok { // because on successful result it returns an error with code 0
+	if err != nil {
 		return err
 	}
 
 	if s.cfg.Path == "" {
-		u, err := url.Parse(s.cfg.URL)
-		if err != nil {
-			return err
+		u, e := url.Parse(s.cfg.URL)
+		if e != nil {
+			return e
 		}
 		s.cfg.Path = u.RawPath
 	}

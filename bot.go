@@ -285,9 +285,17 @@ type WebhookData struct {
 }
 
 // SetWebhook specifies a webhook URL.
-// Use this method to specify a URL and receive incoming updates via an outgoing webhook.
-func (b *Bot) SetWebhook(wd WebhookData) (bool, error) {
-	return method[bool](b.ctx, "setWebhook", api.NewDataFrom(wd))
+// Use this method to specify a URL and receive incoming updates via an outgoing
+// webhook.
+// It has different behaivour: since the API returns error with code 0 on
+// successful result, it check the response for OK and doesn't return error if
+// it is.
+func (b *Bot) SetWebhook(wd WebhookData) error {
+	ok, err := method[bool](b.ctx, "setWebhook", api.NewDataFrom(wd))
+	if !ok {
+		return err
+	}
+	return nil
 }
 
 // DeleteWebhook removes webhook integration if you decide to switch back to getUpdates.

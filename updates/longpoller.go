@@ -25,11 +25,6 @@ func NewLongPoller(timeout, limit uint, offset int) *LongPoller {
 	return &lp
 }
 
-// StartLongPolling creates and runs long poller.
-func StartLongPolling(b *tgot.Bot, timeout, limit uint, offset int) error {
-	return NewLongPoller(timeout, limit, offset).Run(b)
-}
-
 // LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
 type LongPoller struct {
 	timeout, limit uint
@@ -46,14 +41,9 @@ func (lp *LongPoller) Close() {
 	lp.wg.Wait()
 }
 
-// Run starts long polling with background context.
-func (lp *LongPoller) Run(b *tgot.Bot) error {
-	return lp.RunContext(context.Background(), b)
-}
-
-// RunContext starts long polling.
-// The passed context controlls only the long poller but not the handlers.
-func (lp *LongPoller) RunContext(ctx context.Context, b *tgot.Bot) error {
+// Run starts long polling. The passed context controlls only the long poller
+// but not the handlers.
+func (lp *LongPoller) Run(ctx context.Context, b *tgot.Bot) error {
 	if b == nil {
 		panic("LongPoller: nil bot")
 	}
@@ -65,6 +55,7 @@ func (lp *LongPoller) RunContext(ctx context.Context, b *tgot.Bot) error {
 	d.SetUint("limit", lp.limit)
 	d.SetUint("timeout", lp.timeout)
 	d.SetJSON("allowed", b.Allowed())
+	defer d.Put()
 
 	for a := b.API(); ; {
 		d.SetInt("offset", lp.offset)
