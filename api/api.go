@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/karalef/tgot/api/tg"
 )
@@ -16,49 +18,62 @@ const DefaultAPIURL = "https://api.telegram.org/bot"
 // DefaultFileURL is a default url for downloading files.
 const DefaultFileURL = "https://api.telegram.org/file/bot"
 
+func tokenURL(base, token string) string { return base + token + "/" }
+
+// Config contains API parameters.
+type Config struct {
+	APIURL  string // default: DefaultAPIURL
+	FileURL string // default: DefaultFileURL
+	Client  HTTP   // default: http.DefaultClient
+}
+
 // New creates a new API instance.
-// If apiURL or fileURL are empty, the Telegram defaults are used.
-// If client is nil, the http.DefaultClient is used.
-func New(token string, apiURL, fileURL string, client *http.Client) (*API, error) {
+func New(token string, cfg Config) (*API, error) {
 	if token == "" {
 		return nil, errors.New("no token provided")
 	}
-	if apiURL == "" {
-		apiURL = DefaultAPIURL
+	if cfg.APIURL == "" {
+		cfg.APIURL = DefaultAPIURL
 	}
-	if fileURL == "" {
-		fileURL = DefaultFileURL
+	if cfg.FileURL == "" {
+		cfg.FileURL = DefaultFileURL
 	}
-	if client == nil {
-		client = http.DefaultClient
+	if cfg.Client == nil {
+		cfg.Client = NewHTTP(http.DefaultClient)
 	}
 	return &API{
-		token:      token,
-		apiURL:     apiURL,
-		fileURL:    fileURL,
-		botAPIURL:  apiURL + token + "/",
-		botFileURL: fileURL + token + "/",
-		client:     client,
+		token:   token,
+		apiURL:  tokenURL(cfg.APIURL, token),
+		fileURL: tokenURL(cfg.FileURL, token),
+		client:  cfg.Client,
 	}, nil
-}
-
-// NewDefault creates a new API instance with default values.
-func NewDefault(token string) (*API, error) {
-	return New(token, "", "", nil)
 }
 
 // API provides access to the Telegram Bot API.
 type API struct {
-	token      string
-	apiURL     string
-	fileURL    string
-	botAPIURL  string
-	botFileURL string
-	client     *http.Client
+	token   string
+	apiURL  string
+	fileURL string
+	client  HTTP
 }
 
-func (a API) methodURL(method string) string { return a.botAPIURL + method }
-func (a API) pathURL(filepath string) string { return a.botFileURL + filepath }
+func (a API) methodURL(method string) string { return a.apiURL + method }
+func (a API) pathURL(filepath string) string { return a.fileURL + filepath }
+
+func (a API) get(ctx context.Context, url string) (io.ReadCloser, *HTTPError) {
+	code, body, err := a.client.Get(ctx, url)
+	if err != nil || code != http.StatusOK {
+		if body != nil {
+			body.Close()
+		}
+		return nil, &HTTPError{
+			Status: code,
+			Err:    err,
+			URL:    url,
+		}
+	}
+	return body, nil
+}
 
 // RequestContext performs a request to the Bot API but doesn't parse the result.
 func (a *API) Request(ctx context.Context, method string, d *Data) error {
@@ -69,23 +84,22 @@ func (a *API) Request(ctx context.Context, method string, d *Data) error {
 // Request performs a request to the Bot API.
 func Request[T any](ctx context.Context, a *API, method string, data *Data) (result T, err error) {
 	ctype, reader := data.Data()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.methodURL(method), reader)
+	url := a.methodURL(method)
+	code, body, err := a.client.Post(ctx, url, ctype, reader)
 	if err != nil {
-		return result, err
+		return result, &HTTPError{
+			Status: code,
+			Err:    err,
+			URL:    strings.Replace(url, a.token, "...", 1),
+		}
 	}
-	req.Header.Set("Content-Type", ctype)
+	defer body.Close()
 
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return result, err
-	}
-	defer resp.Body.Close()
-
-	r, raw, err := DecodeJSON[tg.Response[T]](resp.Body)
+	r, raw, err := DecodeJSON[tg.Response[T]](body)
 	if err != nil {
 		return result, &JSONError{
 			baseError: makeError(method, data, err),
-			Status:    resp.StatusCode,
+			Status:    code,
 			Response:  raw,
 		}
 	}
@@ -98,19 +112,63 @@ func Request[T any](ctx context.Context, a *API, method string, data *Data) (res
 
 // DownloadFile downloads a file from the server.
 func (a *API) DownloadFile(ctx context.Context, path string) (io.ReadCloser, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.pathURL(path), nil)
+	body, err := a.get(ctx, a.pathURL(path))
 	if err != nil {
-		return nil, err
+		err.URL = strings.Replace(err.URL, a.token, "...", 1)
 	}
-	resp, err := a.client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return nil, &DownloadError{
-			Status: resp.StatusCode,
-			Path:   path,
-			Err:    err,
+	return body, err
+}
+
+func makeError[T error](method string, d *Data, err T) (e baseError[T]) {
+	e.Method, e.Err = method, err
+	if d != nil {
+		e.Params = make(map[string]string, len(d.Params))
+		for k, v := range d.Params {
+			e.Params[k] = v
+		}
+		e.Files = make(map[string]string, len(d.Upload))
+		for field, f := range d.Upload {
+			s, _ := f.FileData()
+			e.Files[field] = s
 		}
 	}
-	return resp.Body, nil
+	return e
+}
+
+type baseError[T error] struct {
+	Method string
+	Params map[string]string
+	Files  map[string]string
+	Err    T
+}
+
+func (e baseError[T]) Unwrap() error { return e.Err }
+
+func (e baseError[T]) Error() string {
+	return fmt.Sprintf("%s\n%s %s", e.Err.Error(), e.Method, e.formatData())
+}
+
+func (e baseError[T]) formatData() string {
+	var sb strings.Builder
+	for k, v := range e.Params {
+		sb.WriteString(k + "=" + v + " ")
+	}
+	for field, f := range e.Files {
+		sb.WriteByte('\n')
+		sb.WriteString("[file] " + field + ": " + f)
+	}
+	return sb.String()
+}
+
+// Error represents a telegram api error and also contains method and data.
+type Error struct{ baseError[*tg.Error] }
+
+// Is implements errors.Is interface.
+func (e *Error) Is(err error) bool {
+	if tge, ok := err.(*tg.Error); ok {
+		return e.Err.Code == tge.Code
+	}
+	return false
 }
 
 // DecodeJSON decodes reader into object or
@@ -124,6 +182,17 @@ func DecodeJSON[T any](r io.Reader) (*T, []byte, error) {
 	}
 	b, _ := io.ReadAll(io.MultiReader(dec.Buffered(), r))
 	return nil, b, err
+}
+
+// JSONError represents JSON error.
+type JSONError struct {
+	baseError[error]
+	Status   int
+	Response []byte
+}
+
+func (e *JSONError) Error() string {
+	return fmt.Sprintf("%s\n%s %s %s", e.Err.Error(), httpStatus(e.Status), e.Method, e.formatData())
 }
 
 // Empty type is used to avoid spending resources on unmarshaling.

@@ -31,9 +31,7 @@ type BaseContext interface {
 }
 
 // Empty represents empty context.
-type Empty interface {
-	Context[Empty]
-}
+type Empty Context[Empty]
 
 // NewContext creates new context.
 func (b *Bot) NewContext(ctx stdcontext.Context, name string) Empty {
@@ -42,8 +40,7 @@ func (b *Bot) NewContext(ctx stdcontext.Context, name string) Empty {
 
 func newContext(c stdcontext.Context, path string, bot *Bot, data *api.Data) *context {
 	if data != nil {
-		cp := data.Copy()
-		data = cp
+		data = data.Copy()
 	}
 	return &context{c, bot, path, data}
 }
@@ -79,12 +76,14 @@ func (c *context) with(d *api.Data) *context {
 	}
 	return newContext(c.Context, c.path, c.bot, d)
 }
+
 func (c *context) add(d *api.Data) *context {
 	if d == nil {
 		return c
 	}
 	return newContext(c.Context, c.path, c.bot, c.data.WriteTo(d))
 }
+
 func (c *context) child(name string) *context {
 	if name == "" {
 		return c
@@ -98,15 +97,10 @@ func (c *context) method(meth string, d ...*api.Data) error {
 }
 
 func method[T any](c BaseContext, method string, d ...*api.Data) (T, error) {
-	var data *api.Data
+	data := c.ctx().data
 	if len(d) > 0 {
-		data = d[0]
-	}
-	ctxData := c.ctx().data
-	if data == nil {
-		data = ctxData
-	} else {
-		ctxData.WriteTo(data)
+		data = data.WriteTo(d[0])
+		defer data.Put()
 	}
 
 	return api.Request[T](c, c.Bot().API(), method, data)

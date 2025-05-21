@@ -12,7 +12,7 @@ import (
 
 // NewWithToken creates new bit with specified token and default http client.
 func NewWithToken(token string, handler Handler) (*Bot, error) {
-	a, err := api.New(token, "", "", nil)
+	a, err := api.New(token, api.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -162,17 +162,16 @@ func (b *Bot) GetDefaultAdminRights(forChannels bool) (*tg.ChatAdministratorRigh
 	return method[*tg.ChatAdministratorRights](b.ctx, "getMyDefaultAdministratorRights", d)
 }
 
-// SetDefaultChatMenuButton changes the bot's default menu button.
-//
-// This method is a wrapper for setChatMenuButton without specifying the chat id.
+// SetDefaultChatMenuButton changes the bot's default menu button. This method
+// is a wrapper for setChatMenuButton without specifying the chat id.
 func (b *Bot) SetDefaultChatMenuButton(menu tg.MenuButton) error {
 	d := api.NewData().SetJSON("menu_button", menu)
 	return b.ctx.method("setChatMenuButton", d)
 }
 
-// GetDefaultChatMenuButton returns the current value of the bot's default menu button.
-//
-// This method is a wrapper for getChatMenuButton without specifying the chat id.
+// GetDefaultChatMenuButton returns the current value of the bot's default menu
+// button. This method is a wrapper for getChatMenuButton without specifying the
+// chat id.
 func (b *Bot) GetDefaultChatMenuButton() (*tg.MenuButton, error) {
 	return method[*tg.MenuButton](b.ctx, "getChatMenuButton")
 }
@@ -190,7 +189,8 @@ func (b *Bot) GetName(lang string) (*tg.BotName, error) {
 	return method[*tg.BotName](b.ctx, "getMyName", d)
 }
 
-// SetDescription changes the bot's description, which is shown in the chat with the bot if the chat is empty.
+// SetDescription changes the bot's description, which is shown in the chat with
+// the bot if the chat is empty.
 func (b *Bot) SetDescription(description, lang string) error {
 	d := api.NewData().Set("description", description)
 	d.Set("language_code", lang)
@@ -319,19 +319,13 @@ func (b *Bot) GetAvailableGifts() (*tg.Gifts, error) {
 	return method[*tg.Gifts](b.ctx, "getAvailableGifts")
 }
 
-// LogOut method.
-//
-// Use this method to log out from the cloud Bot API server before launching the bot locally.
-func (b *Bot) LogOut() error {
-	return b.ctx.method("logOut")
-}
+// LogOut logs out from the cloud Bot API server before launching the bot
+// locally.
+func (b *Bot) LogOut() error { return b.ctx.method("logOut") }
 
-// Close method.
-//
-// Use this method to close the bot instance before moving it from one local server to another.
-func (b *Bot) Close() error {
-	return b.ctx.method("close")
-}
+// Close closes the bot instance before moving it from one local server to
+// another.
+func (b *Bot) Close() error { return b.ctx.method("close") }
 
 // GetCustomEmojiStickers returns information about custom emoji stickers by their identifiers.
 func (b *Bot) GetCustomEmojiStickers(ids ...string) ([]tg.Sticker, error) {

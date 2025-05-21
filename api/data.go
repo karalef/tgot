@@ -8,19 +8,24 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 	"unsafe"
 
 	"github.com/karalef/tgot/api/tg"
 )
 
-// NewData creates new Data object.
-func NewData() *Data {
-	return &Data{
-		Params: make(map[string]string),
-		Upload: make(map[string]*tg.InputFile),
-	}
+var dataPool = sync.Pool{
+	New: func() any {
+		return &Data{
+			Params: make(map[string]string),
+			Upload: make(map[string]*tg.InputFile),
+		}
+	},
 }
+
+// NewData creates new Data object.
+func NewData() *Data { return dataPool.Get().(*Data) }
 
 // NewDataFrom creates new Data object from v.
 func NewDataFrom(v any, structTagName ...string) *Data {
@@ -35,7 +40,22 @@ type Data struct {
 	// contains files that will be uploaded, where key is a multipart field.
 	Upload map[string]*tg.InputFile
 
-	attachCounter int
+	counter int
+}
+
+// Put returns data to the pool.
+func (d *Data) Put() { dataPool.Put(d.Reset()) }
+
+// Reset resets all data.
+func (d *Data) Reset() *Data {
+	d.counter = 0
+	for k := range d.Params {
+		delete(d.Params, k)
+	}
+	for k := range d.Upload {
+		delete(d.Upload, k)
+	}
+	return d
 }
 
 // Copy copies Data's params.
@@ -173,8 +193,9 @@ func (d *Data) AddAttach(file tg.Inputtable) *Data {
 	if !ok || f == nil {
 		return d
 	}
-	d.attachCounter++
-	field := "file-" + strconv.Itoa(d.attachCounter)
+
+	d.counter++
+	field := "file-" + strconv.Itoa(d.counter)
 	return d.addFile(field, f.AsAttachment(field))
 }
 

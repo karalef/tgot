@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"math"
-	"net/http"
 )
 
 // CurrenciesDataURL is the url that provides data about currencies.
@@ -11,25 +10,17 @@ const CurrenciesDataURL = "https://core.telegram.org/bots/payments/currencies.js
 
 // GetCurrenciesData returns information about currencies supported by the telegram api.
 func (a *API) GetCurrenciesData(ctx context.Context) (map[string]Currency, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	body, herr := a.get(ctx, CurrenciesDataURL)
+	if herr != nil {
+		return nil, herr
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, CurrenciesDataURL, nil)
-	if err != nil {
-		return nil, err
-	}
+	defer body.Close()
 
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	r, raw, err := DecodeJSON[map[string]Currency](resp.Body)
+	r, raw, err := DecodeJSON[map[string]Currency](body)
 	if err != nil {
 		return nil, &JSONError{
 			baseError: makeError("/bots/payments/currencies.json", nil, err),
-			Status:    resp.StatusCode,
+			Status:    200,
 			Response:  raw,
 		}
 	}

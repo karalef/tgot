@@ -13,7 +13,7 @@ func (c ChatID) AsRecipientID() RecipientID {
 	}
 }
 
-// // AsRecipientID returns RecipientID that contains user ID.
+// AsRecipientID returns RecipientID that contains user ID.
 func (u *User) AsRecipientID() RecipientID {
 	return RecipientID{userid: u.id}
 }
