@@ -4,34 +4,22 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
 
-// NewLongPoller creates a LongPoller instance.
-//
-// limit must be in the range of 1-100 (else it will be set to server's default).
-func NewLongPoller(timeout, limit uint, offset int) *LongPoller {
-	if limit > 100 {
-		limit = 0
-	}
-	lp := LongPoller{
-		timeout: timeout,
-		limit:   limit,
-		offset:  offset,
-	}
-	return &lp
-}
-
 // LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
 type LongPoller struct {
-	timeout, limit uint
-	offset         int
+	Timeout uint
+	Limit   uint
+	Offset  int
 
-	wg     sync.WaitGroup
-	cancel context.CancelFunc
+	wg      sync.WaitGroup
+	cancel  context.CancelFunc
+	started atomic.Bool
 }
 
 // Close stops the long poller and waits for all active handlers to complete.
@@ -44,21 +32,27 @@ func (lp *LongPoller) Close() {
 // Run starts long polling. The passed context controlls only the long poller
 // but not the handlers.
 func (lp *LongPoller) Run(ctx context.Context, b *tgot.Bot) error {
+	if ctx == nil {
+		panic("LongPoller: nil context")
+	}
 	if b == nil {
 		panic("LongPoller: nil bot")
+	}
+	if !lp.started.CompareAndSwap(false, true) {
+		panic("LongPoller: already running")
 	}
 
 	ctx, lp.cancel = context.WithCancel(ctx)
 	defer lp.wg.Wait()
 
 	d := api.NewData()
-	d.SetUint("limit", lp.limit)
-	d.SetUint("timeout", lp.timeout)
+	d.SetUint("limit", lp.Limit)
+	d.SetUint("timeout", lp.Timeout)
 	d.SetJSON("allowed", b.Allowed())
 	defer d.Put()
 
 	for a := b.API(); ; {
-		d.SetInt("offset", lp.offset)
+		d.SetInt("offset", lp.Offset)
 		upds, err := api.Request[[]tg.Update](ctx, a, "getUpdates", d)
 		switch {
 		case err == nil:
@@ -68,7 +62,7 @@ func (lp *LongPoller) Run(ctx context.Context, b *tgot.Bot) error {
 			return err
 		}
 		if len(upds) > 0 {
-			lp.offset = upds[len(upds)-1].ID + 1
+			lp.Offset = upds[len(upds)-1].ID + 1
 		}
 		for i := range upds {
 			go lp.handle(b.Handle, &upds[i])
