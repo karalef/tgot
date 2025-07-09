@@ -223,6 +223,16 @@ type Poll struct {
 
 func (Poll) sendMethod() string { return "sendPoll" }
 
+var _ Sendable = Checklist{}
+
+// Checklist contains information about the checklist to be sent.
+type Checklist struct {
+	Checklist   tg.InputChecklist `tg:"checklist"`
+	ReplyMarkup tg.ReplyMarkup    `tg:"reply_markup"`
+}
+
+func (Checklist) sendMethod() string { return "sendChecklist" }
+
 var _ Sendable = Dice{}
 
 // Dice contains information about the dice to be sent.

@@ -160,6 +160,15 @@ func (c Message) EditMedia(m tg.InputMedia, replyMarkup ...tg.InlineKeyboardMark
 	return c.msgMethod("editMessageMedia", d)
 }
 
+// EditChecklist edits a checklist on behalf of a connected business account.
+func (c Message) EditChecklist(checklist tg.InputChecklist, replyMarkup ...tg.InlineKeyboardMarkup) (*tg.Message, error) {
+	d := api.NewData().SetJSON("checklist", checklist)
+	if len(replyMarkup) > 0 {
+		d.SetJSON("reply_markup", replyMarkup[0])
+	}
+	return c.msgMethod("editMessageChecklist", d)
+}
+
 // EditReplyMarkup edits only the reply markup of messages.
 func (c Message) EditReplyMarkup(replyMarkup *tg.InlineKeyboardMarkup) (*tg.Message, error) {
 	d := api.NewData().SetJSON("reply_markup", replyMarkup)

@@ -50,6 +50,7 @@ type Message struct {
 	CaptionEntities           []MessageEntity            `json:"caption_entities"`
 	ShowCaptionAboveMedia     bool                       `json:"show_caption_above_media"`
 	HasMediaSpoiler           bool                       `json:"has_media_spoiler"`
+	Checklist                 *Checklist                 `json:"checklist"`
 	Contact                   *Contact                   `json:"contact"`
 	Dice                      *Dice                      `json:"dice"`
 	Game                      *Game                      `json:"game"`
@@ -80,6 +81,9 @@ type Message struct {
 	ProximityAlert            *ProximityAlert            `json:"proximity_alert_triggered"`
 	BoostAdded                *ChatBoostAdded            `json:"boost_added"`
 	ChatBackgroundSet         *ChatBackground            `json:"chat_background_set"`
+	ChecklistTasksDone        *ChecklistTasksDone        `json:"checklist_tasks_done"`
+	ChecklistTasksAdded       *ChecklistTasksAdded       `json:"checklist_tasks_added"`
+	DirectMessagePriceChanged *DirectMessagePriceChanged `json:"direct_message_price_changed"`
 	ForumTopicCreated         *ForumTopicCreated         `json:"forum_topic_created"`
 	ForumTopicEdited          *ForumTopicEdited          `json:"forum_topic_edited"`
 	ForumTopicClosed          *ForumTopicClosed          `json:"forum_topic_closed"`
@@ -90,7 +94,7 @@ type Message struct {
 	Giveaway                  *Giveaway                  `json:"giveaway"`
 	GiveawayWinners           *GiveawayWinners           `json:"giveaway_winners"`
 	GiveawayCompleted         *GiveawayCompleted         `json:"giveaway_completed"`
-	PaidMediaPriceChanged     *PaidMediaPriceChanged     `json:"paid_message_price_changed"`
+	PaidMessagePriceChanged   *PaidMessagePriceChanged   `json:"paid_message_price_changed"`
 	VideoChatScheduled        *VideoChatScheduled        `json:"video_chat_scheduled"`
 	VideoChatStarted          *VideoChatStarted          `json:"video_chat_started"`
 	VideoChatEnded            *VideoChatEnded            `json:"video_chat_ended"`
@@ -382,6 +386,7 @@ type ExternalReplyInfo struct {
 	VideoNote          *VideoNote          `json:"video_note"`
 	Voice              *Voice              `json:"voice"`
 	HasMediaSpoiler    bool                `json:"has_media_spoiler"`
+	Checklist          *Checklist          `json:"checklist"`
 	Contact            *Contact            `json:"contact"`
 	Dice               *Dice               `json:"dice"`
 	Game               *Game               `json:"game"`
@@ -400,6 +405,13 @@ type TextQuote struct {
 	Entities []MessageEntity `json:"entities"`
 	Position int             `json:"position"`
 	IsManual bool            `json:"is_manual"`
+}
+
+// DirectMessagePriceChanged describes a service message about a change in the
+// price of direct messages sent to a channel chat.
+type DirectMessagePriceChanged struct {
+	DirectEnabled bool `json:"are_direct_messages_enabled"`
+	StarCount     uint `json:"direct_message_star_count"`
 }
 
 // GiveawayCreated represents a service message about the creation of a scheduled giveaway.
@@ -682,8 +694,8 @@ const (
 	HTML       ParseMode = "HTML"
 )
 
-// PaidMediaPriceChanged describes a service message about a change in the price
+// PaidMessagePriceChanged describes a service message about a change in the price
 // of paid messages within a chat.
-type PaidMediaPriceChanged struct {
+type PaidMessagePriceChanged struct {
 	Count uint `json:"paid_message_star_count"`
 }

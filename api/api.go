@@ -1,3 +1,6 @@
+// package api provides the Telegram Bot API client.
+// It allow to implement any API method.
+// All the object types are defined in the underlying packages.
 package api
 
 import (

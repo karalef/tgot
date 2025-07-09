@@ -126,6 +126,7 @@ type OwnedGiftUnique struct {
 	IsSaved           bool       `json:"is_saved"`
 	Transferable      bool       `json:"can_be_transferred"`
 	TransferStarCount uint       `json:"transfer_star_count"`
+	NextTransferDate  int64      `json:"next_transfer_date"`
 }
 
 func (OwnedGiftUnique) Type() OwnedGiftType { return OwnedGiftTypeUnique }
@@ -142,10 +143,22 @@ type GiftInfo struct {
 	IsPrivate               bool            `json:"is_private"`
 }
 
+// GiftOrigin represents the origin of a gift.
+type GiftOrigin string
+
+// all available gift origins.
+const (
+	GiftOriginUpgrade  = "upgrade"
+	GiftOriginTransfer = "transfer"
+	GiftOriginResale   = "resale"
+)
+
 // UniqueGiftInfo describes a service message about a unique gift that was sent or received.
 type UniqueGiftInfo struct {
-	Gift              UniqueGift `json:"gift"`
-	Origin            string     `json:"origin"`
-	OwnedID           string     `json:"owned_gift_id,omitempty"`
-	TransferStarCount uint       `json:"transfer_star_count,omitempty"`
+	Gift                UniqueGift `json:"gift"`
+	Origin              GiftOrigin `json:"origin"`
+	LastResaleStarCount uint       `json:"last_resale_star_count,omitempty"`
+	OwnedID             string     `json:"owned_gift_id,omitempty"`
+	TransferStarCount   uint       `json:"transfer_star_count,omitempty"`
+	NextTransferDate    int64      `json:"next_transfer_date,omitempty"`
 }

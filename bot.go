@@ -223,6 +223,12 @@ func (b *Bot) GetBusinessConnection(id string) (*tg.BusinessConnection, error) {
 	return method[*tg.BusinessConnection](b.ctx, "getBusinessConnection", d)
 }
 
+// GetMyStartBalance returns the current Telegram Stars balance of the bot.
+func (b *Bot) GetMyStartBalance(offset, limit int) (*tg.StarAmount, error) {
+	d := api.NewData().SetInt("offset", offset).SetInt("limit", limit)
+	return method[*tg.StarAmount](b.ctx, "getMyStartBalance", d)
+}
+
 // GetStarTransactions returns the bot's Telegram Star transactions in chronological order.
 func (b *Bot) GetStarTransactions(offset uint, limit uint8) (*tg.StarTransactions, error) {
 	d := api.NewData().SetInt("offset", int(offset)).SetInt("limit", int(limit))
