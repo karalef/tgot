@@ -7,9 +7,9 @@ import (
 
 // WithUser creates a new User from context and user id.
 // It copies the context but resets the context parameters.
-func WithUser(ctx BaseContext, userID int64) *User {
+func WithUser(ctx BaseContext, userID tg.ID) *User {
 	return &User{
-		context: ctx.ctx().with(api.NewData().SetInt64("user_id", userID)),
+		context: ctx.ctx().with(api.NewData().SetID("user_id", userID)),
 		id:      userID,
 	}
 }
@@ -19,7 +19,7 @@ var _ Context[*User] = &User{}
 // Users contains methods for working with user.
 type User struct {
 	*context
-	id int64
+	id tg.ID
 }
 
 func (u *User) WithName(name string) *User {
@@ -43,9 +43,10 @@ func (u *User) GetPhotos() (*tg.UserProfilePhotos, error) {
 // allowed the bot to manage their emoji status via the Mini App method
 // [requestEmojiStatusAccess].
 func (u *User) SetEmojiStatus(id string, expires int64) error {
-	d := api.NewData().Set("emoji_status_custom_emoji_id", id)
-	d.SetInt64("emoji_status_expiration_date", expires)
-	return u.method("setUserEmojiStatus")
+	d := api.NewData().
+		Set("emoji_status_custom_emoji_id", id).
+		SetInt64("emoji_status_expiration_date", expires)
+	return u.method("setUserEmojiStatus", d)
 }
 
 // RefundStarPayment refunds a successful payment in Telegram Stars.
@@ -54,17 +55,21 @@ func (u *User) RefundStarPayment(chargeID string) error {
 	return u.method("refundStarPayment", d)
 }
 
-// EditUserStarSubscription cancels or re-enables extension of a subscription paid in Telegram Stars.
-func (u *User) EditUserStarSubscription(chargeID string, isCancelled bool) error {
-	d := api.NewData().Set("telegram_payment_charge_id", chargeID)
-	d.SetBool("is_canceled", isCancelled)
+// EditStarSubscription cancels or re-enables extension of a subscription paid
+// in Telegram Stars.
+func (u *User) EditStarSubscription(chargeID string, isCancelled bool) error {
+	d := api.NewData().
+		Set("telegram_payment_charge_id", chargeID).
+		SetBool("is_canceled", isCancelled)
 	return u.method("editUserStarSubscription", d)
 }
 
 // UploadStickerFile uploads a .PNG file with a sticker for later use
 // in createNewStickerSet and addStickerToSet methods.
 func (u *User) UploadStickerFile(sticker *tg.InputFile, format tg.StickerFormat) (*tg.File, error) {
-	d := api.NewData().SetFile("sticker", sticker).Set("sticker_format", string(format))
+	d := api.NewData().
+		SetFile("sticker", sticker).
+		Set("sticker_format", string(format))
 	return method[*tg.File](u, "uploadStickerFile", d)
 }
 
@@ -118,8 +123,8 @@ func (u *User) SetPassportDataErrors(errs []tg.PassportElementError) error {
 
 // WithChatMember returns ChatMember with provided chat id and user id.
 // It copies the context but resets the context parameters.
-func WithChatMember(ctx BaseContext, chatID ChatID, userID int64) *ChatMember {
-	d := api.NewData().SetInt64("user_id", userID)
+func WithChatMember(ctx BaseContext, chatID ChatID, userID tg.ID) *ChatMember {
+	d := api.NewData().SetID("user_id", userID)
 	chatID.setChatID(d)
 	return &ChatMember{context: ctx.ctx().with(d), chat: chatID, user: userID}
 }
@@ -127,7 +132,7 @@ func WithChatMember(ctx BaseContext, chatID ChatID, userID int64) *ChatMember {
 // ChatMember provides methods for working with chat members.
 type ChatMember struct {
 	*context
-	user int64
+	user tg.ID
 	chat ChatID
 }
 

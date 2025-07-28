@@ -1,19 +1,21 @@
 package updates
 
-import "github.com/karalef/tgot/api/tg"
+import (
+	"github.com/karalef/tgot/api"
+	"github.com/karalef/tgot/api/tg"
+)
 
-// Handler represents handler function type.
-type Handler func(*tg.Update) error
+// Handler represents update handler.
+type Handler interface {
+	Allowed() []string
+	Handle(*tg.Update) Response
+}
 
-// Filter wraps handler with filter function.
-func Filter(handler Handler, filter func(*tg.Update) (keep bool)) Handler {
-	if filter == nil {
-		return handler
-	}
-	return func(u *tg.Update) error {
-		if filter(u) {
-			return handler(u)
-		}
-		return nil
-	}
+// Response sends the api call as a response to the update without returning
+// anything.
+// If it is not nil, the request to the api will be written in response to the
+// webhook or will be sent via api call.
+type Response interface {
+	Method() string
+	Data() *api.Data
 }

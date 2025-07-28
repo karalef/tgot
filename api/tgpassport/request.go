@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/karalef/tgot/deeplinks"
+	"github.com/karalef/tgot/api/deeplink"
 )
 
 // RequestParams contains parameters to request information.
@@ -50,12 +50,12 @@ func (p *RequestParams) Query() (url.Values, error) {
 }
 
 // Deeplink generates request deeplink.
-func (p *RequestParams) Deeplink() (deeplinks.Deeplink, error) {
+func (p *RequestParams) Deeplink() (deeplink.Deeplink, error) {
 	q, err := p.Query()
 	if err != nil {
-		return deeplinks.Deeplink{}, err
+		return deeplink.Deeplink{}, err
 	}
-	return deeplinks.New("passport", q), nil
+	return deeplink.New("passport", q), nil
 }
 
 // URI generates request URI.

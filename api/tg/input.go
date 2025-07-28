@@ -143,10 +143,10 @@ func (*InputMediaPhoto) GetInput() []Inputtable { return nil }
 type InputMediaVideo struct {
 	Thumbnail             *InputFile `json:"thumbnail,omitempty"`
 	Cover                 *InputFile `json:"cover,omitempty"`
-	Start                 int64      `json:"start_timestamp"`
+	Start                 Duration   `json:"start_timestamp"`
 	Width                 int        `json:"width,omitempty"`
 	Height                int        `json:"height,omitempty"`
-	Duration              int        `json:"duration,omitempty"`
+	Duration              Duration   `json:"duration,omitempty"`
 	SupportsStreaming     bool       `json:"supports_streaming,omitempty"`
 	HasSpoiler            bool       `json:"has_spoiler,omitempty"`
 	ShowCaptionAboveMedia bool       `json:"show_caption_above_media,omitempty"`
@@ -161,7 +161,7 @@ type InputMediaAnimation struct {
 	Thumbnail             *InputFile `json:"thumbnail,omitempty"`
 	Width                 int        `json:"width,omitempty"`
 	Height                int        `json:"height,omitempty"`
-	Duration              int        `json:"duration,omitempty"`
+	Duration              Duration   `json:"duration,omitempty"`
 	HasSpoiler            bool       `json:"has_spoiler,omitempty"`
 	ShowCaptionAboveMedia bool       `json:"show_caption_above_media,omitempty"`
 }
@@ -172,7 +172,7 @@ func (a *InputMediaAnimation) GetInput() []Inputtable { return []Inputtable{a.Th
 // InputMediaAudio represents an audio file to be treated as music to be sent.
 type InputMediaAudio struct {
 	Thumbnail *InputFile `json:"thumbnail,omitempty"`
-	Duration  int        `json:"duration,omitempty"`
+	Duration  Duration   `json:"duration,omitempty"`
 	Performer string     `json:"performer,omitempty"`
 	Title     string     `json:"title,omitempty"`
 }
@@ -228,10 +228,10 @@ func (*InputPaidMediaPhoto) GetInput() []Inputtable     { return nil }
 type InputPaidMediaVideo struct {
 	Thumbnail         *InputFile `json:"thumbnail,omitempty"`
 	Cover             *InputFile `json:"cover,omitempty"`
-	Start             int64      `json:"start_timestamp"`
-	Width             uint       `json:"width,omitempty"`
-	Height            uint       `json:"height,omitempty"`
-	Duration          uint       `json:"duration,omitempty"`
+	Start             Duration   `json:"start_timestamp"`
+	Width             int        `json:"width,omitempty"`
+	Height            int        `json:"height,omitempty"`
+	Duration          Duration   `json:"duration,omitempty"`
 	SupportsStreaming bool       `json:"supports_streaming,omitempty"`
 }
 
@@ -311,7 +311,7 @@ func (i InputStoryContentPhoto) Media() *InputFile           { return i.Photo }
 type InputStoryContentVideo struct {
 	Video       *InputFile `json:"video"`
 	Duration    float64    `json:"duration,omitempty"`
-	CoverFrame  int64      `json:"cover_frame_timestamp,omitempty"`
+	CoverFrame  float64    `json:"cover_frame_timestamp,omitempty"`
 	IsAnimation bool       `json:"is_animation"`
 }
 

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/api/cmd"
 	"github.com/karalef/tgot/api/tg"
 )
 
@@ -29,14 +30,14 @@ type Filter struct {
 
 // Handle handles message.
 func (h *Filter) Handle(ctx *tgot.Message, msg *tg.Message) {
-	cmd, mention, args := ParseMsg(msg)
-	if cmd == "" || h.Command == nil {
+	cmd := cmd.ParseMsg(msg)
+	if cmd.Name == "" || h.Command == nil {
 		if h.Message != nil {
 			h.Message(ctx, msg)
 		}
 		return
 	}
-	if mention != "" && mention != h.Username {
+	if cmd.Mention != "" && cmd.Mention != h.Username {
 		if !h.PassNotForMe {
 			return
 		}
@@ -47,5 +48,5 @@ func (h *Filter) Handle(ctx *tgot.Message, msg *tg.Message) {
 			return
 		}
 	}
-	h.Command(ctx.WithName("commands"), msg, cmd, args)
+	h.Command(ctx.WithName("commands"), msg, cmd.Name, cmd.Args)
 }

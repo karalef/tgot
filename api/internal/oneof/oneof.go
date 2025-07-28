@@ -69,24 +69,30 @@ func (o Object[Type, ID]) MarshalJSON() ([]byte, error) {
 
 func (o *Object[Type, ID]) UnmarshalJSON(p []byte) error {
 	var typeID ID
-	if err := json.Unmarshal(p, &typeID); err != nil {
-		return err
-	}
-
-	id := Type(typeID.GetTypeID())
-	rtyp := id.TypeFor(id)
-	if rtyp == nil {
-		return errors.New("unknown identifier for oneof.Object: " + string(id))
-	}
-	ptr := reflect.New(rtyp)
-	err := json.Unmarshal(p, ptr.Interface())
+	err := json.Unmarshal(p, &typeID)
 	if err != nil {
 		return err
 	}
 
-	var ok bool
-	if o.Value, ok = ptr.Elem().Interface().(Value[Type]); !ok {
-		panic("invalid type for oneof.Object")
+	o.Value, err = New(Type(typeID.GetTypeID()), p)
+	return err
+}
+
+// New allocates a new value of the specified type and unmarshals the data into
+// it.
+func New[Type Oneof[Type]](id Type, data []byte) (Value[Type], error) {
+	rtyp := id.TypeFor(id)
+	if rtyp == nil {
+		return nil, errors.New("unknown identifier for oneof.Oneof: " + string(id))
 	}
-	return nil
+	ptr := reflect.New(rtyp)
+	err := json.Unmarshal(data, ptr.Interface())
+	if err != nil {
+		return nil, err
+	}
+
+	if v, ok := ptr.Elem().Interface().(Value[Type]); ok {
+		return v, nil
+	}
+	panic("invalid type for oneof.New")
 }

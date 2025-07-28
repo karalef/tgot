@@ -149,6 +149,23 @@ func (d *Data) SetBool(key string, v bool, force ...bool) *Data {
 	return d
 }
 
+// SetID sets the key to ID value.
+func (d *Data) SetID(key string, id tg.ID) *Data {
+	return d.SetInt64(key, int64(id))
+}
+
+// SetChatID sets the key to chat id value.
+func (d *Data) SetChatID(key string, id tg.ChatID) *Data {
+	switch id := id.(type) {
+	case tg.ID:
+		return d.SetInt64(key, int64(id))
+	case tg.Username:
+		return d.Set(key, string(id))
+	default:
+		panic("unsupported id type")
+	}
+}
+
 // SetJSON sets the key to JSON value.
 func (d *Data) SetJSON(key string, v any) *Data {
 	if v != nil {

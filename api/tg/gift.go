@@ -8,8 +8,8 @@ type Gift struct {
 	Sticker          Sticker `json:"sticker"`
 	StarCount        uint    `json:"star_count"`
 	UpgradeStarCount uint    `json:"upgrade_star_count"`
-	Total            uint    `json:"total_count"`
-	Remaining        uint    `json:"remaining_count"`
+	Total            int     `json:"total_count"`
+	Remaining        int     `json:"remaining_count"`
 }
 
 // Gifts represent a list of gifts.
@@ -19,7 +19,7 @@ type Gifts struct {
 
 // OwnedGifts contains the list of gifts received and owned by a user or a chat.
 type OwnedGifts struct {
-	Count      uint        `json:"total_count"`
+	Count      int         `json:"total_count"`
 	Gifts      []OwnedGift `json:"gifts"`
 	NextOffset string      `json:"next_offset"`
 }
@@ -41,9 +41,9 @@ type StarAmount struct {
 
 // UniqueGiftModel describes the model of a unique gift.
 type UniqueGiftModel struct {
-	Name          string  `json:"name"`
-	Sticker       Sticker `json:"sticker"`
-	RarityPerMile uint    `json:"rarity_per_mille"`
+	Name           string  `json:"name"`
+	Sticker        Sticker `json:"sticker"`
+	RarityPerMille uint    `json:"rarity_per_mille"`
 }
 
 // UniqueGiftSymbol describes the symbol shown on the pattern of a unique gift.
@@ -55,24 +55,24 @@ type UniqueGiftSymbol struct {
 
 // UniqueGiftBackdropColors describes the colors of the backdrop of a unique gift.
 type UniqueGiftBackdropColors struct {
-	Center uint `json:"center_color"`
-	Edge   uint `json:"edge_color"`
-	Symbol uint `json:"symbol_color"`
-	Text   uint `json:"text_color"`
+	Center RGB `json:"center_color"`
+	Edge   RGB `json:"edge_color"`
+	Symbol RGB `json:"symbol_color"`
+	Text   RGB `json:"text_color"`
 }
 
 // UniqueGiftBackdrop describes the backdrop of a unique gift.
 type UniqueGiftBackdrop struct {
-	Name          string                   `json:"name"`
-	Colors        UniqueGiftBackdropColors `json:"colors"`
-	RarityPerMile uint                     `json:"rarity_per_mille"`
+	Name           string                   `json:"name"`
+	Colors         UniqueGiftBackdropColors `json:"colors"`
+	RarityPerMille uint                     `json:"rarity_per_mille"`
 }
 
 // UniqueGift describes a unique gift that was upgraded from a regular gift.
 type UniqueGift struct {
 	BaseName string             `json:"base_name"`
 	Name     string             `json:"name"`
-	Number   uint               `json:"number"`
+	Number   int                `json:"number"`
 	Model    UniqueGiftModel    `json:"model"`
 	Symbol   UniqueGiftSymbol   `json:"symbol"`
 	Backdrop UniqueGiftBackdrop `json:"backdrop"`
@@ -104,7 +104,7 @@ type OwnedGiftRegular struct {
 	Gift                    Gift            `json:"gift"`
 	OwnedID                 string          `json:"owned_gift_id"`
 	Sender                  *User           `json:"sender_user"`
-	Date                    int64           `json:"send_date"`
+	Date                    Date            `json:"send_date"`
 	Text                    string          `json:"text"`
 	Entities                []MessageEntity `json:"entities"`
 	IsPrivate               bool            `json:"is_private"`
@@ -122,11 +122,11 @@ type OwnedGiftUnique struct {
 	Gift              UniqueGift `json:"gift"`
 	OwnedID           string     `json:"owned_gift_id"`
 	Sender            *User      `json:"sender_user"`
-	Date              int64      `json:"send_date"`
+	Date              Date       `json:"send_date"`
 	IsSaved           bool       `json:"is_saved"`
 	Transferable      bool       `json:"can_be_transferred"`
 	TransferStarCount uint       `json:"transfer_star_count"`
-	NextTransferDate  int64      `json:"next_transfer_date"`
+	NextTransferDate  Date       `json:"next_transfer_date"`
 }
 
 func (OwnedGiftUnique) Type() OwnedGiftType { return OwnedGiftTypeUnique }
@@ -160,5 +160,5 @@ type UniqueGiftInfo struct {
 	LastResaleStarCount uint       `json:"last_resale_star_count,omitempty"`
 	OwnedID             string     `json:"owned_gift_id,omitempty"`
 	TransferStarCount   uint       `json:"transfer_star_count,omitempty"`
-	NextTransferDate    int64      `json:"next_transfer_date,omitempty"`
+	NextTransferDate    Date       `json:"next_transfer_date,omitempty"`
 }

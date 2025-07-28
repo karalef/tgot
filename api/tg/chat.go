@@ -2,14 +2,13 @@ package tg
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/karalef/tgot/api/internal/oneof"
 )
 
 // Chat represents a chat.
 type Chat struct {
-	ID        int64    `json:"id"`
+	ID        ID       `json:"id"`
 	Type      ChatType `json:"type"`
 	Title     string   `json:"title"`
 	Username  string   `json:"username"`
@@ -39,7 +38,7 @@ const (
 type ChatFullInfo struct {
 	Chat
 	AccentColorID                  uint8                 `json:"accent_color_id"`
-	MaxReactionCount               uint                  `json:"max_reaction_count"`
+	MaxReactionCount               int                   `json:"max_reaction_count"`
 	Photo                          *ChatPhoto            `json:"photo"`
 	ActiveUsernames                []string              `json:"active_usernames"`
 	Birthdate                      *Birthdate            `json:"birthdate"`
@@ -52,7 +51,7 @@ type ChatFullInfo struct {
 	ProfileAccentColorID           uint8                 `json:"profile_accent_color_id"`
 	ProfileBackgroundCustomEmojiID string                `json:"profile_background_custom_emoji_id"`
 	EmojiStatusCustomEmoji         string                `json:"emoji_status_custom_emoji_id"`
-	EmojiStatusExpirationDate      int64                 `json:"emoji_status_expiration_date"`
+	EmojiStatusExpirationDate      Date                  `json:"emoji_status_expiration_date"`
 	Bio                            string                `json:"bio"`
 	HasPrivateForwards             bool                  `json:"has_private_forwards"`
 	HasRestrictedVoiceAndVideo     bool                  `json:"has_restricted_voice_and_video_messages"`
@@ -64,9 +63,9 @@ type ChatFullInfo struct {
 	Permissions                    *ChatPermissions      `json:"permissions"`
 	AcceptedGiftTypes              AcceptedGiftTypes     `json:"accepted_gift_types"`
 	CanSendPaidMedia               bool                  `json:"can_send_paid_media"`
-	SlowModeDelay                  int                   `json:"slow_mode_delay"`
+	SlowModeDelay                  Duration              `json:"slow_mode_delay"`
 	UnrestrictBoostCount           int                   `json:"unrestrict_boost_count"`
-	AutoDeleteTime                 int                   `json:"message_auto_delete_time"`
+	AutoDeleteTime                 Duration              `json:"message_auto_delete_time"`
 	HasAgressiveAntiSpam           bool                  `json:"has_aggressive_anti_spam_enabled"`
 	HasHiddenMembers               bool                  `json:"has_hidden_members"`
 	HasProtectedContent            bool                  `json:"has_protected_content"`
@@ -74,7 +73,7 @@ type ChatFullInfo struct {
 	StickerSetName                 string                `json:"sticker_set_name"`
 	CanSetStickerSet               bool                  `json:"can_set_sticker_set"`
 	CustomEmojiStickerSetName      string                `json:"custom_emoji_sticker_set_name"`
-	LinkedChatID                   int64                 `json:"linked_chat_id"`
+	LinkedChatID                   ID                    `json:"linked_chat_id"`
 	Location                       *ChatLocation         `json:"location"`
 }
 
@@ -152,25 +151,25 @@ type ChatLocation struct {
 
 // ForumTopic represents a forum topic.
 type ForumTopic struct {
-	MessageThreadID   int    `json:"message_thread_id"`
+	MessageThreadID   ID     `json:"message_thread_id"`
 	Name              string `json:"name"`
-	IconColor         int    `json:"icon_color"`
+	IconColor         RGB    `json:"icon_color"`
 	IconCustomEmojiID string `json:"icon_custom_emoji_id"`
 }
 
 // ChatInviteLink represents an invite link for a chat.
 type ChatInviteLink struct {
-	InviteLink         string `json:"invite_link"`
-	Creator            User   `json:"creator"`
-	CreatesJoinRequest bool   `json:"creates_join_request"`
-	IsPrimary          bool   `json:"is_primary"`
-	IsRevoked          bool   `json:"is_revoked"`
-	Name               string `json:"name,omitempty"`
-	ExpireDate         int64  `json:"expire_date,omitempty"`
-	MemberLimit        int    `json:"member_limit,omitempty"`
-	PendingCount       int    `json:"pending_join_request_count,omitempty"`
-	SubscriptionPeriod uint   `json:"subscription_period,omitempty"`
-	SubscriptionPrice  uint   `json:"subscription_price,omitempty"`
+	InviteLink         string   `json:"invite_link"`
+	Creator            User     `json:"creator"`
+	CreatesJoinRequest bool     `json:"creates_join_request"`
+	IsPrimary          bool     `json:"is_primary"`
+	IsRevoked          bool     `json:"is_revoked"`
+	Name               string   `json:"name,omitempty"`
+	ExpireDate         Date     `json:"expire_date,omitempty"`
+	MemberLimit        int      `json:"member_limit,omitempty"`
+	PendingCount       int      `json:"pending_join_request_count,omitempty"`
+	SubscriptionPeriod Duration `json:"subscription_period,omitempty"`
+	SubscriptionPrice  uint     `json:"subscription_price,omitempty"`
 }
 
 // ChatMemberStatus represents one of the possible member status.
@@ -186,6 +185,19 @@ const (
 	ChatMemberStatusBanned     ChatMemberStatus = "kicked"
 )
 
+var chatMemberTypes = oneof.NewMap[ChatMemberStatus](
+	ChatMemberOwner{},
+	ChatMemberAdministrator{},
+	ChatMemberMember{},
+	ChatMemberRestricted{},
+	ChatMemberLeft{},
+	ChatMemberBanned{},
+)
+
+func (ChatMemberStatus) TypeFor(t ChatMemberStatus) oneof.Type {
+	return chatMemberTypes.TypeFor(t)
+}
+
 // ChatMember contains information about one member of a chat.
 type ChatMember struct {
 	User   User
@@ -194,38 +206,19 @@ type ChatMember struct {
 
 func (m ChatMember) Status() ChatMemberStatus { return m.Member.Type() }
 
-type memberStatusStruct struct {
-	Status ChatMemberStatus `json:"status"`
-	User   User             `json:"user"`
-}
-
-func (m ChatMember) MarshalJSON() ([]byte, error) { panic("unsupported") }
-
 func (m ChatMember) UnmarshalJSON(p []byte) error {
-	var status memberStatusStruct
-	if err := json.Unmarshal(p, &status); err != nil {
+	var status struct {
+		Status ChatMemberStatus `json:"status"`
+		User   User             `json:"user"`
+	}
+	err := json.Unmarshal(p, &status)
+	if err != nil {
 		return err
 	}
 
-	switch status.Status {
-	case ChatMemberStatusOwner:
-		m.Member = ChatMemberOwner{}
-	case ChatMemberStatusAdmin:
-		m.Member = ChatMemberAdministrator{}
-	case ChatMemberStatusMember:
-		m.Member = ChatMemberMember{}
-	case ChatMemberStatusRestricted:
-		m.Member = ChatMemberRestricted{}
-	case ChatMemberStatusLeft:
-		m.Member = ChatMemberLeft{}
-	case ChatMemberStatusBanned:
-		m.Member = ChatMemberBanned{}
-	default:
-		return errors.New("unknown ChatMember status")
-	}
-
 	m.User = status.User
-	return json.Unmarshal(p, &m.Member)
+	m.Member, err = oneof.New(status.Status, p)
+	return err
 }
 
 // ChatMemberOwner represents a chat member that owns the chat and has all administrator privileges.
@@ -247,29 +240,29 @@ func (ChatMemberAdministrator) Type() ChatMemberStatus { return ChatMemberStatus
 
 // ChatMemberMember represents a chat member that has no additional privileges or restrictions.
 type ChatMemberMember struct {
-	UntilDate int64 `json:"until_date"`
+	UntilDate Date `json:"until_date"`
 }
 
 func (ChatMemberMember) Type() ChatMemberStatus { return ChatMemberStatusMember }
 
 // ChatMemberRestricted represents a chat member that is under certain restrictions in the chat. Supergroups only.
 type ChatMemberRestricted struct {
-	IsMember          bool  `json:"is_member"`
-	UntilDate         int64 `json:"until_date"`
-	CanSendMessages   bool  `json:"can_send_messages"`
-	CanSendAudios     bool  `json:"can_send_audios,omitempty"`
-	CanSendDocuments  bool  `json:"can_send_documents,omitempty"`
-	CanSendPhotos     bool  `json:"can_send_photos,omitempty"`
-	CanSendVideos     bool  `json:"can_send_videos,omitempty"`
-	CanSendVideoNotes bool  `json:"can_send_video_notes,omitempty"`
-	CanSendVoiceNotes bool  `json:"can_send_voice_notes,omitempty"`
-	CanSendPolls      bool  `json:"can_send_polls"`
-	CanSendOther      bool  `json:"can_send_other_messages"`
-	CanAddPreviews    bool  `json:"can_add_web_page_previews"`
-	CanChangeInfo     bool  `json:"can_change_info"`
-	CanInviteUsers    bool  `json:"can_invite_users"`
-	CanPinMessages    bool  `json:"can_pin_messages,omitempty"`
-	CanManageTopics   bool  `json:"can_manage_topics,omitempty"`
+	IsMember          bool `json:"is_member"`
+	UntilDate         Date `json:"until_date"`
+	CanSendMessages   bool `json:"can_send_messages"`
+	CanSendAudios     bool `json:"can_send_audios,omitempty"`
+	CanSendDocuments  bool `json:"can_send_documents,omitempty"`
+	CanSendPhotos     bool `json:"can_send_photos,omitempty"`
+	CanSendVideos     bool `json:"can_send_videos,omitempty"`
+	CanSendVideoNotes bool `json:"can_send_video_notes,omitempty"`
+	CanSendVoiceNotes bool `json:"can_send_voice_notes,omitempty"`
+	CanSendPolls      bool `json:"can_send_polls"`
+	CanSendOther      bool `json:"can_send_other_messages"`
+	CanAddPreviews    bool `json:"can_add_web_page_previews"`
+	CanChangeInfo     bool `json:"can_change_info"`
+	CanInviteUsers    bool `json:"can_invite_users"`
+	CanPinMessages    bool `json:"can_pin_messages,omitempty"`
+	CanManageTopics   bool `json:"can_manage_topics,omitempty"`
 }
 
 func (ChatMemberRestricted) Type() ChatMemberStatus { return ChatMemberStatusRestricted }
@@ -326,8 +319,8 @@ type UserChatBoosts struct {
 // ChatBoost contains information about a chat boost.
 type ChatBoost struct {
 	BoostID        string          `json:"boost_id"`
-	AddDate        int64           `json:"add_date"`
-	ExpirationDate int64           `json:"expiration_date"`
+	AddDate        Date            `json:"add_date"`
+	ExpirationDate Date            `json:"expiration_date"`
 	Source         ChatBoostSource `json:"source"`
 }
 
@@ -351,17 +344,25 @@ func (ChatBoostSourceType) TypeFor(t ChatBoostSourceType) oneof.Type {
 	return chatBoostSourceTypes.TypeFor(t)
 }
 
-type typeIDSource struct {
-	Source string `json:"source"`
-}
-
-func (i typeIDSource) SetTypeID(id string) oneof.IDType { i.Source = id; return i }
-func (i typeIDSource) GetTypeID() string                { return i.Source }
-
 // ChatBoostSource describes the source of a chat boost.
 type ChatBoostSource struct {
 	User   User
-	Source oneof.Object[ChatBoostSourceType, typeIDSource]
+	Source oneof.Value[ChatBoostSourceType]
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (s ChatBoostSource) UnmarshalJSON(b []byte) error {
+	var user struct {
+		Source ChatBoostSourceType `json:"source"`
+		User   User                `json:"user"`
+	}
+	err := json.Unmarshal(b, &user)
+	if err != nil {
+		return err
+	}
+	s.User = user.User
+	s.Source, err = oneof.New(user.Source, b)
+	return err
 }
 
 // ChatBoostSourcePremium means the boost was obtained by subscribing to Telegram Premium or
@@ -378,14 +379,9 @@ func (ChatBoostSourceGiftCode) Type() ChatBoostSourceType { return ChatBoostSour
 
 // ChatBoostSourceGiveaway means the boost was obtained by the creation of a Telegram Premium or a Telegram Star giveaway.
 type ChatBoostSourceGiveaway struct {
-	GiveawayMessageID int  `json:"giveaway_message_id"`
-	PrizeStarCount    int  `json:"prize_star_count"`
+	GiveawayMessageID ID   `json:"giveaway_message_id"`
+	PrizeStarCount    uint `json:"prize_star_count"`
 	IsClaimed         bool `json:"is_unclaimed"`
 }
 
 func (ChatBoostSourceGiveaway) Type() ChatBoostSourceType { return ChatBoostSourceTypeGiveaway }
-
-// ChatID represents chat id.
-type ChatID interface {
-	string | int64
-}

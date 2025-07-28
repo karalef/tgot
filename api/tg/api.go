@@ -18,8 +18,8 @@ type Error struct {
 	Code        int    `json:"error_code"`
 	Description string `json:"description"`
 	Parameters  *struct {
-		MigrateTo  *int64 `json:"migrate_to_chat_id"`
-		RetryAfter *int   `json:"retry_after"`
+		MigrateTo  *ID       `json:"migrate_to_chat_id"`
+		RetryAfter *Duration `json:"retry_after"`
 	} `json:"parameters"`
 }
 
@@ -38,15 +38,15 @@ func (e *Error) Error() string {
 
 // WebhookInfo describes the current status of a webhook.
 type WebhookInfo struct {
-	URL                string   `json:"url"`
-	HasCustomCert      bool     `json:"has_custom_certificate"`
-	PendingUpdateCount int      `json:"pending_update_count"`
-	IPAddress          string   `json:"ip_address"`
-	LastErrorDate      int64    `json:"last_error_date"`
-	LastErrorMessage   string   `json:"last_error_message"`
-	LastSyncErrorDate  int64    `json:"last_synchronization_error_date"`
-	MaxConnections     int      `json:"max_connections"`
-	AllowedUpdates     []string `json:"allowed_updates"`
+	URL               string   `json:"url"`
+	CustomCert        bool     `json:"has_custom_certificate"`
+	PendingCount      int      `json:"pending_update_count"`
+	IPAddress         string   `json:"ip_address"`
+	LastErrorDate     Date     `json:"last_error_date"`
+	LastError         string   `json:"last_error_message"`
+	LastSyncErrorDate Date     `json:"last_synchronization_error_date"`
+	MaxConns          int      `json:"max_connections"`
+	Allowed           []string `json:"allowed_updates"`
 }
 
 // Command represents a bot command.
@@ -56,59 +56,53 @@ type Command struct {
 }
 
 // CommandScope represents the scope to which bot commands are applied.
-type CommandScope interface {
-	commandScope()
+type CommandScope struct {
+	Type   string `json:"type"`
+	ChatID ChatID `json:"chat_id,omitempty"`
+	UserID ID     `json:"user_id,omitempty"`
 }
-
-type commandScope[ChatIDType ChatID] struct {
-	Type   string     `json:"type"`
-	ChatID ChatIDType `json:"chat_id,omitempty"`
-	UserID int64      `json:"user_id,omitempty"`
-}
-
-func (commandScope[ChatIDType]) commandScope() {}
 
 // CommandScopeDefault returns the default scope of bot commands.
 // Default commands are used if no commands with a narrower scope
 // are specified for the user.
 func CommandScopeDefault() CommandScope {
-	return commandScope[int64]{Type: "default"}
+	return CommandScope{Type: "default"}
 }
 
 // CommandScopeAllPrivateChats returns the scope of bot commands,
 // covering all private chats.
 func CommandScopeAllPrivateChats() CommandScope {
-	return commandScope[int64]{Type: "all_private_chats"}
+	return CommandScope{Type: "all_private_chats"}
 }
 
 // CommandScopeAllGroupChats returns the scope of bot commands,
 // covering all group and supergroup chats.
 func CommandScopeAllGroupChats() CommandScope {
-	return commandScope[int64]{Type: "all_group_chats"}
+	return CommandScope{Type: "all_group_chats"}
 }
 
 // CommandScopeAllChatAdmins returns the scope of bot commands,
 // covering all group and supergroup chat administrators.
 func CommandScopeAllChatAdmins() CommandScope {
-	return commandScope[int64]{Type: "all_chat_administrators"}
+	return CommandScope{Type: "all_chat_administrators"}
 }
 
 // CommandScopeChat returns the scope of bot commands,
 // covering a specific chat.
-func CommandScopeChat[T ChatID](chatID T) CommandScope {
-	return commandScope[T]{Type: "chat", ChatID: chatID}
+func CommandScopeChat(chatID ChatID) CommandScope {
+	return CommandScope{Type: "chat", ChatID: chatID}
 }
 
 // CommandScopeChatAdmins returns the scope of bot commands,
 // covering all administrators of a specific group or supergroup chat.
-func CommandScopeChatAdmins[T ChatID](chatID T) CommandScope {
-	return commandScope[T]{Type: "chat_administrators", ChatID: chatID}
+func CommandScopeChatAdmins(chatID ChatID) CommandScope {
+	return CommandScope{Type: "chat_administrators", ChatID: chatID}
 }
 
 // CommandScopeChatMember returns the scope of bot commands,
 // covering a specific member of a group or supergroup chat.
-func CommandScopeChatMember[T ChatID](chatID T, userID int64) CommandScope {
-	return commandScope[T]{Type: "chat_member", ChatID: chatID, UserID: userID}
+func CommandScopeChatMember(chatID ChatID, userID ID) CommandScope {
+	return CommandScope{Type: "chat_member", ChatID: chatID, UserID: userID}
 }
 
 // MenuButtonType represents menu button type.
@@ -171,8 +165,8 @@ type BotShortDescription struct {
 type BusinessConnection struct {
 	ID         string            `json:"id"`
 	User       User              `json:"user"`
-	UserChatID int64             `json:"user_chat_id"`
-	Date       int64             `json:"date"`
+	UserChatID ID                `json:"user_chat_id"`
+	Date       Date              `json:"date"`
 	Rights     BusinessBotRights `json:"rights"`
 	IsEnabled  bool              `json:"is_enabled"`
 }

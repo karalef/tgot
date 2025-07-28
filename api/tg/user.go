@@ -2,7 +2,7 @@ package tg
 
 // User represents a Telegram user or bot.
 type User struct {
-	ID            int64  `json:"id"`
+	ID            ID     `json:"id"`
 	IsBot         bool   `json:"is_bot"`
 	FirstName     string `json:"first_name"`
 	LastName      string `json:"last_name"`

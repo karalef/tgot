@@ -27,9 +27,9 @@ type PaidMedia = oneof.Object[PaidMediaType, oneof.IDTypeType]
 
 // PaidMediaPreview represents the paid media that isn't available before the payment.
 type PaidMediaPreview struct {
-	Width    uint `json:"width"`
-	Height   uint `json:"height"`
-	Duration uint `json:"duration"`
+	Width    int      `json:"width"`
+	Height   int      `json:"height"`
+	Duration Duration `json:"duration"`
 }
 
 func (PaidMediaPreview) Type() PaidMediaType { return PaidMediaTypePreview }
@@ -173,7 +173,7 @@ func (StoryAreaTypeLink) Type() StoryAreaTypeID { return StoryAreaTypeIDLink }
 type StoryAreaTypeWeather struct {
 	Temperature     float64 `json:"temperature"`
 	Emoji           string  `json:"emoji"`
-	BackgroundColor uint    `json:"background_color"`
+	BackgroundColor ARGB    `json:"background_color"`
 }
 
 func (StoryAreaTypeWeather) Type() StoryAreaTypeID { return StoryAreaTypeIDWeather }

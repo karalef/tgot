@@ -2,78 +2,110 @@ package updates
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 
-	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
 )
 
-// LongPoller represents complete Poller that polls the server for updates via the getUpdates method.
+// NewLongPoller creates a new long poller.
+func NewLongPoller(api *api.API) *LongPoller { return &LongPoller{api: api} }
+
+// LongPoller uses long polling to listen to the server for updates via the getUpdates method.
 type LongPoller struct {
-	Timeout uint
-	Limit   uint
-	Offset  int
-
-	wg      sync.WaitGroup
-	cancel  context.CancelFunc
-	started atomic.Bool
+	api *api.API
+	run atomic.Bool
+	wg  sync.WaitGroup
 }
 
-// Close stops the long poller and waits for all active handlers to complete.
-// It panics if the poller is not running.
-func (lp *LongPoller) Close() {
-	lp.cancel()
-	lp.wg.Wait()
-}
-
-// Run starts long polling. The passed context controlls only the long poller
-// but not the handlers.
-func (lp *LongPoller) Run(ctx context.Context, b *tgot.Bot) error {
+// Run starts long polling. The passed context controlls only the long poller.
+// It can be called multiple times but only after stopping via context
+// cancellation.
+func (lp *LongPoller) Run(ctx context.Context, h Handler, cfg ...LongPollConfig) error {
 	if ctx == nil {
 		panic("LongPoller: nil context")
 	}
-	if b == nil {
-		panic("LongPoller: nil bot")
+	if h == nil {
+		panic("LongPoller: nil handler")
 	}
-	if !lp.started.CompareAndSwap(false, true) {
+	if lp.run.CompareAndSwap(false, true) {
 		panic("LongPoller: already running")
 	}
 
-	ctx, lp.cancel = context.WithCancel(ctx)
+	s := NewState(lp.api, cfg...)
+	defer lp.run.Store(false)
 	defer lp.wg.Wait()
+	defer s.Close()
 
-	d := api.NewData()
-	d.SetUint("limit", lp.Limit)
-	d.SetUint("timeout", lp.Timeout)
-	d.SetJSON("allowed", b.Allowed())
-	defer d.Put()
-
-	for a := b.API(); ; {
-		d.SetInt("offset", lp.Offset)
-		upds, err := api.Request[[]tg.Update](ctx, a, "getUpdates", d)
-		switch {
-		case err == nil:
-		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-			return b.Err()
-		default:
+	for {
+		upds, err := s.Poll(ctx)
+		if err != nil {
 			return err
 		}
-		if len(upds) > 0 {
-			lp.Offset = upds[len(upds)-1].ID + 1
-		}
 		for i := range upds {
-			go lp.handle(b.Handle, &upds[i])
+			go lp.handle(ctx, h, &upds[i])
 		}
 	}
 }
 
-func (lp *LongPoller) handle(h Handler, upd *tg.Update) {
+func (lp *LongPoller) handle(ctx context.Context, h Handler, upd *tg.Update) {
 	lp.wg.Add(1)
 	defer lp.wg.Done()
-	if err := h(upd); err != nil {
-		lp.cancel()
+
+	if resp := h.Handle(upd); resp != nil {
+		_ = lp.api.Request(ctx, resp.Method(), resp.Data())
 	}
+}
+
+// LongPollConfig is the configuration for the long poller.
+type LongPollConfig struct {
+	Offset  tg.ID
+	Limit   uint
+	Timeout uint
+	Allowed []string
+}
+
+// NewState creates a new long poller state.
+func NewState(a *api.API, cfg ...LongPollConfig) *State {
+	s := &State{
+		a: a,
+		d: api.NewData(),
+	}
+	if len(cfg) > 0 {
+		s.o = cfg[0].Offset
+		s.d.
+			SetUint("limit", cfg[0].Limit).
+			SetUint("timeout", cfg[0].Timeout).
+			SetJSON("allowed", cfg[0].Allowed)
+	}
+	return s
+}
+
+// State polls for updates using the getUpdates method and stores the offset.
+// It is not safe for concurrent use.
+type State struct {
+	a *api.API
+	d *api.Data
+	o tg.ID
+}
+
+// Poll polls for updates from the server and updates the offset.
+func (s *State) Poll(ctx context.Context) ([]tg.Update, error) {
+	s.d.SetID("offset", s.o)
+	upds, err := api.Request[[]tg.Update](ctx, s.a, "getUpdates", s.d)
+	if err != nil {
+		return nil, err
+	}
+	if len(upds) > 0 {
+		s.o = upds[len(upds)-1].ID + 1
+	}
+	return upds, nil
+}
+
+// Close releases the resources used by the state.
+// Calling the Receive method after Close causes panic.
+func (s *State) Close() {
+	s.d.Put()
+	s.a = nil
 }

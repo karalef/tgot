@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/api/cmd"
 	"github.com/karalef/tgot/api/tg"
 )
 
@@ -85,7 +86,7 @@ func (c SimpleCommand) Help() tgot.Text {
 		Type:   tg.EntityCodeBlock,
 		Offset: sb.Len(),
 	}
-	sb.WriteByte(Prefix)
+	sb.WriteByte(cmd.Prefix)
 	sb.WriteString(c.Command)
 	for _, a := range c.Args {
 		sb.WriteByte(' ')
@@ -139,7 +140,7 @@ func MakeHelp(list *List) SimpleCommand {
 		},
 	}
 	h.Func = func(m *tgot.Message, msg *tg.Message, args []string) error {
-		chat := tgot.WithChatID(m, m.ID().ChatID())
+		chat := tgot.WithChatID(m, m.ID().Chat())
 		if len(args) > 0 {
 			if cmd := list.GetCmd(args[0]); cmd != nil {
 				return chat.ReplyE(tgot.ReplyTo(msg.ID), cmd.Help())
@@ -151,7 +152,7 @@ func MakeHelp(list *List) SimpleCommand {
 
 		for _, c := range *list {
 			sb.WriteByte('\n')
-			sb.WriteByte(Prefix)
+			sb.WriteByte(cmd.Prefix)
 			sb.WriteString(c.Name() + " - " + c.Description())
 		}
 		return chat.ReplyE(tgot.ReplyTo(msg.ID), tgot.NewText(sb.String()))

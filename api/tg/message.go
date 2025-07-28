@@ -2,20 +2,19 @@ package tg
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/karalef/tgot/api/internal/oneof"
 )
 
 // Message represents a message.
 type Message struct {
-	ID                        int                        `json:"message_id"`
-	MessageThreadID           int                        `json:"message_thread_id"`
+	ID                        ID                         `json:"message_id"`
+	MessageThreadID           ID                         `json:"message_thread_id"`
 	From                      *User                      `json:"from"`
 	SenderChat                *Chat                      `json:"sender_chat"`
 	SenderBoostCount          int                        `json:"sender_boost_count"`
 	SenderBusinessBot         *User                      `json:"sender_business_bot"`
-	Date                      int64                      `json:"date"`
+	Date                      Date                       `json:"date"`
 	BusinessConnectionID      string                     `json:"business_connection_id"`
 	Chat                      *Chat                      `json:"chat"`
 	ForwardOrigin             *MessageOrigin             `json:"forward_origin"`
@@ -26,7 +25,7 @@ type Message struct {
 	Quote                     *TextQuote                 `json:"quote"`
 	ReplyToStory              *Story                     `json:"reply_to_story"`
 	ViaBot                    *User                      `json:"via_bot"`
-	EditDate                  int64                      `json:"edit_date"`
+	EditDate                  Date                       `json:"edit_date"`
 	HasProtectedContent       bool                       `json:"has_protected_content"`
 	IsFromOffline             bool                       `json:"is_from_offline"`
 	MediaGroupID              string                     `json:"media_group_id"`
@@ -66,8 +65,8 @@ type Message struct {
 	SuperGroupCreated         bool                       `json:"supergroup_chat_created"`
 	ChannelCreated            bool                       `json:"channel_chat_created"`
 	AutoDeleteTimerChanged    *AutoDeleteTimer           `json:"message_auto_delete_timer_changed"`
-	MigrateTo                 int64                      `json:"migrate_to_chat_id"`
-	MigrateFrom               int64                      `json:"migrate_from_chat_id"`
+	MigrateTo                 ID                         `json:"migrate_to_chat_id"`
+	MigrateFrom               ID                         `json:"migrate_from_chat_id"`
 	PinnedMessage             *MaybeInaccessibleMessage  `json:"pinned_message"`
 	Invoice                   *Invoice                   `json:"invoice"`
 	SuccessfulPayment         *SuccessfulPayment         `json:"successful_payment"`
@@ -103,14 +102,9 @@ type Message struct {
 	ReplyMarkup               *InlineKeyboardMarkup      `json:"reply_markup"`
 }
 
-// Time converts unixtime to time.Time.
-func (m *Message) Time() time.Time {
-	return time.Unix(m.Date, 0)
-}
-
 // MessageID represents a unique message identifier.
 type MessageID struct {
-	ID int `json:"message_id"`
+	ID ID `json:"message_id"`
 }
 
 // MessageEntity represents one special entitty in a text message.
@@ -156,7 +150,7 @@ type Contact struct {
 	PhoneNumber string `json:"phone_number"`
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
-	UserID      int64  `json:"user_id"`
+	UserID      ID     `json:"user_id"`
 	Vcard       string `json:"vcard"`
 }
 
@@ -187,7 +181,7 @@ type Location struct {
 	Long               float32  `json:"longitude"`
 	Lat                float32  `json:"latitude"`
 	HorizontalAccuracy *float32 `json:"horizontal_accuracy,omitempty"`
-	LivePeriod         int      `json:"live_period,omitempty"`
+	LivePeriod         Duration `json:"live_period,omitempty"`
 	Heading            int      `json:"heading,omitempty"`
 	AlertRadius        int      `json:"proximity_alert_radius,omitempty"`
 }
@@ -213,22 +207,15 @@ type LinkPreviewOptions struct {
 }
 
 // ReplyParameters describes reply parameters for the message that is being sent.
-type ReplyParameters interface {
-	replyParameters()
-}
-
-// ReplyParametersData describes reply parameters for the message that is being sent.
-type ReplyParametersData[ID ChatID] struct {
-	MessageID                int             `json:"message_id"`
-	ChatID                   ID              `json:"chat_id,omitempty"`
+type ReplyParameters struct {
+	MessageID                ID              `json:"message_id"`
+	ChatID                   ChatID          `json:"chat_id,omitempty"`
 	AllowSendingWithoutReply bool            `json:"allow_sending_without_reply,omitempty"`
 	Quote                    string          `json:"quote,omitempty"`
 	QuoteParseMode           ParseMode       `json:"quote_parse_mode,omitempty"`
 	QuoteEntities            []MessageEntity `json:"quote_entities,omitempty"`
 	QuotePosition            int             `json:"quote_position,omitempty"`
 }
-
-func (ReplyParametersData[ID]) replyParameters() {}
 
 // ProximityAlert represents the content of a service message,
 // sent whenever a user in the chat triggers a proximity alert
@@ -242,12 +229,12 @@ type ProximityAlert struct {
 // AutoDeleteTimer represents a service message about a change
 // in auto-delete timer settings.
 type AutoDeleteTimer struct {
-	MessageAutoDeleteTime int `json:"message_auto_delete_time"`
+	Time Duration `json:"message_auto_delete_time"`
 }
 
 // VideoChatScheduled represents a service message about a video chat scheduled in the chat.
 type VideoChatScheduled struct {
-	Time int64 `json:"start_time"`
+	Time Date `json:"start_time"`
 }
 
 // VideoChatStarted represents a service message about a video chat started in the chat.
@@ -255,22 +242,25 @@ type VideoChatStarted struct{}
 
 // VideoChatEnded represents a service message about a video chat ended in the chat.
 type VideoChatEnded struct {
-	Duration int64 `json:"duration"`
+	Duration Duration `json:"duration"`
 }
 
-// VideoChatInvited represents a service message about new members invited to a video chat.
+// VideoChatInvited represents a service message about new members invited to a
+// video chat.
 type VideoChatInvited struct {
 	Users []User `json:"users"`
 }
 
-// ForumTopicCreated represents a service message about a new forum topic created in the chat.
+// ForumTopicCreated represents a service message about a new forum topic
+// created in the chat.
 type ForumTopicCreated struct {
 	Name              string `json:"name"`
-	IconColor         int    `json:"icon_color"`
+	IconColor         RGB    `json:"icon_color"`
 	IconCustomEmojiID string `json:"icon_custom_emoji_id"`
 }
 
-// ForumTopicClosed represents a service message about a forum topic closed in the chat.
+// ForumTopicClosed represents a service message about a forum topic closed in
+// the chat.
 // Currently holds no information.
 type ForumTopicClosed struct{}
 
@@ -280,27 +270,32 @@ type ForumTopicEdited struct {
 	IconCustomEmojiID string `json:"icon_custom_emoji_id"`
 }
 
-// ForumTopicReopened represents a service message about a forum topic reopened in the chat.
+// ForumTopicReopened represents a service message about a forum topic reopened
+// in the chat.
 // Currently holds no information.
 type ForumTopicReopened struct{}
 
-// GeneralForumTopicHidden represents a service message about General forum topic hidden in the chat.
+// GeneralForumTopicHidden represents a service message about General forum
+// topic hidden in the chat.
 // Currently holds no information.
 type GeneralForumTopicHidden struct{}
 
-// GeneralForumTopicUnhidden represents a service message about General forum topic unhidden in the chat.
+// GeneralForumTopicUnhidden represents a service message about General forum
+// topic unhidden in the chat.
 // Currently holds no information.
 type GeneralForumTopicUnhidden struct{}
 
-// UsersShared contains information about the users whose identifiers were shared with the bot using a KeyboardButtonRequestUsers button.
+// UsersShared contains information about the users whose identifiers were
+// shared with the bot using a KeyboardButtonRequestUsers button.
 type UsersShared struct {
-	RequestID int          `json:"request_id"`
+	RequestID ID           `json:"request_id"`
 	Users     []SharedUser `json:"users"`
 }
 
-// SharedUser contains information about a user that was shared with the bot using a KeyboardButtonRequestUsers button.
+// SharedUser contains information about a user that was shared with the bot
+// using a KeyboardButtonRequestUsers button.
 type SharedUser struct {
-	UserID    int64       `json:"user_id"`
+	UserID    ID          `json:"user_id"`
 	FirstName string      `json:"first_name"`
 	LastName  string      `json:"last_name"`
 	Username  string      `json:"username"`
@@ -309,8 +304,8 @@ type SharedUser struct {
 
 // ChatShared contains information about the chat whose identifier was shared with the bot using a KeyboardButtonRequestChat button.
 type ChatShared struct {
-	RequestID int   `json:"request_id"`
-	ChatID    int64 `json:"chat_id"`
+	RequestID ID `json:"request_id"`
+	ChatID    ID `json:"chat_id"`
 }
 
 // WriteAccessAllowed represents a service message about a user allowing a bot to write messages after adding the bot to the attachment menu or launching a Web App from a link.
@@ -365,7 +360,7 @@ func (ReactionTypePaid) Type() ReactionTypeType { return ReactionTypeTypePaid }
 // Story represents a story.
 type Story struct {
 	Chat Chat `json:"chat"`
-	ID   int  `json:"id"`
+	ID   ID   `json:"id"`
 }
 
 // ExternalReplyInfo contains information about a message that is being replied to,
@@ -373,7 +368,7 @@ type Story struct {
 type ExternalReplyInfo struct {
 	Origin             MessageOrigin       `json:"origin"`
 	Chat               *Chat               `json:"chat"`
-	MessageID          int                 `json:"message_id"`
+	MessageID          ID                  `json:"message_id"`
 	LinkPreviewOptions *LinkPreviewOptions `json:"link_preview_options"`
 	Animation          *Animation          `json:"animation"`
 	Audio              *Audio              `json:"audio"`
@@ -416,36 +411,36 @@ type DirectMessagePriceChanged struct {
 
 // GiveawayCreated represents a service message about the creation of a scheduled giveaway.
 type GiveawayCreated struct {
-	PrizeStarCount int `json:"prize_star_count"`
+	PrizeStarCount uint `json:"prize_star_count"`
 }
 
 // Giveaway represents a message about a scheduled giveaway.
 type Giveaway struct {
-	Chats                         []Chat   `json:"chats"`
-	WinnersSelectionDate          int64    `json:"winners_selection_date"`
-	WinnerCount                   int      `json:"winner_count"`
-	OnlyNewMembers                bool     `json:"only_new_members"`
-	HasPublicWinners              bool     `json:"has_public_winners"`
-	PrizeDescription              string   `json:"prize_description"`
-	CountryCodes                  []string `json:"country_codes"`
-	PrizeStarCount                int      `json:"prize_star_count"`
-	PremiumSubscriptionMonthCount int      `json:"premium_subscription_month_count"`
+	Chats                []Chat   `json:"chats"`
+	WinnersSelectionDate Date     `json:"winners_selection_date"`
+	WinnerCount          int      `json:"winner_count"`
+	OnlyNewMembers       bool     `json:"only_new_members"`
+	HasPublicWinners     bool     `json:"has_public_winners"`
+	PrizeDescription     string   `json:"prize_description"`
+	CountryCodes         []string `json:"country_codes"`
+	PrizeStarCount       uint     `json:"prize_star_count"`
+	PremiumMonths        int      `json:"premium_subscription_month_count"`
 }
 
 // GiveawayWinners represents a message about the completion of a giveaway with public winners.
 type GiveawayWinners struct {
-	Chat                          Chat   `json:"chat"`
-	GiveawayMessageID             int    `json:"giveaway_message_id"`
-	WinnersSelectionDate          int64  `json:"winners_selection_date"`
-	WinnerCount                   int    `json:"winner_count"`
-	Winners                       []User `json:"winners"`
-	AdditionalChatCount           int    `json:"additional_chat_count"`
-	PrizeStarCount                int    `json:"prize_star_count"`
-	PremiumSubscriptionMonthCount int    `json:"premium_subscription_month_count"`
-	UnclaimedPrizeCount           int    `json:"unclaimed_prize_count"`
-	OnlyNewMembers                bool   `json:"only_new_members"`
-	WasRefunded                   bool   `json:"was_refunded"`
-	PrizeDescription              string `json:"prize_description"`
+	Chat                 Chat   `json:"chat"`
+	GiveawayMessageID    ID     `json:"giveaway_message_id"`
+	WinnersSelectionDate Date   `json:"winners_selection_date"`
+	WinnerCount          int    `json:"winner_count"`
+	Winners              []User `json:"winners"`
+	AdditionalChatCount  int    `json:"additional_chat_count"`
+	PrizeStarCount       uint   `json:"prize_star_count"`
+	PremiumMonths        int    `json:"premium_subscription_month_count"`
+	UnclaimedPrizeCount  int    `json:"unclaimed_prize_count"`
+	OnlyNewMembers       bool   `json:"only_new_members"`
+	WasRefunded          bool   `json:"was_refunded"`
+	PrizeDescription     string `json:"prize_description"`
 }
 
 // GiveawayCompleted represents a service message about the completion of a giveaway without public winners.
@@ -482,15 +477,15 @@ type MessageOrigin = oneof.Object[MessageOriginType, oneof.IDTypeType]
 
 // MessageOriginUser means the message was originally sent by a known user.
 type MessageOriginUser struct {
-	Date       int64 `json:"date"`
-	SenderUser User  `json:"sender_user"`
+	Date       Date `json:"date"`
+	SenderUser User `json:"sender_user"`
 }
 
 func (MessageOriginUser) Type() MessageOriginType { return MessageOriginTypeUser }
 
 // MessageOriginHiddenUser means the message was originally sent by an unknown user.
 type MessageOriginHiddenUser struct {
-	Date           int64  `json:"date"`
+	Date           Date   `json:"date"`
 	SenderUserName string `json:"sender_user_name"`
 }
 
@@ -498,7 +493,7 @@ func (MessageOriginHiddenUser) Type() MessageOriginType { return MessageOriginTy
 
 // MessageOriginChat means the message was originally sent on behalf of a chat to a group chat.
 type MessageOriginChat struct {
-	Date            int64  `json:"date"`
+	Date            Date   `json:"date"`
 	SenderChat      Chat   `json:"sender_chat"`
 	AuthorSignature string `json:"author_signature"`
 }
@@ -507,9 +502,9 @@ func (MessageOriginChat) Type() MessageOriginType { return MessageOriginTypeChat
 
 // MessageOriginChannel means the message was originally sent to a channel chat.
 type MessageOriginChannel struct {
-	Date            int64  `json:"date"`
+	Date            Date   `json:"date"`
 	Chat            Chat   `json:"chat"`
-	MessageID       int    `json:"message_id"`
+	MessageID       ID     `json:"message_id"`
 	AuthorSignature string `json:"author_signature"`
 }
 
@@ -517,9 +512,9 @@ func (MessageOriginChannel) Type() MessageOriginType { return MessageOriginTypeC
 
 // InaccessibleMessage describes a message that was deleted or is otherwise inaccessible to the bot.
 type InaccessibleMessage struct {
-	Chat Chat  `json:"chat"`
-	ID   int   `json:"message_id"`
-	Date int64 `json:"date"`
+	Chat Chat `json:"chat"`
+	ID   ID   `json:"message_id"`
+	Date Date `json:"date"`
 }
 
 // MaybeInaccessibleMessage describes a message that can be inaccessible to the bot.
@@ -528,14 +523,14 @@ type MaybeInaccessibleMessage struct {
 	*Message
 }
 
-func (m MaybeInaccessibleMessage) ID() int {
+func (m MaybeInaccessibleMessage) ID() ID {
 	if m.InaccessibleMessage != nil {
 		return m.InaccessibleMessage.ID
 	}
 	return m.Message.ID
 }
 
-func (m MaybeInaccessibleMessage) Date() int64 {
+func (m MaybeInaccessibleMessage) Date() Date {
 	if m.InaccessibleMessage != nil {
 		return m.InaccessibleMessage.Date
 	}
@@ -660,15 +655,15 @@ type BackgroundFill = oneof.Object[BackgroundFillType, oneof.IDTypeType]
 
 // BackgroundFillSolid means the background is filled using the selected color.
 type BackgroundFillSolid struct {
-	Color uint32 `json:"color"` // rgb24
+	Color RGB `json:"color"`
 }
 
 func (BackgroundFillSolid) Type() BackgroundFillType { return BackgroundFillTypeSolid }
 
 // BackgroundFillGradient means the background is a gradient fill.
 type BackgroundFillGradient struct {
-	TopColor      uint32 `json:"top_color"`      // rgb24
-	BottomColor   uint32 `json:"bottom_color"`   // rgb24
+	TopColor      RGB    `json:"top_color"`
+	BottomColor   RGB    `json:"bottom_color"`
 	RotationAngle uint16 `json:"rotation_angle"` // degrees
 }
 
@@ -677,7 +672,7 @@ func (BackgroundFillGradient) Type() BackgroundFillType { return BackgroundFillT
 // BackgroundFillFreeformGradient means the background is a freeform gradient that rotates
 // after every message in the chat.
 type BackgroundFillFreeformGradient struct {
-	Colors []uint32 `json:"colors"` // rgb24
+	Colors []RGB `json:"colors"`
 }
 
 func (BackgroundFillFreeformGradient) Type() BackgroundFillType {

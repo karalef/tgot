@@ -2,10 +2,10 @@ package tgot
 
 import (
 	"io"
-	"sync/atomic"
 
 	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/updates"
 
 	stdcontext "context"
 )
@@ -28,7 +28,7 @@ func New(api *api.API, handler Handler) (*Bot, error) {
 		api: api,
 		h:   handler,
 	}
-	b.ctx = newContext(stdcontext.Background(), "bot", b, nil)
+	b.ctx = newContext(stdcontext.Background(), "", b, nil)
 	_, err := b.GetMe()
 	if err != nil {
 		return nil, err
@@ -37,13 +37,14 @@ func New(api *api.API, handler Handler) (*Bot, error) {
 	return b, nil
 }
 
+var _ updates.Handler = (*Bot)(nil)
+
 // Bot type.
 type Bot struct {
 	h Handler
 
 	ctx *context
 	api *api.API
-	err atomic.Pointer[error]
 	me  tg.User
 }
 
@@ -54,9 +55,7 @@ type Handler interface {
 	Allowed() []string
 
 	// Handle handles the update.
-	// If the handler returns an error, it will be set as bot error,
-	// after which the bot will not handle the future updates.
-	Handle(Empty, *tg.Update) error
+	Handle(Empty, *tg.Update)
 }
 
 // API returns api object.
@@ -66,33 +65,10 @@ func (b *Bot) API() *api.API { return b.api }
 // If the list is nil, all updates are allowed.
 func (b *Bot) Allowed() []string { return b.h.Allowed() }
 
-// SetError changes the state of the bot to an error.
-// It does nothing if the bot is already in an error state.
-// The error state prevents any updates handling..
-func (b *Bot) SetError(err error) {
-	b.err.CompareAndSwap(nil, &err)
-}
-
-// Err returns bot error.
-func (b *Bot) Err() error {
-	if e := b.err.Load(); e != nil {
-		return *e
-	}
-	return nil
-}
-
 // Handle calls underlying handler.
-func (b *Bot) Handle(upd *tg.Update) error {
-	err := b.Err()
-	if err != nil {
-		return err
-	}
-
-	err = b.h.Handle(b.ctx, upd)
-	if err != nil {
-		b.SetError(err)
-	}
-	return b.Err()
+func (b *Bot) Handle(upd *tg.Update) updates.Response {
+	b.h.Handle(b.ctx, upd)
+	return nil
 }
 
 // Me returns current bot as tg.User (cached after GetMe).

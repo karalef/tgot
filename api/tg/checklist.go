@@ -2,11 +2,11 @@ package tg
 
 // ChecklistTask describes a task in a checklist.
 type ChecklistTask struct {
-	ID              int             `json:"id"`
+	ID              ID              `json:"id"`
 	Text            string          `json:"text"`
 	Entities        []MessageEntity `json:"text_entities"`
 	CompletedByUser *User           `json:"completed_by_user"`
-	CompletionDate  int64           `json:"completion_date"`
+	CompletionDate  Date            `json:"completion_date"`
 }
 
 // Checklist describes a checklist.
@@ -20,7 +20,7 @@ type Checklist struct {
 
 // InputChecklistTask describes a task to add to a checklist.
 type InputChecklistTask struct {
-	ID        int             `json:"id"`
+	ID        ID              `json:"id"`
 	Text      string          `json:"text"`
 	ParseMode ParseMode       `json:"parse_mode"`
 	Entities  []MessageEntity `json:"text_entities"`
@@ -39,8 +39,8 @@ type InputChecklist struct {
 // ChecklistTasksDone describes a service message about checklist tasks marked as done or not done.
 type ChecklistTasksDone struct {
 	Message                *Message `json:"checklist_message"`
-	MarkedAsDoneTaskIDs    []int    `json:"marked_as_done_task_ids"`
-	MarkedAsNotDoneTaskIDs []int    `json:"marked_as_not_done_task_ids"`
+	MarkedAsDoneTaskIDs    []ID     `json:"marked_as_done_task_ids"`
+	MarkedAsNotDoneTaskIDs []ID     `json:"marked_as_not_done_task_ids"`
 }
 
 // ChecklistTasksAdded describes a service message about tasks added to a checklist.

@@ -14,7 +14,7 @@ type PassportData struct {
 // PassportFile represents a file uploaded to Telegram Passport.
 type PassportFile struct {
 	FileData
-	FileDate int64 `json:"file_date"`
+	FileDate Date `json:"file_date"`
 }
 
 // EncryptedPassportElement describes documents or other Telegram Passport elements

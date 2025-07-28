@@ -14,8 +14,8 @@ type Poll struct {
 	CorrectOption       int             `json:"correct_option_id"`
 	Explanation         string          `json:"explanation"`
 	ExplanationEntities []MessageEntity `json:"explanation_entities"`
-	OpenPeriod          int             `json:"open_period"`
-	CloseDate           int64           `json:"close_date"`
+	OpenPeriod          Duration        `json:"open_period"`
+	CloseDate           Date            `json:"close_date"`
 }
 
 // PollType represents poll type.
@@ -29,9 +29,9 @@ const (
 
 // PollOption contains information about one answer option in a poll.
 type PollOption struct {
-	Text         string          `json:"text"`
-	TextEntities []MessageEntity `json:"text_entities"`
-	VoterCount   int             `json:"voter_count"`
+	Text       string          `json:"text"`
+	Entities   []MessageEntity `json:"text_entities"`
+	VoterCount int             `json:"voter_count"`
 }
 
 // InputPollOption contains information about one answer option in a poll to be sent.

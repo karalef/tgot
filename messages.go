@@ -7,7 +7,7 @@ import (
 
 // ChatMsgID creates a chat message id.
 func ChatMsgID(msg *tg.Message) MessageID {
-	return MessageID{chatID: NewChatID(msg.Chat.ID, msg.BusinessConnectionID), msgID: msg.ID}
+	return MessageID{chatID: NewChatID(msg.Chat.ID, msg.BusinessConnectionID), id: msg.ID}
 }
 
 // InlineMsgID creates an inline message id.
@@ -21,27 +21,26 @@ func CallbackMsgID(q *tg.CallbackQuery) MessageID {
 		return MessageID{inline: q.InlineMessageID}
 	}
 	return MessageID{
+		id:     q.Message.ID(),
 		chatID: NewChatID(q.Message.Chat().ID, q.Message.BusinessConnectionID),
-		msgID:  q.Message.ID(),
 	}
 }
 
 // MsgID creates a message id.
-func MsgID(chatid int64, msgid int) MessageID {
-	return MessageID{chatID: NewChatID(chatid), msgID: msgid}
+func MsgID(chatid tg.ChatID, msgid tg.ID) MessageID {
+	return MessageID{chatID: NewChatID(chatid), id: msgid}
 }
 
 // MessageID contains inline message id or chat id with message id.
 type MessageID struct {
+	id     tg.ID
 	chatID ChatID
-	msgID  int
 	inline string
 }
 
-func (s MessageID) ChatID() ChatID { return s.chatID }
-func (s MessageID) MessageID() int { return s.msgID }
+func (s MessageID) ID() tg.ID      { return s.id }
+func (s MessageID) Chat() ChatID   { return s.chatID }
 func (s MessageID) Inline() string { return s.inline }
-
 func (s MessageID) isInline() bool { return s.inline != "" }
 
 func (s MessageID) setTo(d *api.Data) *api.Data {
@@ -50,7 +49,7 @@ func (s MessageID) setTo(d *api.Data) *api.Data {
 		return d
 	}
 	s.chatID.setChatID(d)
-	d.SetInt("message_id", s.msgID)
+	d.SetID("message_id", s.id)
 	return d
 }
 
@@ -79,10 +78,10 @@ func (m *Message) WithName(name string) *Message {
 	return &Message{context: m.context.child(name), sig: m.sig}
 }
 
-func (m *Message) ID() MessageID  { return m.sig }
-func (m *Message) ChatID() ChatID { return m.sig.chatID }
-func (m *Message) MessageID() int { return m.sig.msgID }
-func (m *Message) Inline() string { return m.sig.inline }
+func (m *Message) ID() MessageID    { return m.sig }
+func (m *Message) ChatID() ChatID   { return m.sig.chatID }
+func (m *Message) MessageID() tg.ID { return m.sig.id }
+func (m *Message) Inline() string   { return m.sig.inline }
 
 func (c Message) msgMethod(meth string, d *api.Data) (*tg.Message, error) {
 	if c.sig.isInline() {

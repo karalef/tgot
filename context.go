@@ -45,16 +45,6 @@ func newContext(c stdcontext.Context, path string, bot *Bot, data *api.Data) *co
 	return &context{c, bot, path, data}
 }
 
-func nestPath(path string, name string) string {
-	if path == "" {
-		return name
-	}
-	if name == "" {
-		return path
-	}
-	return path + "::" + name
-}
-
 var _ Empty = &context{}
 
 type context struct {
@@ -88,7 +78,10 @@ func (c *context) child(name string) *context {
 	if name == "" {
 		return c
 	}
-	return newContext(c.Context, nestPath(c.path, name), c.bot, c.data)
+	if c.path != "" {
+		name = c.path + "::" + name
+	}
+	return newContext(c.Context, name, c.bot, c.data)
 }
 
 func (c *context) method(meth string, d ...*api.Data) error {

@@ -7,7 +7,7 @@ import (
 // LabeledPrice represents a portion of the price for goods or services.
 type LabeledPrice struct {
 	Label  string `json:"label"`
-	Amount int    `json:"amount"`
+	Amount uint   `json:"amount"`
 }
 
 // Invoice contains basic information about an invoice..
@@ -16,7 +16,7 @@ type Invoice struct {
 	Description    string `json:"description"`
 	StartParameter string `json:"start_parameter"`
 	Currency       string `json:"currency"` // Three-letter ISO 4217 currency code
-	TotalAmount    int    `json:"total_amount"`
+	Total          uint   `json:"total_amount"`
 }
 
 // ShippingAddress represents a shipping address.
@@ -46,16 +46,16 @@ type ShippingOption struct {
 
 // SuccessfulPayment contains basic information about a successful payment.
 type SuccessfulPayment struct {
-	Curency                    string     `json:"currency"`
-	TotalAmount                int        `json:"total_amount"`
-	InvoicePayload             string     `json:"invoice_payload"`
-	SubscriptionExpirationDate int64      `json:"subscription_expiration_date"`
-	IsRecurring                bool       `json:"is_recurring"`
-	IsFirstRecurring           bool       `json:"is_first_recurring"`
-	ShippingOptionID           string     `json:"shipping_option_id,omitempty"`
-	OrderInfo                  *OrderInfo `json:"order_info,omitempty"`
-	TelegramPaymentChargeID    string     `json:"telegram_payment_charge_id"`
-	ProviderPaymentChargeID    string     `json:"provider_payment_charge_id"`
+	Curency          string     `json:"currency"`
+	TotalAmount      uint       `json:"total_amount"`
+	InvoicePayload   string     `json:"invoice_payload"`
+	Expiration       Date       `json:"subscription_expiration_date"`
+	IsRecurring      bool       `json:"is_recurring"`
+	IsFirstRecurring bool       `json:"is_first_recurring"`
+	ShippingOptionID string     `json:"shipping_option_id,omitempty"`
+	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
+	TelegramChargeID string     `json:"telegram_payment_charge_id"`
+	ProviderChargeID string     `json:"provider_payment_charge_id"`
 }
 
 // StarTransactions contains a list of Telegram Star transactions.
@@ -65,22 +65,22 @@ type StarTransactions struct {
 
 // StarTransaction describes a Telegram Star transaction.
 type StarTransaction struct {
-	ID             string              `json:"id"`
-	Amount         uint                `json:"amount"`
-	NanostarAmount uint                `json:"nanostar_amount"`
-	Date           int64               `json:"date"`
-	Source         *TransactionPartner `json:"source"`
-	Receiver       *TransactionPartner `json:"receiver"`
+	ID       string              `json:"id"`
+	Amount   uint                `json:"amount"`
+	Nanostar uint                `json:"nanostar_amount"`
+	Date     Date                `json:"date"`
+	Source   *TransactionPartner `json:"source"`
+	Receiver *TransactionPartner `json:"receiver"`
 }
 
 // AffiliateInfo contains information about the affiliate that received a
 // commission via this transaction.
 type AffiliateInfo struct {
-	User             *User `json:"affiliate_user,omitempty"`
-	Chat             *Chat `json:"affiliate_chat,omitempty"`
-	ComissionPerMile uint  `json:"commission_per_mille"`
-	Amount           uint  `json:"amount"`
-	NanostarAmount   uint  `json:"nanostar_amount,omitempty"`
+	User              *User `json:"affiliate_user,omitempty"`
+	Chat              *Chat `json:"affiliate_chat,omitempty"`
+	ComissionPerMille uint  `json:"commission_per_mille"`
+	Amount            uint  `json:"amount"`
+	Nanostar          uint  `json:"nanostar_amount,omitempty"`
 }
 
 // TransactionPartnerType represents the type of a transaction partner.
@@ -132,11 +132,11 @@ type TransactionPartnerUser struct {
 	User               User            `json:"user"`
 	Affiliate          *AffiliateInfo  `json:"affiliate,omitempty"`
 	InvoicePayload     string          `json:"invoice_payload,omitempty"`
-	SubscriptionPeriod uint            `json:"subscription_period,omitempty"`
+	SubscriptionPeriod Duration        `json:"subscription_period,omitempty"`
 	PaidMedia          []PaidMedia     `json:"paid_media,omitempty"`
 	PaidMediaPayload   string          `json:"paid_media_payload,omitempty"`
 	Gift               *Gift           `json:"gift,omitempty"`
-	PremiumDuration    uint            `json:"premium_subscription_duration"`
+	PremiumDuration    Duration        `json:"premium_subscription_duration"`
 }
 
 func (TransactionPartnerUser) Type() TransactionPartnerType { return TransactionPartnerTypeUser }
@@ -222,7 +222,7 @@ func (RevenueWithdrawalStatePending) Type() RevenueWithdrawalStateType {
 
 // RevenueWithdrawalStateSucceeded means the withdrawal was successed.
 type RevenueWithdrawalStateSucceeded struct {
-	Date int64  `json:"date"`
+	Date Date   `json:"date"`
 	URL  string `json:"url"`
 }
 

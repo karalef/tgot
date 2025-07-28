@@ -43,7 +43,7 @@ type KeyboardButton struct {
 // KeyboardButtonRequestUsers defines the criteria used to request a suitable user.
 // The identifier of the selected user will be shared with the bot when the corresponding button is pressed.
 type KeyboardButtonRequestUsers struct {
-	RequestID       int   `json:"request_id"`
+	RequestID       ID    `json:"request_id"`
 	UserIsBot       *bool `json:"user_is_bot,omitempty"`
 	UserIsPremium   *bool `json:"user_is_premium,omitempty"`
 	MaxQuantity     int   `json:"max_quantity,omitempty"`
@@ -55,7 +55,7 @@ type KeyboardButtonRequestUsers struct {
 // KeyboardButtonRequestChat defines the criteria used to request a suitable chat.
 // The identifier of the selected chat will be shared with the bot when the corresponding button is pressed.
 type KeyboardButtonRequestChat struct {
-	RequestID       int                      `json:"request_id"`
+	RequestID       ID                       `json:"request_id"`
 	ChatIsChannel   bool                     `json:"chat_is_channel"`
 	ChatIsForum     *bool                    `json:"chat_is_forum,omitempty"`
 	ChatHasUsername *bool                    `json:"chat_has_username,omitempty"`

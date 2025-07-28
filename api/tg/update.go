@@ -29,7 +29,7 @@ const (
 
 // Update object represents an incoming update.
 type Update struct {
-	ID                      int                          `json:"update_id"`
+	ID                      ID                           `json:"update_id"`
 	Message                 *Message                     `json:"message"`
 	EditedMessage           *Message                     `json:"edited_message"`
 	ChannelPost             *Message                     `json:"channel_post"`
@@ -57,9 +57,9 @@ type Update struct {
 
 // BusinessMessagesDeleted is received when messages are deleted from a connected business account.
 type BusinessMessagesDeleted struct {
-	BusinessConnectionID string `json:"business_connection_id"`
-	Chat                 Chat   `json:"chat"`
-	MessageIDs           []int  `json:"message_ids"`
+	ConnID     string `json:"business_connection_id"`
+	Chat       Chat   `json:"chat"`
+	MessageIDs []ID   `json:"message_ids"`
 }
 
 // CallbackQuery represents an incoming callback query from a callback
@@ -77,10 +77,10 @@ type CallbackQuery struct {
 // MessageReactionUpdated represents a change of a reaction on a message performed by a user.
 type MessageReactionUpdated struct {
 	Chat        Chat           `json:"chat"`
-	MessageID   int            `json:"message_id"`
+	MessageID   ID             `json:"message_id"`
 	User        *User          `json:"user"`
 	ActorChat   *Chat          `json:"actor_chat"`
-	Date        int64          `json:"date"`
+	Date        Date           `json:"date"`
 	OldReaction []ReactionType `json:"old_reaction"`
 	NewReaction []ReactionType `json:"new_reaction"`
 }
@@ -88,8 +88,8 @@ type MessageReactionUpdated struct {
 // MessageReactionCountUpdated represents reaction changes on a message with anonymous reactions.
 type MessageReactionCountUpdated struct {
 	Chat      Chat            `json:"chat"`
-	MessageID int             `json:"message_id"`
-	Date      int64           `json:"date"`
+	MessageID ID              `json:"message_id"`
+	Date      Date            `json:"date"`
 	Reactions []ReactionCount `json:"reactions"`
 }
 
@@ -134,7 +134,7 @@ type PreCheckoutQuery struct {
 	ID               string     `json:"id"`
 	From             User       `json:"from"`
 	Curency          string     `json:"currency"`
-	TotalAmount      int        `json:"total_amount"`
+	TotalAmount      uint       `json:"total_amount"`
 	InvoicePayload   string     `json:"invoice_payload"`
 	ShippingOptionID string     `json:"shipping_option_id,omitempty"`
 	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
@@ -158,7 +158,7 @@ type PollAnswer struct {
 type ChatMemberUpdated struct {
 	Chat                    Chat            `json:"chat"`
 	From                    User            `json:"from"`
-	Date                    int64           `json:"date"`
+	Date                    Date            `json:"date"`
 	Old                     ChatMember      `json:"old_chat_member"`
 	New                     ChatMember      `json:"new_chat_member"`
 	InviteLink              *ChatInviteLink `json:"invite_link"`
@@ -170,8 +170,8 @@ type ChatMemberUpdated struct {
 type ChatJoinRequest struct {
 	Chat       *Chat           `json:"chat"`
 	From       *User           `json:"from"`
-	UserChatID int64           `json:"user_chat_id"`
-	Date       int64           `json:"date"`
+	UserChatID ID              `json:"user_chat_id"`
+	Date       Date            `json:"date"`
 	Bio        string          `json:"bio,omitempty"`
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
 }
@@ -184,8 +184,8 @@ type ChatBoostUpdated struct {
 
 // ChatBoostRemoved represents a boost removed from a chat.
 type ChatBoostRemoved struct {
-	Chat       Chat            `json:"chat"`
-	BoostID    string          `json:"boost_id"`
-	RemoveDate int64           `json:"remove_date"`
-	Source     ChatBoostSource `json:"source"`
+	Chat    Chat            `json:"chat"`
+	BoostID string          `json:"boost_id"`
+	Date    Date            `json:"remove_date"`
+	Source  ChatBoostSource `json:"source"`
 }

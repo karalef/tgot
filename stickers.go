@@ -80,31 +80,30 @@ func (s StickerSet) Delete() error {
 }
 
 // SetStickerSetThumbnail sets the thumbnail of a sticker set.
-func (s StickerSet) SetThumbnail(userID int64, thumb tg.Inputtable, format tg.StickerFormat) error {
-	d := api.NewData()
-	d.SetInt64("user_id", userID)
+func (s StickerSet) SetThumbnail(userID tg.ID, thumb tg.Inputtable, format tg.StickerFormat) error {
+	d := api.NewData().SetID("user_id", userID)
 	d.SetFile("thumbnail", thumb)
 	d.Set("format", string(format))
 	return s.ctx.method("setStickerSetThumbnail", d)
 }
 
 // Add adds a new sticker to a set created by the bot.
-func (s StickerSet) Add(userID int64, sticker tg.InputSticker) error {
-	d := api.NewData().SetInt64("user_id", userID)
+func (s StickerSet) Add(userID tg.ID, sticker tg.InputSticker) error {
+	d := api.NewData().SetID("user_id", userID)
 	d.SetInput("sticker", sticker)
 	return s.ctx.method("addStickerToSet", d)
 }
 
 // Replace replace an existing sticker in a sticker set with a new one.
-func (s StickerSet) Replace(old string, userID int64, sticker tg.InputSticker) error {
-	d := api.NewData().Set("old_sticker", old).SetInt64("user_id", userID)
+func (s StickerSet) Replace(old string, userID tg.ID, sticker tg.InputSticker) error {
+	d := api.NewData().Set("old_sticker", old).SetID("user_id", userID)
 	d.SetInput("sticker", sticker)
 	return s.ctx.method("replaceStickerInSet", d)
 }
 
 // NewStickerSet contains parameters for creating a sticker set.
 type NewStickerSet struct {
-	UserID          int64             `tg:"user_id"`
+	UserID          tg.ID             `tg:"user_id"`
 	Title           string            `tg:"title"`
 	Stickers        []tg.InputSticker `tg:"stickers"`
 	Type            tg.StickerType    `tg:"sticker_type"`

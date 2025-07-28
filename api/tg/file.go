@@ -22,7 +22,7 @@ type Animation struct {
 
 	Width     int        `json:"width"`
 	Height    int        `json:"height"`
-	Duration  int        `json:"duration"`
+	Duration  Duration   `json:"duration"`
 	Thumbnail *PhotoSize `json:"thumbnail"`
 	FileName  string     `json:"file_name"`
 	MimeType  string     `json:"mime_type"`
@@ -33,7 +33,7 @@ type Animation struct {
 type Audio struct {
 	FileData
 
-	Duration  int        `json:"duration"`
+	Duration  Duration   `json:"duration"`
 	Performer string     `json:"performer"`
 	Title     string     `json:"title"`
 	FileName  string     `json:"file_name"`
@@ -57,10 +57,10 @@ type Video struct {
 
 	Width     int         `json:"width"`
 	Height    int         `json:"height"`
-	Duration  int         `json:"duration"`
+	Duration  Duration    `json:"duration"`
 	Thumbnail *PhotoSize  `json:"thumbnail"`
 	Cover     []PhotoSize `json:"cover"`
-	Start     int64       `json:"start_timestamp"`
+	Start     Duration    `json:"start_timestamp"`
 	FileName  string      `json:"file_name"`
 	MimeType  string      `json:"mime_type"`
 }
@@ -70,7 +70,7 @@ type VideoNote struct {
 	FileData
 
 	Length    int        `json:"length"`
-	Duration  int        `json:"duration"`
+	Duration  Duration   `json:"duration"`
 	Thumbnail *PhotoSize `json:"thumbnail"`
 }
 
@@ -78,8 +78,8 @@ type VideoNote struct {
 type Voice struct {
 	FileData
 
-	Duration int    `json:"duration"`
-	MimeType string `json:"mime_type"`
+	Duration Duration `json:"duration"`
+	MimeType string   `json:"mime_type"`
 }
 
 // Sticker represents a sticker.

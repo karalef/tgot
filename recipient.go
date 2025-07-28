@@ -7,10 +7,7 @@ import (
 
 // AsRecipientID returns RecipientID that contains chat ID.
 func (c ChatID) AsRecipientID() RecipientID {
-	return RecipientID{
-		chatid:   c.id,
-		username: c.username,
-	}
+	return RecipientID{chatid: c.id}
 }
 
 // AsRecipientID returns RecipientID that contains user ID.
@@ -20,19 +17,16 @@ func (u *User) AsRecipientID() RecipientID {
 
 // RecipientID represents user id, chat id or channel username.
 type RecipientID struct {
-	chatid   int64
-	userid   int64
-	username string
+	chatid tg.ChatID
+	userid tg.ID
 }
 
-func (r RecipientID) ChatID() int64    { return r.chatid }
-func (r RecipientID) UserID() int64    { return r.userid }
-func (r RecipientID) Username() string { return r.username }
+func (r RecipientID) ChatID() tg.ChatID { return r.chatid }
+func (r RecipientID) UserID() tg.ID     { return r.userid }
 
 func (r RecipientID) set(d *api.Data) {
-	d.Set("chat_id", r.username)
-	d.SetInt64("chat_id", r.chatid)
-	d.SetInt64("user_id", r.userid)
+	d.SetChatID("chat_id", r.chatid)
+	d.SetID("user_id", r.userid)
 }
 
 // WithRecipient creates a new Recipient from context and recipient id.

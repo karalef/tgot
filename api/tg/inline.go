@@ -86,8 +86,8 @@ type InputInvoiceMessageContent struct {
 	ProviderToken             string         `json:"provider_token"`
 	Currency                  string         `json:"currency"`
 	Prices                    []LabeledPrice `json:"prices"`
-	MaxTipAmount              int            `json:"max_tip_amount,omitempty"`
-	SuggestedTipAmounts       []int          `json:"suggested_tip_amounts,omitempty"`
+	MaxTipAmount              uint           `json:"max_tip_amount,omitempty"`
+	SuggestedTipAmounts       []uint         `json:"suggested_tip_amounts,omitempty"`
 	ProviderData              string         `json:"provider_data,omitempty"`
 	PhotoURL                  string         `json:"photo_url,omitempty"`
 	PhotoSize                 int            `json:"photo_size,omitempty"`
@@ -256,7 +256,7 @@ type InlineQueryResultAudio struct {
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
 	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
 	Performer           string                `json:"performer,omitempty"`
-	Duration            int                   `json:"audio_duration,omitempty"`
+	Duration            Duration              `json:"audio_duration,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
 }
@@ -318,7 +318,7 @@ type InlineQueryResultGIF struct {
 	ThumbnailURL          string                `json:"thumbnail_url"`
 	Width                 int                   `json:"gif_width,omitempty"`
 	Height                int                   `json:"gif_height,omitempty"`
-	Duration              int                   `json:"gif_duration,omitempty"`
+	Duration              Duration              `json:"gif_duration,omitempty"`
 	ThumbnailMIMEType     string                `json:"thumbnail_mime_type,omitempty"`
 	Title                 string                `json:"title,omitempty"`
 	Caption               string                `json:"caption,omitempty"`
@@ -354,7 +354,7 @@ type InlineQueryResultMPEG4GIF struct {
 	ThumbnailURL          string                `json:"thumbnail_url"`
 	Width                 int                   `json:"mpeg4_width,omitempty"`
 	Height                int                   `json:"mpeg4_height,omitempty"`
-	Duration              int                   `json:"mpeg4_duration,omitempty"`
+	Duration              Duration              `json:"mpeg4_duration,omitempty"`
 	Title                 string                `json:"title,omitempty"`
 	Caption               string                `json:"caption,omitempty"`
 	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
@@ -420,7 +420,7 @@ type InlineQueryResultVideo struct {
 	Entities              []MessageEntity       `json:"caption_entities,omitempty"`
 	Width                 int                   `json:"video_width,omitempty"`
 	Height                int                   `json:"video_height,omitempty"`
-	Duration              int                   `json:"video_duration,omitempty"`
+	Duration              Duration              `json:"video_duration,omitempty"`
 	Description           string                `json:"description,omitempty"`
 	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent   InputMessageContent   `json:"input_message_content,omitempty"`
@@ -438,7 +438,7 @@ type InlineQueryResultVoice struct {
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
 	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	Duration            int                   `json:"voice_duration,omitempty"`
+	Duration            Duration              `json:"voice_duration,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
 }
@@ -451,5 +451,5 @@ func (InlineQueryResultVoice) inlineQueryResultType() string {
 // Mini App.
 type PreparedInlineMessage struct {
 	ID      string `json:"id"`
-	Expires int64  `json:"expiration_date"`
+	Expires Date   `json:"expiration_date"`
 }

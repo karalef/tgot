@@ -6,18 +6,13 @@ import (
 )
 
 // NewChatID makes ChatID from chat id.
-func NewChatID(id int64, businness ...string) ChatID {
+func NewChatID(id tg.ChatID, businness ...string) ChatID {
 	return ChatID{id: id, business: firstOne(businness)}
 }
 
 // NewThreadID makes ChatID from thread id.
-func NewThreadID(chatID, threadID int64, businness ...string) ChatID {
+func NewThreadID(chatID, threadID tg.ID, businness ...string) ChatID {
 	return ChatID{thread: threadID, id: chatID, business: firstOne(businness)}
-}
-
-// Username makes ChatID from channel username.
-func Username(username string, businness ...string) ChatID {
-	return ChatID{username: username, business: firstOne(businness)}
 }
 
 func firstOne[T comparable](a []T, or ...T) (val T) {
@@ -31,30 +26,23 @@ func firstOne[T comparable](a []T, or ...T) (val T) {
 
 // ChatID represents chat id or channel username.
 type ChatID struct {
-	id       int64
-	thread   int64
-	username string
+	id       tg.ChatID
+	thread   tg.ID
 	business string
 }
 
-func (c ChatID) ID() int64              { return c.id }
-func (c ChatID) Username() string       { return c.username }
-func (c ChatID) Thread() int64          { return c.thread }
+func (c ChatID) ID() tg.ChatID          { return c.id }
+func (c ChatID) Thread() tg.ID          { return c.thread }
 func (c ChatID) BusinessConnID() string { return c.business }
 func (c ChatID) IsTopic() bool          { return c.thread != 0 }
 func (c ChatID) HasBusiness() bool      { return c.business != "" }
 
 func (c ChatID) setChatID(d *api.Data, key ...string) {
-	k := firstOne(key, "chat_id")
-	if c.id != 0 {
-		d.SetInt64(k, c.id)
-	} else {
-		d.Set(k, c.username)
-	}
+	d.SetChatID(firstOne(key, "chat_id"), c.id)
 	if len(key) > 0 {
 		return
 	}
-	d.SetInt64("message_thread_id", c.thread)
+	d.SetID("message_thread_id", c.thread)
 	d.Set("business_connection_id", c.BusinessConnID())
 }
 
@@ -79,7 +67,7 @@ func (c *Chat) WithName(name string) *Chat {
 }
 
 // WithMember creates a new ChatMember with the specified user id.
-func (c *Chat) WithMember(userID int64) *ChatMember {
+func (c *Chat) WithMember(userID tg.ID) *ChatMember {
 	return WithChatMember(c, c.id, userID)
 }
 
@@ -95,8 +83,8 @@ func (c *Chat) SendE(s Sendable, opts ...SendOptions) error {
 }
 
 // ReplyTo creates ReplyParameters with only message ID.
-func ReplyTo(msgID int) tg.ReplyParameters {
-	return tg.ReplyParametersData[int64]{
+func ReplyTo(msgID tg.ID) tg.ReplyParameters {
+	return tg.ReplyParameters{
 		MessageID: msgID,
 	}
 }
@@ -111,7 +99,7 @@ func (c *Chat) ReplyE(r tg.ReplyParameters, s Sendable) error {
 	return c.SendE(s, SendOptions{ReplyParameters: r})
 }
 
-func (c *Chat) ReplyTextSE(to int, text string, pm ...tg.ParseMode) error {
+func (c *Chat) ReplyTextSE(to tg.ID, text string, pm ...tg.ParseMode) error {
 	msg := NewText(text)
 	msg.ParseMode = firstOne(pm)
 	return c.ReplyE(ReplyTo(to), msg)
