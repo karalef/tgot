@@ -1,14 +1,16 @@
-package updates
+package webhook
 
 import (
 	"context"
 	"errors"
 	"net/http"
+
+	"github.com/karalef/tgot/updates"
 )
 
-// NewWebhookServer creates new server for telegram webhooks.
+// NewServer creates new server for telegram webhooks.
 // Ports currently supported for webhooks: 443, 80, 88, 8443.
-func NewWebhookServer(addr string, cfg ServerConfig) (*Server, error) {
+func NewServer(addr string, cfg Config) (*Server, error) {
 	if cfg.CertFile != "" && cfg.KeyFile == "" {
 		return nil, errors.New("certificate file without key file")
 	}
@@ -32,28 +34,28 @@ type Server struct {
 	Serv http.Server
 	// can be used to set paths other than the one specified in config (it will be overwritten)
 	Mux *http.ServeMux
-	cfg ServerConfig
+	cfg Config
 }
 
-// ServerConfig contains webhook parameters.
-type ServerConfig struct {
+// Config contains webhook parameters.
+type Config struct {
 	Path     string // template for mux
-	CertFile string // will be automatically opened and sent with setWebhook as "certificate"
+	CertFile string
 	KeyFile  string
 	Secret   string
 }
 
 // ListenAndServe starts webhook server.
-func (s *Server) ListenAndServe(ctx context.Context, h Handler) (err error) {
+func (s *Server) ListenAndServe(ctx context.Context, h updates.Handler) (err error) {
 	if h == nil {
 		panic("WebhookServer: nil handler")
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	s.Mux.Handle(s.cfg.Path, &WebhookHandler{
-		Handler:     h,
-		SecretToken: s.cfg.Secret,
+	s.Mux.Handle(s.cfg.Path, &Handler{
+		Handler: h,
+		Secret:  s.cfg.Secret,
 	})
 
 	closed := make(chan error)
