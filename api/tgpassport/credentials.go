@@ -15,7 +15,7 @@ import (
 )
 
 // DecryptCredentials decrypts telegram encrypted passport credentials.
-func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, nonce string) (*Credentials, error) {
+func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, nonce string) (*tg.Credentials, error) {
 	secret, err := decodeString(ecreds.Secret, "EncryptedCredentials.Secret")
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 		return nil, err
 	}
 
-	var creds Credentials
+	var creds tg.Credentials
 	if err = json.Unmarshal(data, &creds); err != nil {
 		return nil, err
 	}
@@ -48,69 +48,22 @@ func DecryptCredentials(ecreds tg.EncryptedCredentials, priv *rsa.PrivateKey, no
 	return &creds, nil
 }
 
-// Credentials is a JSON-serialized object.
-type Credentials struct {
-	SecureData SecureData `json:"secure_data"`
-	Nonce      string     `json:"nonce"`
-}
-
-// SecureData represents the credentials required to decrypt encrypted data.
-// All fields are optional and depend on fields that were requested.
-type SecureData struct {
-	PersonalDetails       *SecureValue `json:"personal_details"`
-	Passport              *SecureValue `json:"passport"`
-	InternalPassport      *SecureValue `json:"internal_passport"`
-	DriverLicense         *SecureValue `json:"driver_license"`
-	IdentityCard          *SecureValue `json:"identity_card"`
-	Address               *SecureValue `json:"address"`
-	UtilityBill           *SecureValue `json:"utility_bill"`
-	BankStatement         *SecureValue `json:"bank_statement"`
-	RentalAgreement       *SecureValue `json:"rental_agreement"`
-	PassportRegistration  *SecureValue `json:"passport_registration"`
-	TemporaryRegistration *SecureValue `json:"temporary_registration"`
-}
-
-// SecureValue represents the credentials required to decrypt encrypted values.
-// All fields are optional and depend on the type of fields that were requested.
-type SecureValue struct {
-	Data        *DataCredentials  `json:"data"`
-	FrontSide   *FileCredentials  `json:"front_side"`
-	ReverseSide *FileCredentials  `json:"reverse_side"`
-	Selfie      *FileCredentials  `json:"selfie"`
-	Translation []FileCredentials `json:"translation"`
-	Files       []FileCredentials `json:"files"`
-}
-
-// DataCredentials can be used to decrypt encrypted data from the data field in EncryptedPassportElement.
-type DataCredentials struct {
-	DataHash string `json:"data_hash"`
-	Secret   string `json:"secret"`
-}
-
 // DecryptData decrypts base64-encoded encrypted data.
-// dst must satisfy [DataType] interface.
-func (c DataCredentials) DecryptData(dst any, data string) error {
+func DecryptData[T tg.PassportDataType](dst T, data string, creds tg.DataCredentials) error {
 	encryptedData, err := decodeString(data, "data")
 	if err != nil {
 		return err
 	}
-	dataJSON, err := decrypt([]byte(c.Secret), []byte(c.DataHash), encryptedData)
+	dataJSON, err := decrypt([]byte(creds.Secret), []byte(creds.DataHash), encryptedData)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(dataJSON, dst)
 }
 
-// FileCredentials can be used to decrypt encrypted files from the front_side, reverse_side, selfie, files
-// and translation fields in EncryptedPassportElement.
-type FileCredentials struct {
-	FileHash string `json:"file_hash"`
-	Secret   string `json:"secret"`
-}
-
 // Decrypt decrypts encrypted file data.
-func (c FileCredentials) Decrypt(fileData []byte) ([]byte, error) {
-	return decrypt([]byte(c.Secret), []byte(c.FileHash), fileData)
+func DecryptFile(fileData []byte, creds tg.FileCredentials) ([]byte, error) {
+	return decrypt([]byte(creds.Secret), []byte(creds.FileHash), fileData)
 }
 
 func decrypt(secret, hash, data []byte) ([]byte, error) {

@@ -187,3 +187,93 @@ type PassportElementErrorUnspecified struct {
 }
 
 func (e PassportElementErrorUnspecified) source() string { return "unspecified" }
+
+// Credentials is a JSON-serialized object.
+type Credentials struct {
+	SecureData SecureData `json:"secure_data"`
+	Nonce      string     `json:"nonce"`
+}
+
+// SecureData represents the credentials required to decrypt encrypted data.
+// All fields are optional and depend on fields that were requested.
+type SecureData struct {
+	PersonalDetails       *SecureValue `json:"personal_details"`
+	Passport              *SecureValue `json:"passport"`
+	InternalPassport      *SecureValue `json:"internal_passport"`
+	DriverLicense         *SecureValue `json:"driver_license"`
+	IdentityCard          *SecureValue `json:"identity_card"`
+	Address               *SecureValue `json:"address"`
+	UtilityBill           *SecureValue `json:"utility_bill"`
+	BankStatement         *SecureValue `json:"bank_statement"`
+	RentalAgreement       *SecureValue `json:"rental_agreement"`
+	PassportRegistration  *SecureValue `json:"passport_registration"`
+	TemporaryRegistration *SecureValue `json:"temporary_registration"`
+}
+
+// SecureValue represents the credentials required to decrypt encrypted values.
+// All fields are optional and depend on the type of fields that were requested.
+type SecureValue struct {
+	Data        *DataCredentials  `json:"data"`
+	FrontSide   *FileCredentials  `json:"front_side"`
+	ReverseSide *FileCredentials  `json:"reverse_side"`
+	Selfie      *FileCredentials  `json:"selfie"`
+	Translation []FileCredentials `json:"translation"`
+	Files       []FileCredentials `json:"files"`
+}
+
+// DataCredentials can be used to decrypt encrypted data from the data field in EncryptedPassportElement.
+type DataCredentials struct {
+	DataHash string `json:"data_hash"`
+	Secret   string `json:"secret"`
+}
+
+// FileCredentials can be used to decrypt encrypted files from the front_side, reverse_side, selfie, files
+// and translation fields in EncryptedPassportElement.
+type FileCredentials struct {
+	FileHash string `json:"file_hash"`
+	Secret   string `json:"secret"`
+}
+
+// PassportDataType represents any type of passport data.
+type PassportDataType interface {
+	PersonalDetails | ResidentialAddress | IDDocumentData
+}
+
+// Gender type.
+type Gender string
+
+// genders.
+const (
+	Male   Gender = "male"
+	Female Gender = "female"
+)
+
+// PersonalDetails represents personal details.
+type PersonalDetails struct {
+	FirstName            string `json:"first_name"`
+	LastName             string `json:"last_name"`
+	MiddleName           string `json:"middle_name"`
+	BirthDate            string `json:"birth_date"` // in DD.MM.YYYY format
+	Gender               Gender `json:"gender"`
+	CountryCode          string `json:"country_code"`           // ISO 3166-1 alpha-2 country code
+	ResidenceCountryCode string `json:"residence_country_code"` // ISO 3166-1 alpha-2 country code
+	FirstNameNative      string `json:"first_name_native"`
+	LastNameNative       string `json:"last_name_native"`
+	MiddleNameNative     string `json:"middle_name_native"`
+}
+
+// ResidentialAddress represents a residential address.
+type ResidentialAddress struct {
+	StreetLine1 string `json:"street_line1"`
+	StreetLine2 string `json:"street_line2"`
+	City        string `json:"city"`
+	State       string `json:"state"`
+	CountryCode string `json:"country_code"` // ISO 3166-1 alpha-2 country code
+	PostCode    string `json:"post_code"`
+}
+
+// IDDocumentData represents the data of an identity document.
+type IDDocumentData struct {
+	DocumentNo string `json:"document_no"`
+	ExpiryDate string `json:"expiry_date"` // in DD.MM.YYYY format
+}
